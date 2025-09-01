@@ -6,6 +6,7 @@ import IMG5 from '../assets/img/hoodies/Hoodie5.jpg'
 import IMG6 from '../assets/img/hoodies/Hoodie6.jpg'
 import IMG7 from '../assets/img/hoodies/Hoodie7.jpg'
 import IMG8 from '../assets/img/hoodies/Hoodie8.jpg'
+import api from '../api/api.js'; 
 
 
 export const Hoodie = [

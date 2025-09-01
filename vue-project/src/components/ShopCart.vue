@@ -1,5 +1,5 @@
 <script setup>
-    import { useCartStore } from '../stores/Cart';
+    import { useCartStore } from '../composables/useCart';
     const cartStore = useCartStore();
     const handleAddToCart = (product) => {
         cartStore.addToCart(product);

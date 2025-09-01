@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { Heart } from 'lucide-vue-next';
-import { useWishlist } from '../stores/useWishList.js';
+import { useWishlist } from '../composables/useWishList.js';
 
 const props = defineProps({
   item: { type: Object, required: true },

@@ -2,8 +2,8 @@ import './assets/main.css'
 import { createApp } from 'vue'
 import App from './App.vue'
 import { createPinia } from 'pinia'
-import router from './routes/index.js'
-import { useUserStore } from "./stores/useUser.js";
+import router from './router/index.js'
+import { useUserStore } from "./composables/useUser.js";
 
 
 const app = createApp(App);

@@ -11,7 +11,7 @@ export default defineConfig({
     tailwindcss()
   ],
   server: {
-    port: 3001
+    port: Number(process.env.VITE_PORT) || 3001
   },
   resolve: {
     alias: {

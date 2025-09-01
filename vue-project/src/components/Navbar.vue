@@ -174,8 +174,8 @@ onUnmounted(() => {
                 </div>
                 <nav class="p-4">
                     <ul class="space-y-2">
-                        <template v-for="link in navLinks" :key="link.label">
-                            <li v-if="link.children">
+                        <template v-for="link in navLinks">
+                            <li v-if="link.children" :key="link.label">
                                 <button @click="toggleDropdown(link.label)"
                                     class="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-800"
                                     :aria-expanded="openDropdown === link.label"
@@ -200,7 +200,7 @@ onUnmounted(() => {
                                     </ul>
                                 </transition>
                             </li>
-                            <li v-else>
+                            <li v-else :key="link.label + '-single'">
                                 <RouterLink :to="link.to"
                                     class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors duration-200"
                                     :class="{ 'bg-gray-800': isActiveRoute(link.to) }"
