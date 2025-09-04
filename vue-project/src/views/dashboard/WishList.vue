@@ -1,145 +1,86 @@
 <script setup>
-import { ref, computed } from 'vue';
-import {
-  Search, Grid, List, Heart,
-  ShoppingCart, Trash2, Package, ArrowRight
-} from 'lucide-vue-next';
+import { computed } from 'vue';
+import { useWishList } from '../../composables/useWishList';
 import { useRouter } from 'vue-router';
-import ProductPreview from '../components/ProductPreview.vue';
-import { useWishlist } from '../composables/useWishList.js';
-import { Accesorie } from '../data/accesorie.js';
-import { Hoodie } from '../data/hoodies.js';
-import { Pants } from '../data/pants.js';
-import { Shirt } from '../data/shirt.js';
+import { Heart, ShoppingCart, Trash2, ArrowLeft } from 'lucide-vue-next';
+import { Accesorie } from '../../data/accesorie.js';
+import { Hoodie } from '../../data/hoodies.js';
+import { Pants } from '../../data/pants.js';
+import { Shirt } from '../../data/shirt.js';
 
 const router = useRouter();
-const wishlistStore = useWishlist();
-const filterText = ref('');
-const selectedSort = ref('name');
-const isGridView = ref(true);
+const { wishlist, remove, clear } = useWishList();
 
 const allProducts = [...Accesorie, ...Hoodie, ...Pants, ...Shirt];
 
 const wishlistItems = computed(() => {
-  const wishlistIds = Array.from(wishlistStore.wishlist);
+  const wishlistIds = Array.from(wishlist.value);
   return allProducts.filter(p => wishlistIds.includes(p.id));
 });
-const filteredWishlist = computed(() => {
-  let list = [...wishlistItems.value];
-  if (filterText.value.trim()) {
-    const term = filterText.value.toLowerCase();
-    list = list.filter(p =>
-      p.name.toLowerCase().includes(term) ||
-      (p.description && p.description.toLowerCase().includes(term))
-    );
-  }
-
-  if (selectedSort.value === 'name') list.sort((a, b) => a.name.localeCompare(b.name));
-  else if (selectedSort.value === 'price') list.sort((a, b) => a.price - b.price);
-
-  return list;
-});
-
-const wishlistCount = computed(() => wishlistItems.value.length);
 
 const moveToCart = (product) => {
   const cart = JSON.parse(localStorage.getItem('cart')) || [];
   cart.push(product);
   localStorage.setItem('cart', JSON.stringify(cart));
-  wishlistStore.remove(product.id);
+  remove(product.id);
 };
 
-const addAllToCart = () => {
-  const cart = JSON.parse(localStorage.getItem('cart')) || [];
-  cart.push(...wishlistItems.value);
-  localStorage.setItem('cart', JSON.stringify(cart));
-  wishlistStore.clear();
+const clearWishlist = () => {
+  clear();
 };
 
-const continueShopping = () => router.push('/');
+const continueShopping = () => router.push('/Allproduct');
 </script>
 
 <template>
-  <div class="p-6 max-w-screen-xl mx-auto">
-    <!-- Header -->
-    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-      <h2 class="text-2xl font-semibold flex items-center gap-2 text-gray-800">
-        <Heart class="w-6 h-6 text-pink-600" />
-        Wishlist ({{ wishlistCount }})
-      </h2>
-      <!-- Controls -->
-      <div class="flex flex-wrap gap-3 items-center">
-        <!-- Search -->
-        <div class="relative">
-          <input
-            v-model="filterText"
-            type="text"
-            placeholder="Search..."
-            class="pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 shadow-sm transition"
-          />
-          <Search class="w-5 h-5 absolute top-1/2 left-3 transform -translate-y-1/2 text-gray-400" />
-        </div>
-        <!-- Sort -->
-        <select
-          v-model="selectedSort"
-          class="py-2 px-3 border rounded-lg text-sm focus:ring-2 focus:ring-blue-400 shadow-sm transition"
-        >
-          <option value="name">Sort by Name</option>
-          <option value="price">Sort by Price</option>
-        </select>
-        <!-- View Toggle -->
-        <button @click="isGridView = true"
-          :class="isGridView ? 'bg-gray-200 shadow-md' : ''"
-          class="p-2 rounded-lg hover:bg-gray-100 transition"
-        >
-          <Grid class="w-5 h-5" />
-        </button>
-        <button @click="isGridView = false"
-          :class="!isGridView ? 'bg-gray-200 shadow-md' : ''"
-          class="p-2 rounded-lg hover:bg-gray-100 transition"
-        >
-          <List class="w-5 h-5" />
-        </button>
-        <!-- Actions -->
-        <button @click="addAllToCart"
-          :disabled="wishlistCount === 0"
-          class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white rounded-lg shadow-lg hover:scale-105 transition disabled:opacity-50"
-        >
-          <ShoppingCart class="w-4 h-4" /> Add All to Cart
-        </button>
-        <button @click="wishlistStore.clear"
-          :disabled="wishlistCount === 0"
-          class="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg shadow-lg hover:scale-105 transition disabled:opacity-50"
-        >
-          <Trash2 class="w-4 h-4" /> Clear Wishlist
+  <div class="min-h-screen bg-[#f7fafc] p-4 sm:p-8">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex justify-between items-center mb-10">
+        <h1 class="text-4xl font-bold text-gray-800 flex items-center gap-4">
+          <Heart class="w-10 h-10 text-pink-500" />
+          Your Wishlist
+        </h1>
+        <button @click="continueShopping" class="flex items-center gap-2 text-gray-600 hover:text-blue-500 transition-colors duration-300">
+          <ArrowLeft class="w-6 h-6" />
+          <span class="font-medium">Back to Shopping</span>
         </button>
       </div>
-    </div>
-    <!-- Wishlist Items -->
-    <div v-if="filteredWishlist.length > 0"
-        :class="isGridView ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'">
-      <div v-for="item in filteredWishlist" :key="item.id"
-          class="border rounded-2xl p-4 shadow hover:shadow-lg transition hover:scale-105 bg-white">
-        <ProductPreview :product="item" />
-        <div class="mt-4 flex justify-between items-center gap-3">
-          <button @click="moveToCart(item)"
-                  class="flex items-center gap-2 px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm shadow-md transition">
-            <Package class="w-4 h-4" /> Move to Cart
-          </button>
-          <button @click="wishlistStore.remove(item.id)"
-                  class="flex items-center gap-2 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm shadow-md transition">
-            <Trash2 class="w-4 h-4" /> Remove
+      <div v-if="wishlistItems.length > 0">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+          <div v-for="item in wishlistItems" :key="item.id" class="relative bg-white rounded-2xl shadow-lg overflow-hidden group transform hover:-translate-y-2 transition-transform duration-300 border-t-4 border-pink-500">
+            <img :src="item.image" :alt="item.name" class="w-full h-64 object-cover">
+            <div class="p-5">
+              <h3 class="text-xl font-semibold text-gray-800 truncate">{{ item.name }}</h3>
+              <p class="text-2xl font-bold text-blue-500 mt-2">${{ item.price.toFixed(2) }}</p>
+            </div>
+            <div class="absolute inset-0 bg-black bg-opacity-60 flex flex-col justify-center items-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4">
+              <button @click="moveToCart(item)" class="flex items-center justify-center gap-2 w-full bg-blue-500 text-white px-5 py-3 rounded-lg shadow-xl hover:bg-blue-600 transition-colors duration-300 font-semibold">
+                <ShoppingCart class="w-6 h-6" />
+                Add to Cart
+              </button>
+              <button @click="remove(item.id)" class="flex items-center justify-center gap-2 w-full bg-red-500 text-white px-5 py-3 rounded-lg shadow-xl hover:bg-red-600 transition-colors duration-300 font-semibold">
+                <Trash2 class="w-6 h-6" />
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="text-center mt-16">
+          <button @click="clearWishlist" class="bg-red-500 text-white px-10 py-4 rounded-lg shadow-lg hover:bg-red-600 transition-all transform hover:scale-105 font-semibold text-lg">
+            Clear Wishlist
           </button>
         </div>
       </div>
-    </div>
-    <!-- Empty State -->
-    <div v-else class="text-center text-gray-400 mt-10">
-      <p class="text-lg mb-4">Your wishlist is empty.</p>
-      <button @click="continueShopping"
-              class="inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white rounded-lg shadow-lg hover:scale-105 transition">
-        <ArrowRight class="w-4 h-4" /> Continue Shopping
-      </button>
+      <div v-else class="text-center py-24">
+        <div class="inline-block bg-gray-200 p-8 rounded-full mb-6 shadow-inner">
+          <Heart class="w-20 h-20 text-gray-400" />
+        </div>
+        <h2 class="text-3xl font-semibold text-gray-700 mb-4">Your Wishlist is Empty</h2>
+        <p class="text-gray-500 mb-8 text-lg">Looks like you haven't added anything to your wishlist yet.</p>
+        <button @click="continueShopping" class="bg-blue-500 text-white px-10 py-4 rounded-lg shadow-lg hover:bg-blue-600 transition-all transform hover:scale-105 font-semibold text-lg">
+          Start Shopping
+        </button>
+      </div>
     </div>
   </div>
 </template>

@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import '../assets/homeStyle.css';
 import { allProduct } from '../data/allProduct';
+import { RouterLink, useRoute } from 'vue-router';
 
 
 const heroTitle = ref('Welcome to STORE');
@@ -13,74 +14,74 @@ const product = ref(allProduct.slice(0, 4));
 </script>
 
 <template>
-    <div class="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
-        <!-- Bubble background -->
-        <div class="fixed inset-0 overflow-hidden pointer-events-none">
-            <div class="bubble absolute top-20 left-20 w-20 h-20 bg-blue-500 rounded-full opacity-10"></div>
-            <div class="bubble delay-2s absolute top-40 right-40 w-32 h-32 bg-purple-500 rounded-full opacity-10"></div>
-            <div class="bubble delay-3s absolute bottom-10 right-1/4 w-16 h-16 bg-green-500 rounded-full opacity-10"></div>
-            <div class="bubble delay-4s absolute bottom-20 left-1/3 w-24 h-24 bg-pink-500 rounded-full opacity-10"></div>
-        </div>
+    <div class="min-h-screen bg-[#cbe5f6]">
         <!-- Hero section -->
-        <section class="bg-center h-[400px] flex items-center justify-center">
+        <section class="bg-center h-[400px] flex items-center justify-center bg-[#d8edfc]">
             <div class="text-center mt-28 max-w-3xl mx-auto">
-                <h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-rose-400 to-pink-600 bg-clip-text text-transparent animate-[bounce_2s_ease-in-out_infinite]">
+                <h1 class="text-6xl font-extrabold mb-4 text-gray-800">
                     {{ heroTitle }}
                 </h1>
-                <p class="mt-6 text-lg text-slate-300">
+                <p class="mt-6 text-lg text-gray-600">
                     {{ heroSubtitle }}
                 </p>
                 <div class="mt-10 flex justify-center items-center gap-6">
-                    <a href="/Allproduct" class="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-sm">
-                    Get started
+                    <a href="/Allproduct" class="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-semibold text-lg shadow-lg transition-transform transform hover:scale-105">
+                        Start Shopping
                     </a>
-                    <a href="/about" class="text-sm font-medium text-white hover:underline flex items-center gap-1">
-                    Learn more →
+                    <a href="/about" class="text-lg font-medium text-gray-700 hover:text-blue-600 flex items-center gap-1 transition-colors">
+                        Learn more →
                     </a>
                 </div>
             </div>
         </section>
         <!-- Features Section -->
-        <section class="py-16 m-6">
+        <section class="py-20 bg-[#c2e7ff]">
             <div class="container mx-auto px-4">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-                    <div class="bg-white/10 backdrop-blur-lg rounded-xl p-6 text-white transform hover:scale-105 transition-transform">
-                        <h3 class="text-xl font-semibold mb-4">Our Services</h3>
-                        <p class="text-gray-300">Explore our wide range of professional services designed to meet your needs.</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                    <div class="text-center p-8 bg-gray-50 rounded-xl shadow-md transform hover:-translate-y-2 transition-transform">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4">Our Services</h3>
+                        <p class="text-gray-600">Explore our wide range of professional services designed to meet your needs.</p>
                     </div>
-                    <div class="bg-white/10 backdrop-blur-lg rounded-xl p-6 text-white transform hover:scale-105 transition-transform">
-                        <h3 class="text-xl font-semibold mb-4">About Us</h3>
-                        <p class="text-gray-300">Learn more about our company and our commitment to excellence.</p>
+                    <div class="text-center p-8 bg-gray-50 rounded-xl shadow-md transform hover:-translate-y-2 transition-transform">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4">About Us</h3>
+                        <p class="text-gray-600">Learn more about our company and our commitment to excellence.</p>
                     </div>
-                    <div class="bg-white/10 backdrop-blur-lg rounded-xl p-6 text-white transform hover:scale-105 transition-transform">
-                        <h3 class="text-xl font-semibold mb-4">Contact</h3>
-                        <p class="text-gray-300">Get in touch with us. We're here to help and answer any questions.</p>
+                    <div class="text-center p-8 bg-gray-50 rounded-xl shadow-md transform hover:-translate-y-2 transition-transform">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4">Contact</h3>
+                        <p class="text-gray-600">Get in touch with us. We're here to help and answer any questions.</p>
                     </div>
                 </div>
             </div>
         </section>
         <!-- Main Contents -->
-        <main class="container mx-auto px-4 py-6 bg-white/10 backdrop-blur-lg rounded-xl">
-            <h2 class="text-3xl font-bold text-center text-white mb-8">
-                Our Products
+        <main class="container mx-auto px-4 py-16">
+            <h2 class="text-4xl font-extrabold text-center text-gray-800 mb-12">
+                Featured Products
             </h2>
             <div v-for="product in [product]" :key="product.id" class="mb-12">
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    <div v-for="product in product" :key="product.id" class="bg-white/10 backdrop-blur-lg rounded-lg p-4 transform hover:scale-105 transition-transform">
-                        <img :src="product.image" alt="" class="w-full h-48 object-cover rounded-lg mb-4">
-                        <h3 class="text-xl font-semibold text-white">{{ product.name }}</h3>
-                        <p class="text-gray-300 mt-2">{{ product.description }}</p>
-                        <p class="text-lg font-bold text-white mt-4">${{ product.price }}</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                    <div v-for="product in product" :key="product.id" class="bg-white rounded-xl shadow-lg overflow-hidden transform hover:-translate-y-2 transition-transform duration-300">
+                        <img :src="product.image" alt="" class="w-full h-56 object-cover">
+                        <div class="p-6">
+                            <h3 class="text-2xl font-bold text-gray-800">{{ product.name }}</h3>
+                            <p class="text-gray-600 mt-2">{{ product.description }}</p>
+                            <p class="text-xl font-bold text-blue-600 mt-4">${{ product.price }}</p>
+                            <button class="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-3 font-semibold text-lg shadow-md transition-colors">
+                                <RouterLink to="/Checkout" class="block w-full h-full">
+                                    Add to Cart
+                                </RouterLink>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </main>
-        
     </div>
 </template>
 
 <style scoped>
 .container {
+    min-width: 620px;
     max-width: 1200px;
 }
 </style>

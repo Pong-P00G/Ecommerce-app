@@ -112,7 +112,7 @@ onMounted(() => {
         <div class="relative z-20 h-full flex items-center justify-center text-white">
             <div class="text-center space-y-8 max-w-5xl px-4">
                 <h1 class="text-6xl md:text-8xl font-bold animate-fade-in bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                    MEN'S STYLE
+                    SHOPPING
                 </h1>
                 <h2 class="text-2xl md:text-4xl font-semibold animate-slide-up text-gray-200">
                     Premium Fashion & Accessories

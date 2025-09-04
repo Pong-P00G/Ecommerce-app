@@ -113,25 +113,35 @@ const routes = [
         component: ProductCart
     },
     {
-        path: '/setting',
-        name: 'setting',
-        component: () => import('../views/dashboard/Setting.vue')
-    },
-    {
         path: '/profile',
         name: 'profile',
         component: () => import('../views/dashboard/Profile.vue')
     },
     {
-        path: '/WishList',
-        name: 'WishList',
+        path: '/wishlist',
+        name: 'wishlist',
         component: () => import('../views/dashboard/WishList.vue')
     },
     {
-        path: '/Dashboard',
-        name: 'Dashboard',
+        path: '/dashboard',
+        name: 'dashboard',
         component: () => import('../views/dashboard/DashBoard.vue')
-    }
+    },
+    {
+        path: '/settings',
+        name: 'settings',
+        component: () => import('../views/dashboard/Setting.vue')
+    },
+    {
+        path: '/addproduct',
+        name: 'addproduct',
+        component: () => import('../views/dashboard/AddProduct.vue')
+    },
+    {
+        path: '/viewproduct',
+        name: 'viewproduct',
+        component: () => import('../views/dashboard/ProductListPage.vue')
+    },
 ]
 
 const router = createRouter({

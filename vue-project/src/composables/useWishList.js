@@ -1,25 +1,29 @@
-import { ref, computed } from 'vue';
-import api from '../api/api.js';
+import { ref, onMounted } from 'vue';
 
-const wishlistItems = ref([]);
+const wishlist = ref(new Set());
 
 export function useWishList() {
-  const fetchWishlist = async (userId) => {
-    const { data } = await api.get(`/wishlist/${userId}`);
-    wishlistItems.value = data;
+  onMounted(() => {
+    const savedWishlist = localStorage.getItem('wishlist');
+    if (savedWishlist) {
+      wishlist.value = new Set(JSON.parse(savedWishlist));
+    }
+  });
+
+  const add = (productId) => {
+    wishlist.value.add(productId);
+    localStorage.setItem('wishlist', JSON.stringify(Array.from(wishlist.value)));
   };
 
-  const addToWishlist = async (item) => {
-    const { data } = await api.post('/wishlist', item);
-    wishlistItems.value.push(data);
+  const remove = (productId) => {
+    wishlist.value.delete(productId);
+    localStorage.setItem('wishlist', JSON.stringify(Array.from(wishlist.value)));
   };
 
-  const removeFromWishlist = async (itemId) => {
-    await api.delete(`/wishlist/${itemId}`);
-    wishlistItems.value = wishlistItems.value.filter(i => i.id !== itemId);
+  const clear = () => {
+    wishlist.value.clear();
+    localStorage.removeItem('wishlist');
   };
 
-  const totalWishlist = computed(() => wishlistItems.value.length);
-
-  return { wishlistItems, fetchWishlist, addToWishlist, removeFromWishlist, totalWishlist };
+  return { wishlist, add, remove, clear };
 }

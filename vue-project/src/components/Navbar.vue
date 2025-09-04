@@ -64,7 +64,7 @@ const navLinks = ref([
     },
     { to: '/contact', label: 'Contact', icon: 'Phone', ariaLabel: 'Contact us' },
     { to: '/about', label: 'About', icon: 'Info', ariaLabel: 'Learn about us' },
-    {to: '/setting', label: 'setting', icon: 'Settings', ariaLabel: 'Setting' }
+    {to: '/dashboard', label: 'Dashboard', icon: 'CircleGauge', ariaLabel: 'dashboard' }
 ]);
 
 const isActiveRoute = computed(() => (linkTo) =>
@@ -99,7 +99,7 @@ onUnmounted(() => {
             </button>
             <!-- Logo -->
             <RouterLink to="/" class="text-2xl font-bold px-2 py-1 rounded-lg" aria-label="MyApp - Go to homepage">
-                MyApp
+                SHOPPING
             </RouterLink>
             <!-- Desktop Navigation -->
             <nav class="hidden md:flex space-x-1" role="navigation" aria-label="Main navigation">
