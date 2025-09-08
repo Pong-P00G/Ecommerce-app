@@ -1,12 +1,12 @@
 <script setup>
 
-    const currentDate = new Date(); // Create a new Date object
-    const Year = currentDate.getFullYear(); // Get the full year (e.g., 2023)
-    console.log(Year); // Output the year
+const currentDate = new Date();
+const Year = currentDate.getFullYear(); 
+console.log(Year);
 
-    //link Facebook & Instagram
-    const facebookLInk = "https://www.facebook.com";
-    const instagramLInk = "https://www.instagram.com";
+//link Facebook & Instagram
+const facebookLInk = "https://www.facebook.com";
+const instagramLInk = "https://www.instagram.com";
 
 </script>
 

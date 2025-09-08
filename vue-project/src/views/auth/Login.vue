@@ -31,7 +31,7 @@ const handleLogin = async (e) => {
             if (res.data.admin) {
               router.push('/dashboard');
             } else {
-              router.push("/profile");
+              router.push("/");
             }
         }, 500);
     } catch (err) {

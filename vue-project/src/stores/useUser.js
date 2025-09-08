@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import * as api from "../api/api";
 
 export const useUserStore = defineStore("user", {
     state: () => ({
@@ -7,6 +8,7 @@ export const useUserStore = defineStore("user", {
         email: "",
         avatar: "avatar",
         password: "",
+        userId: null,
     }),
     actions: {
         //Login user
@@ -16,6 +18,7 @@ export const useUserStore = defineStore("user", {
         this.email = user.email;
         this.avatar = user.avatar || "https://via.placeholder.com/150";
         this.password = user.password || "";
+        this.userId = user.userid;
         localStorage.setItem("loggedInUser", JSON.stringify(this.$state));
         },
         //Logout user
@@ -31,9 +34,25 @@ export const useUserStore = defineStore("user", {
         }
         },
         //Update profile & persist
-        updateProfile(updates) {
-        this.$patch(updates);
-        localStorage.setItem("loggedInUser", JSON.stringify(this.$state));
+        async updateProfile(updates) {
+            try {
+                const { data } = await api.updateUserProfile(updates);
+                this.$patch(data);
+                localStorage.setItem("loggedInUser", JSON.stringify(this.$state));
+            } catch (error) {
+                console.error("Failed to update profile:", error);
+                throw error;
+            }
         },
+
+        async fetchUserProfile() {
+            try {
+                const { data } = await api.getUserProfile();
+                this.$patch(data);
+            } catch (error) {
+                console.error("Failed to fetch user profile:", error);
+                throw error;
+            }
+        }
     },
 });

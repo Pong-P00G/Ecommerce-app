@@ -76,10 +76,10 @@ export const deleteUser = async (id) => {
 }
 
 // Verify user password
-export const verifyUser = async (username, passwordHash) => {
+export const verifyUser = async (email, username ,password) => {
     const result = await pool.query(
-        'SELECT * FROM users WHERE username=$1 AND passwordhash = crypt($2, passwordhash)',
-        [username, passwordHash]
+        'SELECT * FROM users WHERE email=$1 OR username=$2 AND passwordhash = crypt($3, passwordhash)',
+        [email,username, password]
     );
     return result.rows[0] || null;
 }

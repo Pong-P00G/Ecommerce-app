@@ -73,16 +73,15 @@ const filteredProducts = computed(() => {
 
     // Price filter
     products = products.filter(p => {
-        const price = parseFloat(String(p.price).replace('$',''));
-        return price >= filterBy.value.priceRange[0] && price <= filterBy.value.priceRange[1];
+        return p.price >= filterBy.value.priceRange[0] && p.price <= filterBy.value.priceRange[1];
     });
 
     // Sorting
     switch(sortBy.value){
         case 'price-low':
-        products.sort((a,b)=>parseFloat(a.price)-parseFloat(b.price)); break;
+        products.sort((a,b)=>a.price - b.price); break;
         case 'price-high':
-        products.sort((a,b)=>parseFloat(b.price)-parseFloat(a.price)); break;
+        products.sort((a,b)=>b.price - a.price); break;
         case 'rating':
         products.sort((a,b)=>(b.rating||4.8)-(a.rating||4.8)); break;
         default:
@@ -115,18 +114,21 @@ const availableSizes = computed(() => {
 onMounted(async () => {
     try {
         isLoading.value = true;
-        const { data } = await api.get("/products/accessories");
-        productCard.value = data.map(p=>({
-        ...p,
-        image: p.image || "fallback.jpg",
-        price: parseFloat(p.price),
-        originalPrice: parseFloat(p.price)*1.3,
-        rating: (Math.random()*1+4).toFixed(1),
-        reviews: Math.floor(Math.random()*500+50),
-        stock: p.stock??Math.floor(Math.random()*20+5),
-        isNew: Math.random()>0.7,
-        isBestseller: Math.random()>0.8,
-        }));
+        const { data } = await api.get("/products/category/accessories");
+        productCard.value = data.map(p=>{
+          const price = parseFloat(String(p.price).replace(/[$,]/g, ''));
+          return {
+            ...p,
+            image: p.image || "fallback.jpg",
+            price: price,
+            originalPrice: price*1.3,
+            rating: (Math.random()*1+4).toFixed(1),
+            reviews: Math.floor(Math.random()*500+50),
+            stock: p.stock??Math.floor(Math.random()*20+5),
+            isNew: Math.random()>0.7,
+            isBestseller: Math.random()>0.8,
+          }
+        });
         productCard.value.forEach(p=>{
         selectSize.value[p.id] = Object.keys(p.size||{})[0];
         selectColor.value[p.id] = Object.keys(p.color||{})[0];

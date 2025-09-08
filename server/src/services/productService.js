@@ -10,6 +10,12 @@ export const getAllProductById = async (id) => {
     return await productModels.getAllProductById(id);
 };
 
+// Get product from category
+export const getProductCategory = async (category) => {
+    return await productModels.getProductCategory(category);
+};
+
+
 // Create product
 export const createProduct = async (productData) => {
     return await productModels.createProduct(productData);

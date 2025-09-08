@@ -95,179 +95,179 @@ const features = [
 onMounted(() => {
     isVisible.value = true
 })
+
+
+const bubbleColors = ['#3b82f6', '#8b5cf6', '#f472b6', '#10b981', '#facc15']
+
+function random(min, max) {
+  return Math.random() * (max - min) + min
+}
+
+function bubbleStyle(i) {
+    const size = random(30, 120) // width & height
+    const left = random(0, 100) // vw position
+    const duration = random(15, 30) // animation duration
+    const delay = random(0, 10) // animation delay
+    const color = bubbleColors[i % bubbleColors.length]
+
+    return {
+        width: `${size}px`,
+        height: `${size}px`,
+        top: '100vh', // start from bottom
+        left: `${left}vw`,
+        backgroundColor: color,
+        borderRadius: '50%',
+        opacity: 0.2,
+        animation: `floatUp ${duration}s ease-in-out ${delay}s infinite`,
+    }
+}
+
 </script>
 
 <template>
-    <div class="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
-        <div class="fixed inset-0 overflow-hidden pointer-events-none">
-            <div class="bubble absolute top-20 left-20 w-20 h-20 bg-blue-500 rounded-full opacity-10"></div>
-            <div class="bubble delay-2s absolute top-40 right-40 w-32 h-32 bg-purple-500 rounded-full opacity-10"></div>
-            <div class="bubble delay-3s absolute bottom-10 right-1/4 w-16 h-16 bg-green-500 rounded-full opacity-10"></div>
-            <div class="bubble delay-4s absolute bottom-20 left-1/3 w-24 h-24 bg-pink-500 rounded-full opacity-10"></div>
+    <div class="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 relative overflow-hidden">
+        <!-- Global Floating Bubbles / Particles -->
+        <div class="fixed inset-0 pointer-events-none overflow-hidden">
+        <div v-for="i in 25" :key="i" class="bubble absolute rounded-full opacity-20"
+            :style="bubbleStyle(i)">
+        </div>
         </div>
         <!-- Hero Section -->
-        <section class="relative h-[70vh] overflow-hidden bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
+        <section class="relative h-[70vh] flex items-center justify-center text-center px-4 overflow-hidden">
         <div class="absolute inset-0 bg-black/40 z-10"></div>
-        <div class="absolute inset-0 bg-[url('')] opacity-20"></div>
-        <div class="relative z-20 h-full flex items-center justify-center text-white">
-            <div class="text-center space-y-8 max-w-5xl px-4">
-                <h1 class="text-6xl md:text-8xl font-bold animate-fade-in bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                    SHOPPING
-                </h1>
-                <h2 class="text-2xl md:text-4xl font-semibold animate-slide-up text-gray-200">
-                    Premium Fashion & Accessories
-                </h2>
-                <p class="text-lg md:text-xl animate-slide-up text-gray-300 max-w-3xl mx-auto">
-                    Discover our exclusive collection of shirts, hoodies, pants, jeans, and premium accessories designed for the
-                    modern gentleman
-                </p>
-            </div>
+        <div class="relative z-20 max-w-5xl space-y-8">
+            <h1 class="text-6xl md:text-8xl font-extrabold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent animate-fade-in">
+            SHOPPING
+            </h1>
+            <h2 class="text-2xl md:text-4xl font-semibold text-gray-200 animate-slide-up">
+            Premium Fashion & Accessories
+            </h2>
+            <p class="text-lg md:text-xl text-gray-300 animate-slide-up max-w-3xl mx-auto">
+            Discover our exclusive collection of shirts, hoodies, pants, jeans, and premium accessories for the modern gentleman
+            </p>
         </div>
         </section>
         <!-- Product Categories Preview -->
         <section class="container mx-auto px-4 py-20">
-            <h2 class="text-4xl font-bold text-center mb-16 bg-gradient-to-r from-slate-100 to-gray-300 bg-clip-text text-transparent">
-                What We Offer
-            </h2>
-            <div class="grid md:grid-cols-3 gap-8">
-                <div v-for="category in productCategories"
-                    :key="category.name"
-                    class="bg-gray-800/50 backdrop-blur-lg rounded-2xl shadow-xl p-8 hover:shadow-2xl transform hover:scale-105 transition-all duration-300">
-                <div class="text-4xl mb-6 text-center">{{ category.icon }}</div>
-                <h3 class="text-2xl font-bold mb-6 text-center text-gray-200">{{ category.name }}</h3>
-                <ul class="space-y-3">
-                    <li v-for="item in category.items"
-                        :key="item"
-                        class="flex items-center text-gray-300">
-                    <div class="w-2 h-2 bg-gradient-to-r from-slate-100 to-gray-300 rounded-full mr-3"></div>
-                    {{ item }}
-                    </li>
-                </ul>
-                </div>
+        <h2 class="text-4xl font-bold text-center mb-16 bg-gradient-to-r from-slate-100 to-gray-300 bg-clip-text text-transparent">
+            What We Offer
+        </h2>
+        <div class="grid md:grid-cols-3 gap-8">
+            <div v-for="category in productCategories" :key="category.name"
+                class="bg-white/5 backdrop-blur-lg rounded-3xl shadow-lg p-8 hover:shadow-2xl transform hover:scale-105 transition-all duration-500">
+            <div class="text-5xl mb-6 text-center text-gradient">{{ category.icon }}</div>
+            <h3 class="text-2xl font-bold mb-6 text-center text-gray-200">{{ category.name }}</h3>
+            <ul class="space-y-3">
+                <li v-for="item in category.items" :key="item" class="flex items-center text-gray-300">
+                <div class="w-2 h-2 bg-gradient-to-r from-slate-100 to-gray-300 rounded-full mr-3"></div>
+                {{ item }}
+                </li>
+            </ul>
             </div>
+        </div>
         </section>
         <!-- Stats Section -->
         <section class="bg-gradient-to-br from-gray-800 via-blue-900 to-purple-900 shadow-lg py-20">
-            <div class="container mx-auto px-4">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
-                    <div v-for="stat in stats" :key="stat.number" class="text-center transform hover:scale-110 transition-transform duration-300">
-                        <div class="text-5xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-2">
-                            {{ stat.number }}
-                        </div>
-                        <div class="text-gray-300 text-lg">{{ stat.label }}</div>
-                    </div>
-                </div>
+        <div class="container mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div v-for="stat in stats" :key="stat.number" class="text-center transform hover:scale-110 transition-transform duration-300">
+            <div class="text-5xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-2">
+                {{ stat.number }}
             </div>
+            <div class="text-gray-300 text-lg">{{ stat.label }}</div>
+            </div>
+        </div>
         </section>
         <!-- Company Features -->
         <section class="container mx-auto px-4 py-20">
-            <h2 class="text-4xl font-bold text-center mb-16 bg-gradient-to-r from-slate-100 to-gray-300 bg-clip-text text-transparent">
-                Why Choose Us
-            </h2>
-            <div class="grid md:grid-cols-3 gap-8">
-                <div v-for="feature in companyFeatures" :key="feature.title"
-                    class="relative group overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500">
-                <div class="absolute inset-0 bg-gradient-to-br opacity-90" :class="feature.gradient">
-                </div>
-                <div class="relative p-10 text-white h-full">
-                    <component :is="feature.icon" class="w-16 h-16 mb-6 transform group-hover:scale-110 transition-transform duration-300"/>
-                    <h3 class="text-2xl font-bold mb-6">{{ feature.title }}</h3>
-                    <p class="text-white/95 leading-relaxed text-lg">{{ feature.description }}</p>
-                </div>
-                </div>
+        <h2 class="text-4xl font-bold text-center mb-16 bg-gradient-to-r from-slate-100 to-gray-300 bg-clip-text text-transparent">
+            Why Choose Us
+        </h2>
+        <div class="grid md:grid-cols-3 gap-8">
+            <div v-for="feature in companyFeatures" :key="feature.title"
+                class="relative group overflow-hidden rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500">
+            <div class="absolute inset-0 bg-gradient-to-br opacity-90" :class="feature.gradient"></div>
+            <div class="relative p-10 text-white h-full flex flex-col justify-center items-center">
+                <component :is="feature.icon" class="w-16 h-16 mb-6 transform group-hover:scale-110 transition-transform duration-300"/>
+                <h3 class="text-2xl font-bold mb-6 text-center">{{ feature.title }}</h3>
+                <p class="text-white/95 text-center leading-relaxed text-lg">{{ feature.description }}</p>
             </div>
+            </div>
+        </div>
         </section>
         <!-- Values Section -->
         <section class="bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 py-20">
-            <div class="container mx-auto px-4">
-                <h2 class="text-4xl font-bold text-center mb-16 bg-gradient-to-r from-slate-100 to-gray-300 bg-clip-text text-transparent">
-                Our Commitment
-                </h2>
-                <div class="grid md:grid-cols-3 gap-8">
-                    <div v-for="value in values"
-                        :key="value.title"
-                        :class="{'opacity-100 translate-y-0': isVisible, 'opacity-0 translate-y-10': !isVisible}"
-                        class="bg-gray-800/50 backdrop-blur-lg p-8 rounded-2xl shadow-lg transform hover:scale-105 transition-all duration-300">
-                            <component :is="value.icon" class="w-16 h-16 mb-6 text-slate-100"/>
-                        <h3 class="text-2xl font-semibold mb-4 text-gray-300">{{ value.title }}</h3>
-                        <p class="text-gray-300 leading-relaxed">{{ value.description }}</p>
-                    </div>
-                </div>
+        <div class="container mx-auto px-4">
+            <h2 class="text-4xl font-bold text-center mb-16 bg-gradient-to-r from-slate-100 to-gray-300 bg-clip-text text-transparent">
+            Our Commitment
+            </h2>
+            <div class="grid md:grid-cols-3 gap-8">
+            <div v-for="value in values" :key="value.title"
+                class="bg-white/5 backdrop-blur-lg p-8 rounded-3xl shadow-lg transform hover:scale-105 transition-all duration-500 text-center">
+                <component :is="value.icon" class="w-16 h-16 mb-6 text-slate-100 mx-auto"/>
+                <h3 class="text-2xl font-semibold mb-4 text-gray-300">{{ value.title }}</h3>
+                <p class="text-gray-300 leading-relaxed">{{ value.description }}</p>
             </div>
-        </section>
-        <!-- Features Grid -->
-        <section class="container mx-auto px-4 py-20">
-            <div class="grid md:grid-cols-4 gap-6">
-                <div v-for="feature in features"
-                    :key="feature.title"
-                    class="text-center p-6 rounded-xl hover:bg-gray-800 hover:backdrop-blur-lg transition-colors duration-300 hover:cursor-auto">
-                        <component :is="feature.icon" class="w-12 h-12 mx-auto mb-4 text-slate-200"/>
-                <h4 class="font-semibold mb-2 text-gray-100">{{ feature.title }}</h4>
-                <p class="text-sm text-gray-100">{{ feature.description }}</p>
-                </div>
             </div>
+        </div>
         </section>
         <!-- Call to Action -->
-        <section class="bg-gray-800/50 backdrop-blur-lg py-20">
-            <div class="container mx-auto px-4 text-center">
-                <div class="max-w-4xl mx-auto text-white">
-                    <h2 class="text-4xl font-bold mb-6">Elevate Your Style Today</h2>
-                    <p class="text-xl mb-8 text-gray-300 leading-relaxed">
-                        Join thousands of satisfied customers who trust us for their fashion needs.
-                        From premium shirts and hoodies to stylish accessories that complete your look.
-                    </p>
-                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                        <router-link to="/store" @click="handleScroll" class="px-10 py-4 bg-gradient-to-r from-white to-gray-200 text-slate-800 rounded-full
-                            hover:shadow-xl transform hover:scale-105 transition-all duration-300 font-semibold text-lg">
-                        Shop Collection
-                        </router-link>
-                        <router-link to="/contact" @click="handleScroll" class="px-10 py-4 border-2 border-white text-white rounded-full
-                            hover:bg-white hover:text-slate-800 transition-all duration-300 font-semibold text-lg">
-                        Contact Us
-                        </router-link>
-                    </div>
-                </div>
+        <section class="bg-white/5 backdrop-blur-lg py-20">
+        <div class="container mx-auto px-4 text-center text-white">
+            <div class="max-w-4xl mx-auto space-y-6">
+            <h2 class="text-4xl font-bold mb-6 text-gradient">Elevate Your Style Today</h2>
+            <p class="text-xl text-gray-300 leading-relaxed">
+                Join thousands of satisfied customers who trust us for their fashion needs.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <router-link to="/Allproduct" class="px-10 py-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full font-semibold text-lg hover:scale-105 hover:shadow-xl transition-all">
+                Shop Collection
+                </router-link>
+                <router-link to="/contact" class="px-10 py-4 border-2 border-white rounded-full font-semibold text-lg hover:bg-white hover:text-slate-800 transition-all">
+                Contact Us
+                </router-link>
             </div>
+            </div>
+        </div>
         </section>
     </div>
 </template>
 
 <style scoped>
-.animate-fade-in {
-    animation: fadeIn 1.2s ease-out;
-}
 
-.animate-slide-up {
-    animation: slideUp 1.2s ease-out 0.3s both;
-}
+.animate-fade-in { animation: fadeIn 1.2s ease-out; }
+.animate-slide-up { animation: slideUp 1.2s ease-out 0.3s both; }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
+@keyframes fadeIn { from {opacity:0; transform:translateY(-20px);} to{opacity:1; transform:translateY(0);} }
+@keyframes slideUp { from {opacity:0; transform:translateY(30px);} to{opacity:1; transform:translateY(0);} }
+@keyframes floatUp {
+    0% {
+        top: 100vh;
+        transform: translateX(0) scale(1);
+        opacity: 0.2;
     }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+    25% {
+        top: 75vh;
+        transform: translateX(-20px) scale(1.1);
+        opacity: 0.15;
+    }
+    50% {
+        top: 50vh;
+        transform: translateX(10px) scale(0.9);
+        opacity: 0.1;
+    }
+    75% {
+        top: 25vh;
+        transform: translateX(-10px) scale(1.05);
+        opacity: 0.15;
+    }
+    100% {
+        top: -20vh;
+        transform: translateX(0) scale(1);
+        opacity: 0.2;
     }
 }
 
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
 
-html {
-    scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth; }
 
-.group:hover .transform {
-    transform: scale(1.05);
-}
 </style>

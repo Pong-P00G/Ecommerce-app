@@ -1,5 +1,4 @@
 import * as userService from '../services/userService.js';
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 // Get all users
@@ -35,7 +34,7 @@ export const createUsers = async (req, res) => {
 // Update User
 export const updateUser = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { id } = req.user;
         const user = await userService.updateUser(id, req.body);
         res.status(200).json(user);
     } catch (error) {
@@ -58,13 +57,9 @@ export const deleteUser = async (req, res) => {
 // Login User
 export const loginUser = async (req, res) => {
     try {
-        const { email, password } = req.body;
-        const user = await userService.getUserByEmail(email);
+        const { email, username, password } = req.body;
+        const user = await userService.verifyUser(email, username, password);
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-        const isMatch = await bcrypt.compare(password, user.passwordhash);
-        if (!isMatch) {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
         const token = jwt.sign({ id: user.userid, role: user.role }, process.env.JWT_SECRET, {

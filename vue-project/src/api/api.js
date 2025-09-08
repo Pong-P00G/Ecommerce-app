@@ -22,6 +22,7 @@ export const register = (userData) => api.post('/auth/register', userData);
 // Products
 export const getProducts = () => api.get('/products');
 export const getProductById = (id) => api.get(`/products/${id}`);
+export const getProductCategory = (category) => api.get(`/products/category/${category}`);
 export const createProduct = (productData) => api.post('/products', productData);
 export const updateProduct = (id, productData) => api.put(`/products/${id}`, productData);
 export const deleteProduct = (id) => api.delete(`/products/${id}`);
@@ -29,7 +30,9 @@ export const deleteProduct = (id) => api.delete(`/products/${id}`);
 // Cart
 export const getCart = () => api.get('/cart');
 export const addToCart = (itemData) => api.post('/cart', itemData);
+export const updateCartItem = (itemData) => api.put('/cart', itemData);
 export const removeFromCart = (id) => api.delete(`/cart/${id}`);
+export const clearCart = () => api.delete('/cart');
 
 // Wishlist
 export const getWishlist = () => api.get('/wishlist');

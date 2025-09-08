@@ -1,32 +1,27 @@
 <script setup>
-import { computed } from 'vue';
-import { useWishList } from '../../composables/useWishList';
+import { computed, onMounted } from 'vue';
+import { useWishlistStore } from '../../stores/wishlist';
+import { useCartStore } from '../../stores/Cart';
 import { useRouter } from 'vue-router';
 import { Heart, ShoppingCart, Trash2, ArrowLeft } from 'lucide-vue-next';
-import { Accesorie } from '../../data/accesorie.js';
-import { Hoodie } from '../../data/hoodies.js';
-import { Pants } from '../../data/pants.js';
-import { Shirt } from '../../data/shirt.js';
 
 const router = useRouter();
-const { wishlist, remove, clear } = useWishList();
+const wishlistStore = useWishlistStore();
+const cartStore = useCartStore();
 
-const allProducts = [...Accesorie, ...Hoodie, ...Pants, ...Shirt];
-
-const wishlistItems = computed(() => {
-  const wishlistIds = Array.from(wishlist.value);
-  return allProducts.filter(p => wishlistIds.includes(p.id));
+onMounted(() => {
+  wishlistStore.fetchWishlist();
 });
 
+const wishlistItems = computed(() => wishlistStore.wishlistItems);
+
 const moveToCart = (product) => {
-  const cart = JSON.parse(localStorage.getItem('cart')) || [];
-  cart.push(product);
-  localStorage.setItem('cart', JSON.stringify(cart));
-  remove(product.id);
+  cartStore.addToCart(product.id, 1, product.stock);
+  wishlistStore.removeFromWishlist(product.id);
 };
 
 const clearWishlist = () => {
-  clear();
+  wishlistStore.clearWishlist();
 };
 
 const continueShopping = () => router.push('/Allproduct');
@@ -58,7 +53,7 @@ const continueShopping = () => router.push('/Allproduct');
                 <ShoppingCart class="w-6 h-6" />
                 Add to Cart
               </button>
-              <button @click="remove(item.id)" class="flex items-center justify-center gap-2 w-full bg-red-500 text-white px-5 py-3 rounded-lg shadow-xl hover:bg-red-600 transition-colors duration-300 font-semibold">
+              <button @click="wishlistStore.removeFromWishlist(item.id)" class="flex items-center justify-center gap-2 w-full bg-red-500 text-white px-5 py-3 rounded-lg shadow-xl hover:bg-red-600 transition-colors duration-300 font-semibold">
                 <Trash2 class="w-6 h-6" />
                 Remove
               </button>

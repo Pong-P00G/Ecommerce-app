@@ -6,7 +6,7 @@ import {
   Filter, Grid, List, ChevronDown, Search, SortAsc, AlertCircle,
   Check, X, ShoppingBag, Zap, Award, TrendingUp
 } from 'lucide-vue-next';
-import { Pants } from '../../data/pants.js';
+import api from '../../api/api.js';
 import '../../assets/product.css';
 
 const router = useRouter();
@@ -75,17 +75,16 @@ const filteredProducts = computed(() => {
   }
   // Price filter
   products = products.filter(product => {
-    const price = parseFloat(String(product.price).replace('$', ''));
-    return price >= filterBy.value.priceRange[0] && price <= filterBy.value.priceRange[1];
+    return product.price >= filterBy.value.priceRange[0] && product.price <= filterBy.value.priceRange[1];
   });
 
   // Sort products
   switch(sortBy.value) {
     case 'price-low':
-      products.sort((a, b) => parseFloat(a.price.replace('$', '')) - parseFloat(b.price.replace('$', '')));
+      products.sort((a, b) => a.price - b.price);
       break;
     case 'price-high':
-      products.sort((a, b) => parseFloat(b.price.replace('$', '')) - parseFloat(a.price.replace('$', '')));
+      products.sort((a, b) => b.price - a.price);
       break;
     case 'rating':
       products.sort((a, b) => (b.rating || 4.8) - (a.rating || 4.8));
@@ -124,38 +123,32 @@ const availableSizes = computed(() => {
 });
 
 onMounted(async () => {
-  try {
-    // Simulate API call with loading
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    // Process shirt data with enhanced properties
-    productCard.value = Pants.map(Pants => ({
-      ...Pants,
-      image: Pants.image, 
-      price: parseFloat(Pants.price.replace('$', '')), 
-      originalPrice: parseFloat(Pants.price.replace('$', '')) * 1.3,
-      rating: (Math.random() * 1 + 4).toFixed(1), 
-      reviews: Math.floor(Math.random() * 500 + 50),
-      stock: Math.floor(Math.random() * 20 + 5), 
-      isNew: Math.random() > 0.7, 
-      isBestseller: Math.random() > 0.8,
-    }));
-
-    // Initialize selections
-    productCard.value.forEach((product) => {
-      selectSize.value[product.id] = Object.keys(product.size)[0];
-      selectColor.value[product.id] = Object.keys(product.color)[0];
-      quantity.value[product.id] = 1;
-    });
-
-    // Load wishlist from localStorage
-    const savedWishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
-    wishlist.value = new Set(savedWishlist);
-  } catch (e) {
-    error.value = 'Failed to load products. Please try again.';
-    showToast('Failed to load products', 'error');
-  } finally {
-    isLoading.value = false;
-  }
+    try {
+        isLoading.value = true;
+        const { data } = await api.get("/products/category/pants");
+        productCard.value = data.map(p=>{
+          const price = parseFloat(String(p.price).replace(/[$,]/g, ''));
+          return {
+            ...p,
+            image: p.image || "fallback.jpg",
+            price: price,
+            originalPrice: price*1.3,
+            rating: (Math.random()*1+4).toFixed(1),
+            reviews: Math.floor(Math.random()*500+50),
+            stock: p.stock??Math.floor(Math.random()*20+5),
+            isNew: Math.random()>0.7,
+            isBestseller: Math.random()>0.8,
+          }
+        });
+        productCard.value.forEach(p=>{
+        selectSize.value[p.id] = Object.keys(p.size||{})[0];
+        selectColor.value[p.id] = Object.keys(p.color||{})[0];
+        quantity.value[p.id] = 1;
+        });
+    } catch(e){
+        error.value = "Failed to load products. Please try again.";
+        showToast("Failed to load products", "error");
+    } finally { isLoading.value=false; }
 });
 
 

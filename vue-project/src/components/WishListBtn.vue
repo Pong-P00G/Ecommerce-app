@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { Heart } from 'lucide-vue-next';
-import { useWishlist } from '../composables/useWishList.js';
+import { useWishlistStore } from '../stores/wishlist';
 
 const props = defineProps({
   item: { type: Object, required: true },
@@ -11,9 +11,9 @@ const props = defineProps({
 
 const emit = defineEmits(['added', 'removed']);
 
-const { isInWishlist, toggleWishlist } = useWishlist();
+const wishlistStore = useWishlistStore();
 
-const isWishlisted = computed(() => isInWishlist(props.item.id));
+const isWishlisted = wishlistStore.isInWishlist(props.item.id);
 
 const sizeClasses = computed(() => {
   return {
@@ -32,8 +32,13 @@ const iconSize = computed(() => {
 });
 
 const handleToggle = () => {
-  const added = toggleWishlist(props.item);
-  emit(added ? 'added' : 'removed', props.item);
+  if (isWishlisted.value) {
+    wishlistStore.removeFromWishlist(props.item.id);
+    emit('removed', props.item);
+  } else {
+    wishlistStore.addToWishlist(props.item);
+    emit('added', props.item);
+  }
 };
 </script>
 

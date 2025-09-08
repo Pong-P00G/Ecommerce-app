@@ -73,8 +73,7 @@ const filteredProducts = computed(() => {
 
     // Price filter
     products = products.filter(p => {
-        const price = parseFloat(String(p.price).replace('$',''));
-        return price >= filterBy.value.priceRange[0] && price <= filterBy.value.priceRange[1];
+        return p.price >= filterBy.value.priceRange[0] && p.price <= filterBy.value.priceRange[1];
     });
 
     // Sorting
@@ -115,7 +114,7 @@ const availableSizes = computed(() => {
 onMounted(async () => {
     try {
         isLoading.value = true;
-        const { data } = await api.get("/products/hoodies");
+        const { data } = await api.get("/products/category/hoodies");
         productCard.value = data.map(p=>({
         ...p,
         image: p.image || "fallback.jpg",

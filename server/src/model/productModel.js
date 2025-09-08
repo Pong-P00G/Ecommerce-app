@@ -6,21 +6,29 @@ export const getAllProduct = async () => {
     return result.rows;
 }
 
+
+// Get productby id 
 export const getAllProductById = async (id) => {
     const result = await pool.query('SELECT * FROM products WHERE productid = $1', [id]);
     return result.rows[0];
+}
+
+
+// Get product from Category
+export const getProductCategory = async (category) => {
+    const result = await pool.query('SELECT * FROM products WHERE productcategory = $1', [category]);
+    return result.rows;
 }
 
 // Create product 
 export const createProduct = async (productData) => {
     const { productname, productsize, productcolor, productprice, productdiscount, productcategory } = productData;
 
-    await pool.query(
-        'SELECT INSERT INTO products($1, $2, $3, $4, $5, $6)'
+    const result = await pool.query(
+        'INSERT INTO products (productname, productsize, productcolor, productprice, productdiscount, productcategory) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
         [productname, productsize, productcolor, productprice, productdiscount, productcategory || 'products']
     );
 
-    const result = await pool.query('SELECT & FROM product WHERE products = $1', [productname]);
     return result.rows[0];
 }
 

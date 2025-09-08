@@ -1,6 +1,6 @@
 <script setup>
-import { ref } from "vue";
-import { useUserStore } from "../../composables/useUser";
+import { ref, onMounted } from "vue";
+import { useUserStore } from "../../stores/useUser";
 import { Eye, EyeOff, Upload, ArrowLeft } from "lucide-vue-next";
 import user from '../../assets/img/user/user.png'
 
@@ -12,6 +12,15 @@ const showPassword = ref(false);
 const showConfirmPassword = ref(false);
 const confirmPassword = ref("");
 const errorMsg = ref("");
+
+// onMounted(async () => {
+//   if (!userStore.isLoggedIn) {
+//     router.push('/auth/login');
+//   } else {
+//     await userStore.fetchUserProfile();
+//     form.value = { ...userStore.$state };
+//   }
+// });
 
 function handleAvatarUpload(event) {
   const file = event.target.files[0];
@@ -49,21 +58,16 @@ function handleSave() {
       <div
         class="absolute top-0 right-0 w-40 h-40 bg-blue-100 rounded-full blur-3xl opacity-30 -z-10"
       ></div>
-
       <!-- Header -->
       <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-8 gap-4">
         <h1 class="text-3xl md:text-4xl font-extrabold text-gray-800 tracking-tight">
           Your Profile
         </h1>
-        <router-link
-          to="/dashboard"
-          class="flex items-center gap-2 text-gray-500 hover:text-blue-600 transition-all font-medium"
-        >
+        <router-link to="/dashboard" class="flex items-center gap-2 text-gray-500 hover:text-blue-600 transition-all font-medium">
           <ArrowLeft class="w-5 h-5" />
           Back to Dashboard
         </router-link>
       </div>
-
       <!-- Success Alert -->
       <transition name="fade">
         <div

@@ -1,5 +1,4 @@
 import * as UserModels from '../model/userModel.js';
-import bcrypt from 'bcryptjs';
 
 // Get all users
 export const getAllUsers = async () => {
@@ -19,12 +18,9 @@ export const getUserByEmail = async (email) => {
 // Create users
 export const createUsers = async (userData) => {
     const { password, ...rest } = userData;
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
-
     const newUserData = {
         ...rest,
-        passwordHash,
+        passwordHash: password,
     };
 
     return await UserModels.createUsers(newUserData);
@@ -33,11 +29,9 @@ export const createUsers = async (userData) => {
 // Update User
 export const updateUser = async (id, userData) => {
     if (userData.password) {
-        const salt = await bcrypt.genSalt(10);
-        userData.passwordHash = await bcrypt.hash(userData.password, salt);
+        userData.passwordHash = userData.password;
         delete userData.password;
     }
-
     return await UserModels.updateUsers(id, userData);
 };
 
@@ -45,6 +39,11 @@ export const updateUser = async (id, userData) => {
 export const deleteUser = async (id) => {
     return await UserModels.deleteUser(id);
 };
+
+// Verify User
+export const verifyUser = async (email, password) => {
+    return await UserModels.verifyUser(email, password);
+}
 
 
 // Auth

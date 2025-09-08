@@ -1,15 +1,6 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import axios from "axios";
-
-// Debounce helper
-function debounce(fn, delay = 200) {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => fn(...args), delay);
-  };
-}
+import * as api from "../api/api";
 
 export const useCartStore = defineStore("cart", () => {
   const cartItems = ref([]);
@@ -22,11 +13,11 @@ export const useCartStore = defineStore("cart", () => {
   };
 
   // --- Actions ---
-  const fetchCart = async (userID) => {
+  const fetchCart = async () => {
     loading.value = true;
     error.value = null;
     try {
-      const res = await axios.get(`/api/cart/${userID}`);
+      const res = await api.getCart();
       cartItems.value = res.data.cart || [];
     } catch (err) {
       setError(err, "Failed to fetch cart");
@@ -35,7 +26,7 @@ export const useCartStore = defineStore("cart", () => {
     }
   };
 
-  const addToCart = debounce(async (userID, productID, quantity = 1, maxStock = Infinity) => {
+  const addToCart = async (productID, quantity = 1, maxStock = Infinity) => {
     error.value = null;
 
     const existing = cartItems.value.find((i) => i.productID === productID);
@@ -59,15 +50,15 @@ export const useCartStore = defineStore("cart", () => {
     }
 
     try {
-      await axios.post("/api/cart/add", { userID, productID, quantity });
-      await fetchCart(userID); // sync with server
+      await api.addToCart({ productID, quantity });
+      await fetchCart(); // sync with server
     } catch (err) {
       setError(err, "Failed to add item");
-      await fetchCart(userID); // rollback
+      await fetchCart(); // rollback
     }
-  }, 200);
+  };
 
-  const updateCartItem = async (userID, productID, quantity, maxStock = Infinity) => {
+  const updateCartItem = async (productID, quantity, maxStock = Infinity) => {
     error.value = null;
 
     if (quantity > maxStock) {
@@ -81,15 +72,15 @@ export const useCartStore = defineStore("cart", () => {
     }
 
     try {
-      await axios.put("/api/cart/update", { userID, productID, quantity });
-      await fetchCart(userID);
+      await api.updateCartItem({ productID, quantity });
+      await fetchCart();
     } catch (err) {
       setError(err, "Failed to update item");
-      await fetchCart(userID);
+      await fetchCart();
     }
   };
 
-  const removeCartItem = async (userID, productID) => {
+  const removeCartItem = async (productID) => {
     error.value = null;
 
     // Optimistic remove
@@ -97,25 +88,25 @@ export const useCartStore = defineStore("cart", () => {
     const removed = index >= 0 ? cartItems.value.splice(index, 1)[0] : null;
 
     try {
-      await axios.delete("/api/cart/remove", { data: { userID, productID } });
+      await api.removeFromCart(productID);
     } catch (err) {
       setError(err, "Failed to remove item");
       if (removed) cartItems.value.push(removed); // rollback
-      await fetchCart(userID);
+      await fetchCart();
     }
   };
 
-  const clearCart = async (userID) => {
+  const clearCart = async () => {
     error.value = null;
     const backup = [...cartItems.value];
     cartItems.value = []; // optimistic
 
     try {
-      await axios.delete("/api/cart/clear", { data: { userID } });
+      await api.clearCart();
     } catch (err) {
       setError(err, "Failed to clear cart");
       cartItems.value = backup;
-      await fetchCart(userID);
+      await fetchCart();
     }
   };
 
