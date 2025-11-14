@@ -2,13 +2,7 @@
 import './assets/App.css';
 import Navbar from './components/Navbar.vue';
 import Footer from './components/Footer.vue';
-import { onMounted } from 'vue';
-import { useUserStore } from './stores/useUser';
 
-onMounted(() => {
-    const userStore = useUserStore();
-    userStore.loadFromLocalStorage();
-});
 </script>
 
 <template>

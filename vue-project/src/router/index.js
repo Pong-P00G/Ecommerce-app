@@ -2,18 +2,14 @@ import { createRouter, createWebHistory } from "vue-router";
 import Home from "../views/Home.vue";
 import Login from "../views/auth/Login.vue";
 import Register from "../views/auth/Register.vue";
-import ForgetPassword from "../components/ForgetPass.vue";
+import ForgetPassword from "../views/auth/ForgetPass.vue";
 import Checkout from "../views/checkout/Checkout.vue";
+import AllProduct from "../views/products/AllProduct.vue";
 import About from "../views/About.vue";
 import Contact from "../views/Contact.vue";
-import AllProduct from "../views/products/AllProduct.vue";
-import Shirt from "../views/products/ProductShirt.vue";
-import Accesorie from "../views/products/AccesoriesProduct.vue";
-import Hoodie from "../views/products/ProductHoodie.vue";
-import Pants  from "../views/products/ProductPant.vue";
 import Payment from "../views/Payment.vue";
 import OrderSucces from "../views/OrderSucces.vue";
-import ProductCart from "../views/cart/ProductCart.vue";
+import Mainlayout from "../Layout/Mainlayout.vue";
 
 
 const routes = [
@@ -67,80 +63,62 @@ const routes = [
         path: '/Allproduct',
         component: AllProduct,
     },
-    {
-        name: 'Shirt',
-        path: '/Shirt',
-        component: Shirt,
-    },
-    {
-        name: 'Accessorie',
-        path: '/Accessorie',
-        component: Accesorie,
-    },
-    {
-        name: 'Hoodie',
-        path: '/Hoodie',
-        component: Hoodie,
-    },
-    {
-        name: 'Pant',
-        path: '/Pant',
-        component: Pants,
-    },
-    {
-        path: '/Shirt/:id',
-        name: 'ShirtDetail',
-        component: () => import('../components/productDetails/ShirtDetail.vue')
-    },
-    {
-        path: '/Hoodie/:id',
-        name: 'HoodieDetail',
-        component: () => import('../components/productDetails/HoodieDetail.vue')
-    },
-    {
-        path: '/Pants/:id',
-        name: 'PantDetail',
-        component: () => import('../components/productDetails/PantsDetail.vue')
-    },
-    {
-        path: '/Accesorie/:id',
-        name: 'AccesorieDetail',
-        component: () => import('../components/productDetails/AccesorieDetail.vue')
-    },
-    {
-        path: '/productCart',
-        name: 'productCart',
-        component: ProductCart
-    },
-    {
-        path: '/profile',
-        name: 'profile',
-        component: () => import('../views/dashboard/Profile.vue')
-    },
-    {
-        path: '/wishlist',
-        name: 'wishlist',
-        component: () => import('../views/dashboard/WishList.vue')
-    },
+    // {
+    //     path: '/Shirt/:id',
+    //     name: 'ShirtDetail',
+    //     component: () => import('../components/productDetails/ShirtDetail.vue')
+    // },
+    // {
+    //     path: '/Hoodie/:id',
+    //     name: 'HoodieDetail',
+    //     component: () => import('../components/productDetails/HoodieDetail.vue')
+    // },
+    // {
+    //     path: '/Pants/:id',
+    //     name: 'PantDetail',
+    //     component: () => import('../components/productDetails/PantsDetail.vue')
+    // },
+    // {
+    //     path: '/Accesorie/:id',
+    //     name: 'AccesorieDetail',
+    //     component: () => import('../components/productDetails/AccesorieDetail.vue')
+    // },
     {
         path: '/dashboard',
-        name: 'dashboard',
-        component: () => import('../views/dashboard/DashBoard.vue')
-    },
-    {
-        path: '/settings',
-        name: 'settings',
-        component: () => import('../views/dashboard/Setting.vue')
-    },
-    {
-        path: '/addproduct',
-        name: 'addproduct',
-        component: () => import('../views/dashboard/AddProduct.vue')
-    },
-    {
-        path: '/viewproduct',
-        name: 'viewproduct',
-        component: () => import('../views/dashboard/ProductListPage.vue')
+        component: Mainlayout,
+        // meta: { requiresAuth: true, requireRole: 'admin' },
+        children: [
+            {
+            name: 'DashboardHome',
+            path: '',
+            component: () => import('../views/dashboard/Dashboard.vue'),
+            },
+            {
+                path: '/add-product',
+                name: 'addproduct',
+                component: () => import('../views/dashboard/AddProduct.vue')
+            },
+            {
+                path: '/manage-stock',
+                name: 'managestock',
+                component: () => import('../views/dashboard/ManageStocks.vue')
+            },
+            {
+                path: '/manage-user',
+                name: 'manageuser',
+                component: () => import('../views/dashboard/ManageUser.vue')
+            },
+            {
+                path: '/analytics',
+                name: 'analytics',
+                component: () => import('../views/dashboard/Analytic.vue')
+            },
+            {
+                path: '/report',
+                name: 'report',
+                component: () => import('../views/dashboard/Reports.vue')
+            },
+        ],
     },
 ]
 

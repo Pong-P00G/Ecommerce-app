@@ -116,7 +116,7 @@ const instagramLInk = "https://www.instagram.com";
             </div>
             <!-- Copyright -->
             <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-                &copy; {{ Year }} ShopCloth. All rights reserved.
+                &copy; {{ Year }} ALIE SHOP. All rights reserved.
             </div>
         </div>
     </footer>

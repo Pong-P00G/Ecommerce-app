@@ -1,20 +1,47 @@
-import { Shirt } from '../data/shirt.js';
-import { Hoodie } from '../data/hoodies.js';
-import { Pants } from '../data/pants.js';
-import { Accesorie } from '../data/accesorie.js';
+import IMG1 from "../assets/img/hoodies/Hoodie1.jpg";
+import IMG2 from "../assets/img/hoodies/Hoodie2.jpg";
+import IMG3 from "../assets/img/hoodies/Hoodie3.jpg";
+import IMG4 from "../assets/img/hoodies/Hoodie4.jpg";
+import IMG5 from "../assets/img/hoodies/Hoodie5.jpg";
+import IMG6 from "../assets/img/hoodies/Hoodie6.jpg";
 
-// Combine with category tags
+
+
 export const allProduct = [
-    ...Shirt.map(item => ({ ...item, category: 'Shirt' })),
-    ...Hoodie.map(item => ({ ...item, category: 'Hoodie' })),
-    ...Pants.map(item => ({ ...item, category: 'Pants' })),
-    ...Accesorie.map(item => ({ ...item, category: 'Accesorie' }))
-];
-
-// OR — Sort by category, then by name
-allProduct.sort((a, b) => {
-    const categoryCompare = a.category.localeCompare(b.category);
-    if (categoryCompare !== 0) return categoryCompare;
-    return a.name.localeCompare(b.name);
-});
-
+    {
+        id: 1,
+        Image: IMG1,
+        name: "Stylish Hoodie",
+        category: "Hoodie",
+    },
+    {
+        id: 2,
+        Image: IMG2,
+        name: "Comfortable Pants",
+        category: "Pants",
+    },
+    {
+        id: 3,
+        Image: IMG3,
+        name: "Comfortable Pants",
+        category: "Pants",
+    },
+    {
+        id: 4,
+        Image: IMG4,
+        name: "Comfortable Pants",
+        category: "Pants",
+    },
+    {
+        id: 5,
+        Image: IMG5,
+        name: "Comfortable Pants",
+        category: "Pants",
+    },
+    {
+        id: 6,
+        Image: IMG6,
+        name: "Comfortable Pants",
+        category: "Pants",
+    },
+]

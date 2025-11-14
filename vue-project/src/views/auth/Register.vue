@@ -1,146 +1,199 @@
 <script setup>
-import { ref } from "vue";
-import { useRouter } from "vue-router";
-import { register } from "../../api/api"; // Import register from api.js
+import { ref } from 'vue'
+import { useRouter, RouterLink } from 'vue-router'
+import { register } from '@/api/api'
+import { useToast } from '@/composables/useToast.js'
+
+const router = useRouter()
+const { error, success } = useToast()
+
+const username = ref('')
+const firstname = ref('')
+const lastname = ref('')
+const email = ref('')
+const password = ref('')
+const confirmPassword = ref('')
+
+const loading = ref(false)
 
 
-const router = useRouter();
-const username = ref("");
-const fullname = ref("");
-const email = ref("");
-const password = ref("");
-const confirmPassword = ref("");
-const error = ref("");
-const successful = ref("");
+async function handleRegister(e) {
+    e.preventDefault()
 
-const handleRegister = async (e) => {
-    e.preventDefault();
     if (password.value !== confirmPassword.value) {
-        error.value = "Passwords do not match!";
-        return;
+        error('❌ Passwords do not match!')
+        return
     }
+
+    loading.value = true
     try {
-    const res = await register({ // Using api.register
+        const fullname = `${firstname.value} ${lastname.value}`
+
+        await register({
         username: username.value,
-        fullname: fullname.value,
+        firstname: firstname.value,
+        lastname: lastname.value,
+        fullname,
         email: email.value,
         password: password.value,
-    });
+        })
 
-    successful.value = "Registration successful!";
-    error.value = "";
-
-    setTimeout(() => {
-        router.push("/login");
-    }, 1000);
+        success('✅ Registration successful! Redirecting...')
+        setTimeout(() => router.push('/login'), 1500)
     } catch (err) {
-        error.value = err.response?.data?.message || "Registration failed";
+        const msg = err.response?.data?.message || '❌ Registration failed'
+        error(msg)
+    } finally {
+        loading.value = false
     }
-};
+}
 </script>
 
 <template>
-    <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-        <div class="fixed inset-0 pointer-events-none">
-            <div class="bubble absolute w-20 h-20 bg-blue-500 rounded-full opacity-20 top-20 left-20"></div>
-            <div class="bubble absolute w-32 h-32 bg-purple-500 rounded-full opacity-20 top-40 right-40"></div>
-            <div class="bubble absolute w-16 h-16 bg-green-500 rounded-full opacity-20 bottom-10 right-1/4"></div>
-            <div class="bubble absolute w-24 h-24 bg-pink-500 rounded-full opacity-20 bottom-20 left-1/3"></div>
-        </div>
-        <form @submit="handleRegister" 
-            class="p-6 sm:p-8 w-[370px] max-w-md mx-auto mt-8 mb-16 sm:mt-20
-                bg-gradient-to-br from-gray-900/80 via-gray-800/70 to-gray-900/80
-                backdrop-blur-lg border border-gray-700/50
-                rounded-2xl shadow-2xl text-white
-                animate-fade-slide card-hover">
-            <!-- Title -->
-            <h1 class="text-2xl sm:text-3xl font-extrabold mb-6 sm:mb-8 text-center tracking-wide
-                bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">
-                Register
-            </h1>
+    <div class="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-950 via-cyan-950 to-slate-900 text-white p-6">
+        <!-- Gradient animation overlay -->
+        <div class="absolute inset-0 bg-[linear-gradient(120deg,#00ffff33,#0080ff33,#ff00ff33)] bg-[length:400%_400%] animate-gradient opacity-40"></div>
+
+        <!-- Registration Card -->
+        <div
+            class="relative z-10 w-full max-w-2xl rounded-3xl bg-white/10 backdrop-blur-2xl border border-white/20 shadow-[0_0_40px_#00ffff30] p-10 hover:shadow-[0_0_60px_#00ffff60] transition-all duration-500 hover:scale-[1.02]"
+        >
+        <h1 class="text-3xl font-bold text-center text-white mb-8 drop-shadow-lg">
+            Create Your Account
+        </h1>
+
+        <form @submit="handleRegister" class="grid grid-cols-1 gap-6">
             <!-- Username -->
-            <input 
-                v-model="username" 
-                placeholder="Username" 
-                required 
-                class="w-full p-3 mb-3 sm:mb-4 rounded-lg bg-gray-700/50 text-white placeholder-gray-300
-                    border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition"
+            <div>
+            <label class="block text-sm font-medium text-white/80 mb-2" for="username">Username</label>
+            <input
+                id="username"
+                v-model="username"
+                type="text"
+                required
+                placeholder="Mr. John"
+                class="w-full px-4 py-3 rounded-xl bg-white/10 text-white placeholder-white/50 border border-white/20 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
             />
-            <!-- Fullname -->
-            <input 
-                v-model="fullname" 
-                placeholder="Fullname" 
-                required 
-                class="w-full p-3 mb-3 sm:mb-4 rounded-lg bg-gray-700/50 text-white placeholder-gray-300
-                    border border-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition"
-            />
-            <!-- Email -->
-            <input 
-                v-model="email" 
-                type="email" 
-                placeholder="Email" 
-                required 
-                class="w-full p-3 mb-3 sm:mb-4 rounded-lg bg-gray-700/50 text-white placeholder-gray-300
-                    border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-            />
-            <!-- Password -->
-            <input 
-                v-model="password" 
-                type="password" 
-                placeholder="Password" 
-                required 
-                class="w-full p-3 mb-3 sm:mb-4 rounded-lg bg-gray-700/50 text-white placeholder-gray-300
-                    border border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"/>
-            <!-- Confirm Password -->
-            <input 
-                v-model="confirmPassword" 
-                type="password" 
-                placeholder="Confirm Password" 
-                required 
-                class="w-full p-3 mb-3 sm:mb-4 rounded-lg bg-gray-700/50 text-white placeholder-gray-300
-                    border border-gray-600 focus:outline-none focus:ring-2 focus:ring-pink-500 transition"/>
-            <!-- Register Button -->
-            <button 
-                type="submit" 
-                class="w-full p-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 font-semibold
-                hover:from-green-500 hover:to-emerald-500 transition-all shadow-lg">
-                Register
-            </button>
-            <!-- Error & Success Messages -->
-            <div v-if="error" class="text-red-400 mt-4 text-center text-sm font-medium">{{ error }}</div>
-            <div v-if="successful" class="text-green-400 mt-4 text-center text-sm font-medium">{{ successful }}</div>
-            <!-- Login Redirect -->
-            <div class="mt-5 text-center text-sm">
-                Already have an account?
-                <router-link to="/login" class="text-blue-400 hover:underline font-medium">Login</router-link>
             </div>
+
+            <!-- Firstname / Lastname -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-white/80 mb-2" for="firstname">First name</label>
+                <input
+                    id="firstname"
+                    v-model="firstname"
+                    type="text"
+                    required
+                    placeholder="John"
+                    class="w-full px-4 py-3 rounded-xl bg-white/10 text-white placeholder-white/50 border border-white/20 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
+                />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-white/80 mb-2" for="lastname">Last name</label>
+                <input
+                    id="lastname"
+                    v-model="lastname"
+                    type="text"
+                    required
+                    placeholder="Smith"
+                    class="w-full px-4 py-3 rounded-xl bg-white/10 text-white placeholder-white/50 border border-white/20 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
+                />
+            </div>
+            </div>
+
+            <!-- Email -->
+            <div>
+            <label class="block text-sm font-medium text-white/80 mb-2" for="email">Email</label>
+            <input
+                id="email"
+                v-model="email"
+                type="email"
+                required
+                placeholder="you@example.com"
+                class="w-full px-4 py-3 rounded-xl bg-white/10 text-white placeholder-white/50 border border-white/20 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
+            />
+            </div>
+
+            <!-- Password / Confirm -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-white/80 mb-2" for="password">Password</label>
+                <input
+                    id="password"
+                    v-model="password"
+                    type="password"
+                    required
+                    minlength="6"
+                    placeholder="••••••••"
+                    class="w-full px-4 py-3 rounded-xl bg-white/10 text-white placeholder-white/50 border border-white/20 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
+                />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-white/80 mb-2" for="confirmPassword">Confirm Password</label>
+                <input
+                    id="confirmPassword"
+                    v-model="confirmPassword"
+                    type="password"
+                    required
+                    minlength="6"
+                    placeholder="••••••••"
+                    class="w-full px-4 py-3 rounded-xl bg-white/10 text-white placeholder-white/50 border border-white/20 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
+                />
+            </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button
+                type="submit"
+                :disabled="loading"
+                class="w-full py-3 rounded-xl font-semibold text-black bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 shadow-[0_0_25px_#00ffff70] hover:shadow-[0_0_40px_#00ffffa0] transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+            >
+            <svg
+                v-if="loading"
+                class="animate-spin h-5 w-5 text-black"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+            >
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4A4 4 0 004 12z" />
+            </svg>
+            <span>{{ loading ? 'Creating account...' : 'Create account' }}</span>
+            </button>
+
+            <!-- Redirect -->
+            <p class="text-center text-sm text-white/70 mt-4">
+            Already have an account?
+            <RouterLink
+                to="/login"
+                class="text-cyan-300 hover:text-cyan-100 font-medium underline underline-offset-4 transition"
+            >
+                Sign in
+            </RouterLink>
+            </p>
         </form>
+        </div>
+
+        <!-- Floating light effects -->
+        <div class="absolute top-0 left-0 w-64 h-64 bg-cyan-400/20 blur-3xl rounded-full animate-pulse"></div>
+        <div class="absolute bottom-10 right-10 w-96 h-96 bg-indigo-500/30 blur-3xl rounded-full animate-pulse delay-700"></div>
     </div>
 </template>
 
 <style scoped>
-@keyframes fade-slide {
+@keyframes gradient {
     0% {
-        opacity: 0;
-        transform: translateY(30px) scale(0.98);
+        background-position: 0 50%;
+    }
+    50% {
+        background-position: 100% 50%;
     }
     100% {
-        opacity: 1;
-        transform: translateY(0) scale(1);
+        background-position: 0 50%;
     }
 }
-
-.animate-fade-slide {
-    animation: fade-slide 0.6s ease-out;
-}
-
-/* Hover lift + glow */
-.card-hover {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-.card-hover:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 12px 25px rgba(16, 185, 129, 0.4); /* emerald glow */
+.animate-gradient {
+    animation: gradient 8s ease infinite;
 }
 </style>
-

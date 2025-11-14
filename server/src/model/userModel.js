@@ -2,7 +2,7 @@ import pool from '../db.js';
 
 // Get all users
 export const getAllUsers = async () => {
-    const result = await pool.query('SELECT * FROM public.users');
+    const result = await pool.query('SELECT * FROM users');
     return result.rows;
 }
 
@@ -20,12 +20,12 @@ export const getUserByEmail = async (email) => {
 
 // Create user using insert_user function (handles hashing in Postgres)
 export const createUsers = async (userData) => {
-    const { username, email, passwordHash, fullname, role } = userData;
+    const { username, email, passwordhash, fullname, role } = userData;
 
     // Call PostgreSQL function insert_user
     await pool.query(
         'SELECT insert_user($1, $2, $3, $4, $5)',
-        [username, passwordHash, email, fullname, role || 'user']
+        [username, passwordhash, email, fullname, role || 'user']
     );
 
     // Return the inserted user
@@ -35,23 +35,23 @@ export const createUsers = async (userData) => {
 
 // Update user
 export const updateUsers = async (id, userData) => {
-    const { username, email, passwordHash, fullname, role } = userData;
+    const { username, email, passwordhash, fullname, role } = userData;
 
     let query;
     let values;
 
-    if (passwordHash) {
+    if (passwordhash) {
         query = `
             UPDATE users
             SET username=$1,
                 email=$2,
-                passwordHash=crypt($3, gen_salt('bf',12)),
+                passwordhash=crypt($3, gen_salt('bf',12)),
                 fullname=$4,
                 role=$5
             WHERE userid=$6
             RETURNING *
         `;
-        values = [username, email, passwordHash, fullname, role, id];
+        values = [username, email, passwordhash, fullname, role, id];
     } else {
         query = `
             UPDATE users

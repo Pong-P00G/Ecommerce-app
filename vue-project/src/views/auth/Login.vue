@@ -1,144 +1,162 @@
 <script setup>
-import { ref } from "vue";
-import { useRouter } from "vue-router";
-import { login } from "../../api/api"; // Import login from api.js
+import { ref } from 'vue'
+import { useRouter, RouterLink } from 'vue-router'
+import { useAuthStore } from '@/stores/auth.js'
+import { LogIn, User, Lock, Eye, EyeOff } from 'lucide-vue-next'
+import { useToast } from '@/composables/useToast.js'
 
-const router = useRouter();
-const email = ref("")
-const password = ref("");
-const remember = ref(false);
-const error = ref("");
-const successful = ref("");
+const router = useRouter()
+const auth = useAuthStore()
+const {success, error} = useToast()
 
-const handleLogin = async (e) => {
-    e.preventDefault();
-    try {
-        const res = await login({ 
-            email: email.value, 
-            password: password.value,
-        });
-        const { token, user } = res.data;
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
-        if (remember.value) {
-            localStorage.setItem("rememberedUser", JSON.stringify({ email: email.value })); 
-        } 
-        else {
-          localStorage.removeItem("rememberedUser");
-        }
-        successful.value = "Login successful!";
-        setTimeout(() => {
-            if (res.data.admin) {
-              router.push('/dashboard');
-            } else {
-              router.push("/");
-            }
-        }, 500);
-    } catch (err) {
-        error.value = err.response?.data?.message || "Login failed";
-    }
-};
+const email = ref('')
+const password = ref('')
+const showPassword = ref(false)
+const loading = ref(false)
+
+
+async function onSubmit() {
+  error.value = ''
+  loading.value = true
+  try {
+    await auth.login({ email: email.value, password: password.value })
+    success('✅ Login successful! Redirecting...')
+    await router.push({ path: '/', replace: true })
+  } catch (e) {
+    error.value = e.message || 'Login failed'
+    error(`❌ ${error.value}`)
+  } finally {
+    loading.value = false
+  }
+}
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-    <div class="fixed inset-0 pointer-events-none">
-      <div class="bubble absolute w-20 h-20 bg-blue-500 rounded-full opacity-20 top-20 left-20"></div>
-      <div class="bubble absolute w-32 h-32 bg-purple-500 rounded-full opacity-20 top-40 right-40"></div>
-      <div class="bubble absolute w-16 h-16 bg-green-500 rounded-full opacity-20 bottom-10 right-1/4"></div>
-      <div class="bubble absolute w-24 h-24 bg-pink-500 rounded-full opacity-20 bottom-20 left-1/3"></div>
+  <div class="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white">
+    <!-- Animated Gradient Overlay -->
+    <div class="absolute inset-0 bg-[linear-gradient(120deg,#00ffff33,#0080ff33,#ff00ff33)] bg-[length:400%_400%] animate-gradient opacity-40"></div>
+
+    <!-- Floating Glass Card -->
+    <div
+        class="relative z-10 w-full max-w-md p-10 rounded-3xl bg-white/10 backdrop-blur-2xl border border-white/20 shadow-[0_0_40px_#00ffff30] hover:shadow-[0_0_60px_#00ffff50] transition-transform duration-500 hover:scale-[1.02]"
+    >
+      <!-- Logo & Heading -->
+      <div class="flex flex-col items-center mb-8 space-y-2">
+        <div
+            class="h-16 w-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-indigo-600 flex items-center justify-center shadow-[0_0_25px_#00ffff80]"
+        >
+          <LogIn class="w-8 h-8 text-white" />
+        </div>
+        <h1 class="text-3xl font-bold tracking-tight text-white drop-shadow-lg">
+          Welcome Back
+        </h1>
+        <p class="text-sm text-white/60">Sign in to continue to your dashboard</p>
+      </div>
+
+      <!-- Login Form -->
+      <form @submit.prevent="onSubmit" class="space-y-6">
+        <!-- Email -->
+        <div>
+          <label for="email" class="block text-sm font-medium text-white/80 mb-2">Email Address</label>
+          <div class="relative">
+            <User class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-400" />
+            <input
+                id="email"
+                v-model.trim="email"
+                type="email"
+                required
+                placeholder="operator@system.io"
+                class="w-full pl-11 pr-4 py-3 rounded-xl bg-white/10 text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
+            />
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div>
+          <label for="password" class="block text-sm font-medium text-white/80 mb-2">Password</label>
+          <div class="relative">
+            <Lock class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-400" />
+            <input
+                id="password"
+                :type="showPassword ? 'text' : 'password'"
+                v-model="password"
+                required
+                placeholder="••••••••"
+                class="w-full pl-11 pr-11 py-3 rounded-xl bg-white/10 text-white placeholder-white/40 border border-white/20 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
+            />
+            <button
+                type="button"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-300 hover:text-cyan-100 transition"
+                @click="showPassword = !showPassword"
+                aria-label="Toggle password"
+            >
+              <Eye v-if="!showPassword" class="w-5 h-5" />
+              <EyeOff v-else class="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <!-- Forgot Password -->
+        <div class="flex justify-end">
+          <RouterLink
+              to="/forgot-password"
+              class="text-sm text-cyan-300 hover:text-cyan-100 underline underline-offset-4 transition"
+          >
+            Forgot password?
+          </RouterLink>
+        </div>
+
+        <!-- Sign In Button -->
+        <button
+            type="submit"
+            :disabled="loading"
+            class="w-full py-3 rounded-xl font-semibold text-black bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 shadow-[0_0_25px_#00ffff70] hover:shadow-[0_0_40px_#00ffffa0] transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+        >
+          <svg
+              v-if="loading"
+              class="animate-spin h-5 w-5 text-black"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+          >
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4A4 4 0 004 12z" />
+          </svg>
+          <span>{{ loading ? 'Authenticating...' : 'Sign In' }}</span>
+        </button>
+
+        <!-- Create Account -->
+        <p class="text-center text-sm text-white/70 mt-4">
+          New user?
+          <RouterLink
+              to="/register"
+              class="text-cyan-300 hover:text-cyan-100 font-medium underline underline-offset-4 transition"
+          >
+            Create an account
+          </RouterLink>
+        </p>
+      </form>
     </div>
-    <!-- Container -->
-    <form @submit="handleLogin"
-      class="relative p-6 sm:p-8 w-[370px] max-w-md
-        bg-gray-900/70 backdrop-blur-xl border border-gray-700/50
-        rounded-2xl shadow-2xl text-white
-        animate-fade-slide card-hover-login">
-      <!-- Floating glow -->
-      <div class="absolute inset-0 rounded-2xl bg-gradient-to-tr from-blue-500/20 via-purple-500/10 to-pink-500/20 blur-2xl opacity-30 -z-10"></div>
-      <!-- Title -->
-      <h1 class="text-3xl sm:text-4xl font-extrabold mb-8 text-center tracking-wide
-        bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent animate-gradient">
-        Welcome Back
-      </h1>
-      <!-- Email -->
-      <input 
-        v-model="email" 
-        placeholder="Email or Username" 
-        required 
-        class="w-full p-3 mb-4 rounded-lg bg-gray-800/70 text-white placeholder-gray-400
-          border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/80 focus:border-blue-400
-          transition duration-200 shadow-sm"/>
-      <!-- Password -->
-      <input 
-        v-model="password" 
-        type="password" 
-        placeholder="Password" 
-        required 
-        class="w-full p-3 mb-5 rounded-lg bg-gray-800/70 text-white placeholder-gray-400
-          border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500/80 focus:border-purple-400
-          transition duration-200 shadow-sm"/>
-    
-      <!-- Remember + Forgot -->
-      <div class="flex justify-between items-center mb-6 text-sm">
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" v-model="remember" class="accent-blue-500" /> 
-          <span class="text-gray-300">Remember me</span>
-        </label>
-        <router-link to="/forgotPassword" class="text-blue-400 hover:text-blue-300 transition">Forgot?</router-link>
-      </div>
-      <!-- Button -->
-      <button 
-        type="submit" 
-        class="w-full p-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 font-semibold
-          hover:from-blue-500 hover:to-purple-500 transition-all shadow-lg
-          transform hover:scale-[1.02] active:scale-[0.98]">
-        Login
-      </button>
-      <!-- Error & Success Messages -->
-      <div v-if="error" class="text-red-400 mt-4 text-center text-sm font-medium">{{ error }}</div>
-      <div v-if="successful" class="text-green-400 mt-4 text-center text-sm font-medium">{{ successful }}</div>
-      <!-- Register Redirect -->
-      <div class="mt-6 text-center text-sm text-gray-400">
-        Don’t have an account?
-        <router-link to="/register" class="text-blue-400 hover:text-blue-300 font-medium transition"> Register</router-link>
-      </div>
-    </form>
+
+    <!-- Floating Light Effects -->
+    <div class="absolute top-0 left-0 w-64 h-64 bg-cyan-400/20 blur-3xl rounded-full animate-pulse"></div>
+    <div class="absolute bottom-10 right-10 w-96 h-96 bg-indigo-500/30 blur-3xl rounded-full animate-pulse delay-700"></div>
   </div>
 </template>
 
 <style scoped>
-@keyframes fade-slide {
+@keyframes gradient {
   0% {
-    opacity: 0;
-    transform: translateY(30px) scale(0.98);
+    background-position: 0 50%;
+  }
+  50% {
+    background-position: 100% 50%;
   }
   100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
+    background-position: 0 50%;
   }
 }
-
-.animate-fade-slide {
-  animation: fade-slide 0.6s ease-out;
-}
-
-/* Card hover lift + glow */
-.card-hover-login {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-.card-hover-login:hover {
-  transform: translateY(-6px) scale(1.01);
-  box-shadow: 0 12px 25px rgba(59, 130, 246, 0.35),0 8px 18px rgba(139, 92, 246, 0.25);
-}
-
-/* Gradient text shimmer */
-@keyframes gradient-move {
-  0% { background-position: 0% 50%; }
-  100% { background-position: 100% 50%; }
-}
 .animate-gradient {
-  background-size: 200% auto;
-  animation: gradient-move 4s linear infinite;
+  animation: gradient 8s ease infinite;
 }
 </style>
