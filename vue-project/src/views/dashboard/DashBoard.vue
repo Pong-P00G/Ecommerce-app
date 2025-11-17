@@ -34,18 +34,18 @@ const formatCurrency = (n) => new Intl.NumberFormat(undefined, { style: 'currenc
 </script>
 
 <template>
-  <div class="min-h-screen p-6 space-y-8 bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
+  <div class="min-h-screen p-6 space-y-8 bg-linear-to-br from-slate-50 via-gray-50 to-zinc-50">
     <!-- Modern Header -->
     <div class="relative">
-      <div class="absolute inset-0 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 blur-3xl opacity-20 rounded-3xl"></div>
+      <div class="absolute inset-0 bg-linear-to-r from-violet-600 via-purple-600 to-fuchsia-600 blur-3xl opacity-20 rounded-3xl"></div>
       <div class="relative bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
         <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
           <div class="flex items-center gap-4">
-            <div class="p-4 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl shadow-lg">
+            <div class="p-4 bg-linear-to-br from-violet-500 to-fuchsia-500 rounded-2xl shadow-lg">
               <BarChart3 class="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 class="text-4xl font-black bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
+              <h1 class="text-4xl font-black bg-linear-to-r from-violet-600 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
                 Dashboard Overview
               </h1>
               <p class="text-gray-500 mt-1 flex items-center gap-2">
@@ -55,7 +55,7 @@ const formatCurrency = (n) => new Intl.NumberFormat(undefined, { style: 'currenc
             </div>
           </div>
           <div class="flex items-center gap-3">
-            <button class="group px-6 py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 font-bold">
+            <button class="group px-6 py-3 bg-linear-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 font-bold">
               <Activity class="w-4 h-4" />
               Live View
               <span class="relative flex h-2 w-2">
@@ -67,14 +67,12 @@ const formatCurrency = (n) => new Intl.NumberFormat(undefined, { style: 'currenc
         </div>
       </div>
     </div>
-
     <!-- Stats Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
       <div v-for="stat in stats" :key="stat.id"
         class="group relative bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-xl border border-white/20 hover:shadow-2xl hover:-translate-y-1 transition-all duration-500">
-        <!-- Gradient Background -->
-        <div class="absolute inset-0 bg-gradient-to-br opacity-5 rounded-3xl" :class="stat.color"></div>
-
+        <!-- linear Background -->
+        <div class="absolute inset-0 bg-linear-to-br opacity-5 rounded-3xl" :class="stat.color"></div>
         <!-- Content -->
         <div class="relative space-y-4">
           <div class="flex items-start justify-between">
@@ -84,11 +82,10 @@ const formatCurrency = (n) => new Intl.NumberFormat(undefined, { style: 'currenc
                 {{ stat.name.includes('Revenue') ? formatCurrency(stat.value) : stat.value.toLocaleString() }}
               </h3>
             </div>
-            <div class="p-4 bg-gradient-to-br rounded-2xl shadow-lg" :class="stat.color">
+            <div class="p-4 bg-linear-to-br rounded-2xl shadow-lg" :class="stat.color">
               <component :is="stat.icon" class="w-6 h-6 text-white" />
             </div>
           </div>
-
           <!-- Change Indicator -->
           <div class="flex items-center gap-2 pt-3 border-t border-gray-100">
             <div class="flex items-center gap-1 px-2.5 py-1 rounded-xl font-bold text-sm"
@@ -101,7 +98,6 @@ const formatCurrency = (n) => new Intl.NumberFormat(undefined, { style: 'currenc
         </div>
       </div>
     </div>
-
     <!-- Main Content Grid -->
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
       <!-- Recent Orders -->
@@ -114,7 +110,6 @@ const formatCurrency = (n) => new Intl.NumberFormat(undefined, { style: 'currenc
             <ArrowUpRight class="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
           </router-link>
         </div>
-
         <div class="space-y-4">
           <div v-for="order in recentOrders" :key="order.id"
             class="group flex items-center gap-4 p-4 rounded-2xl border-2 border-gray-100 hover:border-violet-200 hover:bg-violet-50/50 transition-all duration-300">
@@ -138,21 +133,19 @@ const formatCurrency = (n) => new Intl.NumberFormat(undefined, { style: 'currenc
           </div>
         </div>
       </div>
-
       <!-- Activity Feed -->
       <div class="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8">
         <div class="flex items-center gap-3 mb-6">
-          <div class="p-2 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-xl">
+          <div class="p-2 bg-linear-to-br from-violet-500 to-fuchsia-500 rounded-xl">
             <Zap class="w-5 h-5 text-white" />
           </div>
           <h2 class="text-2xl font-black text-gray-900">Live Activity</h2>
         </div>
-
         <div class="space-y-4">
           <div v-for="activity in activities" :key="activity.id"
             class="relative flex items-start gap-4 pb-4 border-b border-gray-100 last:border-0 last:pb-0">
             <div class="relative">
-              <div class="p-2 bg-gradient-to-br rounded-xl shadow-lg" :class="activity.color">
+              <div class="p-2 bg-linear-to-br rounded-xl shadow-lg" :class="activity.color">
                 <Activity class="w-4 h-4 text-white" />
               </div>
               <span v-if="activity.id === 1" class="absolute -top-1 -right-1 flex h-3 w-3">
@@ -169,12 +162,11 @@ const formatCurrency = (n) => new Intl.NumberFormat(undefined, { style: 'currenc
         </div>
       </div>
     </div>
-
     <!-- Top Products -->
     <div class="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8">
       <div class="flex items-center justify-between mb-6">
         <div class="flex items-center gap-3">
-          <div class="p-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl">
+          <div class="p-2 bg-linear-to-br from-amber-500 to-orange-500 rounded-xl">
             <Package class="w-5 h-5 text-white" />
           </div>
           <h2 class="text-2xl font-black text-gray-900">Top Selling Products</h2>
@@ -185,10 +177,9 @@ const formatCurrency = (n) => new Intl.NumberFormat(undefined, { style: 'currenc
           View Inventory
         </router-link>
       </div>
-
       <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <div v-for="(product, index) in topProducts" :key="index"
-          class="group relative bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 hover:shadow-xl transition-all duration-300">
+          class="group relative bg-linear-to-br from-gray-50 to-gray-100 rounded-2xl p-6 hover:shadow-xl transition-all duration-300">
           <div class="space-y-4">
             <div class="flex items-start justify-between">
               <div class="flex-1">
@@ -199,16 +190,14 @@ const formatCurrency = (n) => new Intl.NumberFormat(undefined, { style: 'currenc
                 class="w-5 h-5"
                 :class="product.trend === 'up' ? 'text-green-500' : 'text-red-500'" />
             </div>
-
             <div class="space-y-2">
               <div class="flex items-center justify-between text-sm">
                 <span class="text-gray-600 font-bold">Revenue</span>
                 <span class="text-gray-900 font-black">{{ formatCurrency(product.revenue) }}</span>
               </div>
-
               <!-- Progress Bar -->
               <div class="relative h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div class="absolute inset-y-0 left-0 bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full transition-all duration-500"
+                <div class="absolute inset-y-0 left-0 bg-linear-to-r from-violet-500 to-fuchsia-500 rounded-full transition-all duration-500"
                   :style="{ width: `${product.progress}%` }"></div>
               </div>
               <p class="text-xs text-gray-500 text-right">{{ product.progress }}% of goal</p>

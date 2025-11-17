@@ -21,6 +21,26 @@ export const register = (userData) => api.post('/auth/register', userData);
 export const forgotPassword = (email) => api.post('/auth/forgot-password', { email });
 export const resetPassword = (token, newPassword) => api.post('/auth/reset-password', { token, newPassword });
 
+// User Profile
+export const getUserProfile = () => api.get('/user/profile');
+export const updateUserProfile = (profileData) => api.put('/user/profile', profileData);
+
+// Admin User Management
+export const getAllUsers = () => api.get('/user');
+export const createUsers = () => api.post(`/user`);
+export const updateUser = (id, userData) => api.put(`/user/${id}`, userData);
+export const deleteUser = (id) => api.delete(`/user/${id}`);
+
+// Analytics
+export const getAnalyticsKpis = () => api.get('/analytics/kpis');
+export const getRevenueTrend = () => api.get('/analytics/revenue-trend');
+export const getTrafficSources = () => api.get('/analytics/traffic-sources');
+export const getTopPages = () => api.get('/analytics/top-pages');
+
+// Reports
+export const getReport = (reportData) => api.post('/reports', reportData);
+
+
 // Products
 export const getProducts = () => api.get('/products');
 export const getProductById = (id) => api.get(`/products/${id}`);
@@ -40,7 +60,3 @@ export const clearCart = () => api.delete('/cart');
 export const getWishlist = () => api.get('/wishlist');
 export const addToWishlist = (itemData) => api.post('/wishlist', itemData);
 export const removeFromWishlist = (id) => api.delete(`/wishlist/${id}`);
-
-// User
-export const getUserProfile = () => api.get('/user/profile');
-export const updateUserProfile = (profileData) => api.put('/user/profile', profileData);

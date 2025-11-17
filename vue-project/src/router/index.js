@@ -1,88 +1,50 @@
 import { createRouter, createWebHistory } from "vue-router";
-import Home from "../views/Home.vue";
-import Login from "../views/auth/Login.vue";
-import Register from "../views/auth/Register.vue";
-import ForgetPassword from "../views/auth/ForgetPass.vue";
-import Checkout from "../views/checkout/Checkout.vue";
-import AllProduct from "../views/products/AllProduct.vue";
-import About from "../views/About.vue";
-import Contact from "../views/Contact.vue";
-import Payment from "../views/Payment.vue";
-import OrderSucces from "../views/OrderSucces.vue";
+import { useAuthStore } from "../stores/auth"; 
 import Mainlayout from "../Layout/Mainlayout.vue";
-
+import HomeLayout from "../Layout/HomeLayout.vue";
 
 const routes = [
     {
-        name: 'home',
         path: '/',
-        component: Home
+        component: HomeLayout,
+        children: [
+            {
+                name: 'home',
+                path: '/',
+                component: () => import("../views/Home.vue")
+            },
+            {
+                name: 'about',
+                path: '/about',
+                component: () => import("../views/About.vue")
+            },
+            {
+                name: 'contact',
+                path: '/contact',
+                component: () => import("../views/Contact.vue")
+            },
+            {
+                name: 'checkout',
+                path: '/checkout',
+                component:() => import("../views/checkout/Checkout.vue")
+            },
+            {
+                name: 'payment',
+                path: '/payment',
+                component:() => import("../views/Payment.vue")
+            },
+            {
+                name: 'orderSucces',
+                path: '/orderSucces',
+                component:() => import("../views/OrderSucces.vue")
+            },
+            {
+                name: 'Allproduct',
+                path: '/Allproduct',
+                component: () => import("../views/products/AllProduct.vue"),
+            },
+        ]
     },
-    {
-        name: 'login',
-        path: '/login',
-        component: Login
-    },
-    {
-        name: 'register',
-        path: '/register',
-        component: Register
-    },
-    {
-        name: 'forgotPassword',
-        path: '/forgotPassword',
-        component: ForgetPassword
-    },
-    {
-        name: 'about',
-        path: '/about',
-        component: About
-    },
-    {
-        name: 'contact',
-        path: '/contact',
-        component: Contact
-    },
-    {
-        name: 'checkout',
-        path: '/checkout',
-        component:Checkout
-    },
-    {
-        name: 'payment',
-        path: '/payment',
-        component:Payment
-    },
-    {
-        name: 'orderSucces',
-        path: '/orderSucces',
-        component:OrderSucces
-    },
-    {
-        name: 'Allproduct',
-        path: '/Allproduct',
-        component: AllProduct,
-    },
-    // {
-    //     path: '/Shirt/:id',
-    //     name: 'ShirtDetail',
-    //     component: () => import('../components/productDetails/ShirtDetail.vue')
-    // },
-    // {
-    //     path: '/Hoodie/:id',
-    //     name: 'HoodieDetail',
-    //     component: () => import('../components/productDetails/HoodieDetail.vue')
-    // },
-    // {
-    //     path: '/Pants/:id',
-    //     name: 'PantDetail',
-    //     component: () => import('../components/productDetails/PantsDetail.vue')
-    // },
-    // {
-    //     path: '/Accesorie/:id',
-    //     name: 'AccesorieDetail',
-    //     component: () => import('../components/productDetails/AccesorieDetail.vue')
-    // },
     {
         path: '/dashboard',
         component: Mainlayout,
@@ -120,6 +82,21 @@ const routes = [
             },
         ],
     },
+    {
+        name: 'login',
+        path: '/login',
+        component: () => import("../views/auth/Login.vue")
+    },
+    {
+        name: 'register',
+        path: '/register',
+        component: () => import("../views/auth/Register.vue")
+    },
+    {
+        name: 'forgotPassword',
+        path: '/forgotPassword',
+        component: () => import("../views/auth/ForgetPass.vue")
+    },
 ]
 
 const router = createRouter({
@@ -128,6 +105,26 @@ const router = createRouter({
     scrollBehavior() {
         return { top: 0 };
     }
+});
+
+router.beforeEach((to, from, next) => {
+    const authStore = useAuthStore();
+    const isAuthenticated = authStore.isAuthenticated;
+    const userRole = authStore.user?.role;
+
+    if (to.meta.requiresAuth && !isAuthenticated) {
+        return next({ name: 'Login' });
+    }
+
+    else if (to.meta.requireRole && to.meta.requireRole !== userRole) {
+        return next({ name: 'DashboardHome' });
+    }
+
+    else if ((to.name === 'Login' || to.name === 'Register') && isAuthenticated) {
+        return next({ name: 'Home' });
+    }
+
+    next();
 });
 
 export default router;

@@ -1,9 +1,9 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
+import { icons, ShoppingBagIcon, ShoppingCart } from 'lucide-vue-next';
 import Icons from '../assets/icons/icons.vue';
 import '../assets/navbar.css';
-import { icons, ShoppingBagIcon, ShoppingCart } from 'lucide-vue-next';
 
 const route = useRoute();
 
@@ -27,7 +27,6 @@ const navLinks = ref([
     { to: '/Allproduct', label: 'Product', icon: 'Box', ariaLabel: 'Browse our product' },
     { to: '/contact', label: 'Contact', icon: 'Phone', ariaLabel: 'Contact us' },
     { to: '/about', label: 'About', icon: 'Info', ariaLabel: 'Learn about us' },
-    {to: '/dashboard', label: 'Dashboard', icon: 'CircleGauge', ariaLabel: 'dashboard' }
 ]);
 
 const isActiveRoute = computed(() => (linkTo) =>
@@ -53,23 +52,22 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <header class="sticky top-0 z-50 bg-gradient-to-br from-[#dcf1ff] to-[#d0ebff] text-grya-900 shadow-lg" role="banner">
+    <header class="sticky top-0 z-50 bg-white/30 backdrop-blur-2xl text-grya-900 shadow-lg" role="banner">
         <div class="flex justify-between items-center px-4 py-3 max-w-full mx-auto">
             <!-- Mobile Toggle -->
-            <button @click="toggleMenu" class="md:hidden p-2 rounded-lg hover:bg-cyan-100"
-                :aria-expanded="isMenuOpen" aria-controls="mobile-menu" aria-label="Toggle navigation menu">
+            <button @click="toggleMenu" class="md:hidden p-2 rounded-lg hover:bg-cyan-100" :aria-expanded="isMenuOpen"
+                aria-controls="mobile-menu" aria-label="Toggle navigation menu">
                 <Icons :name="isMenuOpen ? 'X' : 'Menu'" class="w-6 h-6" />
             </button>
             <!-- Logo -->
             <RouterLink to="/" class="text-2xl font-bold px-2 py-1 rounded-lg" aria-label="MyApp - Go to homepage">
-                ALIE SHOP
+                <span class="text-cyan-600">ALIE</span><span class="text-gray-800">SHOP</span>
             </RouterLink>
             <!-- Desktop Navigation -->
             <nav class="hidden md:flex space-x-1" role="navigation" aria-label="Main navigation">
                 <RouterLink v-for="link in navLinks" :key="link.label" :to="link.to"
                     class="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-cyan-100 transition-colors duration-200"
-                    :class="{ 'bg-cyan-200': isActiveRoute(link.to) }"
-                    :aria-label="link.ariaLabel">
+                    :class="{ 'bg-cyan-200': isActiveRoute(link.to) }" :aria-label="link.ariaLabel">
                     <Icons :name="link.icon" class="w-5 h-5" />
                     <span class="text-sm font-medium">{{ link.label }}</span>
                 </RouterLink>
@@ -80,8 +78,7 @@ onUnmounted(() => {
                     <Icons name="UserCircle2" class="w-7 h-7" />
                 </RouterLink>
                 <!-- Cart -->
-                <RouterLink to="/checkout" 
-                    class="p-2 rounded-lg hover:bg-cyan-100 flex items-center justify-center"
+                <RouterLink to="/checkout" class="p-2 rounded-lg hover:bg-cyan-100 flex items-center justify-center"
                     aria-label="View shopping cart">
                     <Icons name="ShoppingCart" class="w-6 h-6" />
                 </RouterLink>
@@ -89,11 +86,13 @@ onUnmounted(() => {
         </div>
         <!-- Mobile Menu Overlay -->
         <transition name="overlay">
-            <div v-if="isMenuOpen" class="fixed inset-0 bg-black/60 md:hidden" @click="closeMenu" aria-hidden="true"></div>
+            <div v-if="isMenuOpen" class="fixed inset-0 bg-black/60 md:hidden" @click="closeMenu" aria-hidden="true">
+            </div>
         </transition>
         <!-- Mobile Sidebar -->
         <transition name="slide">
-            <aside v-if="isMenuOpen" id="mobile-menu" class="fixed top-0 left-0 w-80 h-full bg-gradient-to-br from-[#dcf1ff] to-[#d0ebff] text-grya-900 z-50 shadow-xl overflow-y-auto md:hidden"
+            <aside v-if="isMenuOpen" id="mobile-menu"
+                class="fixed top-0 left-0 w-80 h-full bg-linear-to-br from-[#dcf1ff] to-[#d0ebff] text-grya-900 z-50 shadow-xl overflow-y-auto md:hidden"
                 aria-label="Mobile navigation" role="region">
                 <div class="flex justify-between items-center p-4">
                     <h2 class="text-xl font-semibold">Navigation</h2>
@@ -111,7 +110,8 @@ onUnmounted(() => {
                                         <li v-for="child in link.children" :key="child.to">
                                             <RouterLink :to="child.to"
                                                 class="flex items-center gap-3 p-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800"
-                                                @click="closeMenu" :aria-label="child.ariaLabel || `Go to ${child.label}`">
+                                                @click="closeMenu"
+                                                :aria-label="child.ariaLabel || `Go to ${child.label}`">
                                                 <Icons :name="child.icon" class="w-4 h-4" />
                                                 {{ child.label }}
                                             </RouterLink>
@@ -122,8 +122,7 @@ onUnmounted(() => {
                             <li v-else :key="link.label + '-single'">
                                 <RouterLink :to="link.to"
                                     class="flex items-center gap-3 p-3 rounded-lg hover:bg-cyan-100 transition-colors duration-200"
-                                    :class="{ 'bg-cyan-200': isActiveRoute(link.to) }"
-                                    @click="closeMenu"
+                                    :class="{ 'bg-cyan-200': isActiveRoute(link.to) }" @click="closeMenu"
                                     :aria-label="link.ariaLabel">
                                     <Icons :name="link.icon" class="w-5 h-5" />
                                     <span class="text-sm font-medium">{{ link.label }}</span>

@@ -100,17 +100,17 @@ function RefreshPage() {
 
 <template>
   <div class="min-h-screen p-6 space-y-16">
-    <!-- Modern Header with Gradient -->
+    <!-- Modern Header with linear -->
     <div class="relative">
-      <div class="absolute inset-0 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 blur-3xl opacity-20 rounded-3xl"></div>
+      <div class="absolute inset-0 bg-linear-to-r from-violet-600 via-purple-600 to-fuchsia-600 blur-3xl opacity-20 rounded-3xl"></div>
       <div class="relative bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
         <div class="flex flex-col lg:flex-row justify-between items-center gap-6">
           <div class="flex items-center gap-4">
-            <div class="p-4 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl shadow-lg">
+            <div class="p-4 bg-linear-to-br from-violet-500 to-fuchsia-500 rounded-2xl shadow-lg">
               <Package class="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 class="text-4xl font-black bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
+              <h1 class="text-4xl font-black bg-linear-to-r from-violet-600 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
                 Add New Product
               </h1>
               <p class="text-gray-500 mt-1 flex items-center gap-2">
@@ -143,8 +143,8 @@ function RefreshPage() {
               <div
                 class="relative group border-2 border-dashed rounded-3xl p-12 text-center cursor-pointer transition-all duration-500"
                 :class="isDragging
-                  ? 'border-violet-500 bg-gradient-to-br from-violet-50 to-fuchsia-50 scale-[0.98]'
-                  : 'border-gray-300 hover:border-violet-400 hover:bg-gradient-to-br hover:from-violet-50/50 hover:to-fuchsia-50/50'"
+                  ? 'border-violet-500 bg-linear-to-br from-violet-50 to-fuchsia-50 scale-[0.98]'
+                  : 'border-gray-300 hover:border-violet-400 hover:bg-linear-to-br hover:from-violet-50/50 hover:to-fuchsia-50/50'"
                 @dragover.prevent="isDragging = true"
                 @dragleave.prevent="isDragging = false"
                 @drop.prevent="handleDrop"
@@ -152,7 +152,7 @@ function RefreshPage() {
                 <input type="file" accept="image/*" class="hidden" ref="fileInput" @change="handleFileChange"/>
 
                 <div v-if="!imagePreview" class="space-y-4">
-                  <div class="inline-flex p-6 bg-gradient-to-br from-violet-100 to-fuchsia-100 rounded-2xl group-hover:scale-110 transition-transform duration-300">
+                  <div class="inline-flex p-6 bg-linear-to-br from-violet-100 to-fuchsia-100 rounded-2xl group-hover:scale-110 transition-transform duration-300">
                     <ImagePlus class="w-12 h-12 text-violet-600"/>
                   </div>
                   <div>
@@ -165,7 +165,7 @@ function RefreshPage() {
                   <img :src="imagePreview" alt="Preview"
                     class="w-full max-w-md mx-auto h-64 object-cover rounded-2xl shadow-2xl ring-4 ring-violet-100"/>
                   <button @click.stop="removeImage" type="button"
-                    class="absolute -top-3 -right-3 p-3 bg-gradient-to-br from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white rounded-2xl shadow-lg transition-all duration-300 hover:scale-110">
+                    class="absolute -top-3 -right-3 p-3 bg-linear-to-br from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white rounded-2xl shadow-lg transition-all duration-300 hover:scale-110">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -254,9 +254,9 @@ function RefreshPage() {
         </div>
       </div>
       <!-- Right Side: Live Preview (takes 2 columns) -->
-      <div class="xl:col-span-2 xl:w-[100%]">
+      <div class="xl:col-span-2 xl:w-full">
         <div class="sticky top-6">
-          <div class="bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600 rounded-3xl p-8 shadow-2xl">
+          <div class="bg-linear-to-br from-violet-600 via-purple-600 to-fuchsia-600 rounded-3xl p-8 shadow-2xl">
             <h2 class="text-2xl font-black text-white mb-6 flex items-center gap-3">
               <Sparkles class="w-6 h-6" />
               Live Preview
@@ -264,7 +264,7 @@ function RefreshPage() {
             <!-- Product Card Preview -->
             <div class="bg-white rounded-3xl overflow-hidden shadow-2xl transform hover:scale-[1.02] transition-all duration-500">
               <!-- Image Container -->
-              <div class="relative w-full h-80 bg-gradient-to-br from-gray-100 to-gray-200">
+              <div class="relative w-full h-80 bg-linear-to-br from-gray-100 to-gray-200">
                 <img
                   v-if="imagePreview"
                   :src="imagePreview"
@@ -279,7 +279,7 @@ function RefreshPage() {
 
                 <!-- Discount Badge -->
                 <div v-if="productData.productdiscount"
-                  class="absolute top-4 right-4 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-2xl shadow-lg font-black text-sm">
+                  class="absolute top-4 right-4 px-4 py-2 bg-linear-to-r from-green-500 to-emerald-500 text-white rounded-2xl shadow-lg font-black text-sm">
                   -{{ productData.productdiscount }}% OFF
                 </div>
               </div>
@@ -317,7 +317,7 @@ function RefreshPage() {
                     <div>
                       <p class="text-xs text-gray-500 font-bold mb-1">Price</p>
                       <div class="flex items-baseline gap-2">
-                        <span class="text-3xl font-black bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
+                        <span class="text-3xl font-black bg-linear-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
                           ${{ discountedPrice ? discountedPrice.toFixed(2) : (productData.productprice ? productData.productprice.toFixed(2) : '0.00') }}
                         </span>
                         <span v-if="productData.productdiscount" class="text-lg text-gray-400 line-through font-bold">
@@ -364,5 +364,6 @@ input::-webkit-inner-spin-button {
 
 input[type=number] {
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 </style>

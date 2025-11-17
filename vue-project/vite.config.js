@@ -21,9 +21,27 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  build: {
+    chunkSizeWarningLimit: 1500,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('lucide-vue-next')) {
+              return 'lucide-vue-next';
+            }
+            if (id.includes('@vue')) {
+              return 'vue';
+            }
+            return 'vendor';
+          }
+        }
+      }
+    }
+  },
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: './tests/setupTests.js', // ← add this line
+    setupFiles: './test/setupTests.js', // ← add this line
   },
 })

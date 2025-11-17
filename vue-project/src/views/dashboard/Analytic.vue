@@ -71,18 +71,18 @@ const sourceColors = ['from-violet-500 to-purple-600', 'from-blue-500 to-cyan-60
 </script>
 
 <template>
-  <div class="min-h-screen p-6 space-y-8 bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
+  <div class="min-h-screen p-6 space-y-8 bg-linear-to-br from-slate-50 via-gray-50 to-zinc-50">
     <!-- Modern Header -->
     <div class="relative">
-      <div class="absolute inset-0 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 blur-3xl opacity-20 rounded-3xl"></div>
+      <div class="absolute inset-0 bg-linear-to-r from-violet-600 via-purple-600 to-fuchsia-600 blur-3xl opacity-20 rounded-3xl"></div>
       <div class="relative bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
         <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
           <div class="flex items-center gap-4">
-            <div class="p-4 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-2xl shadow-lg">
+            <div class="p-4 bg-linear-to-br from-violet-500 to-fuchsia-500 rounded-2xl shadow-lg">
               <BarChart3 class="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 class="text-4xl font-black bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
+              <h1 class="text-4xl font-black bg-linear-to-r from-violet-600 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
                 Analytics Overview
               </h1>
               <p class="text-gray-500 mt-1 flex items-center gap-2">
@@ -110,7 +110,7 @@ const sourceColors = ['from-violet-500 to-purple-600', 'from-blue-500 to-cyan-60
       <div v-for="(kpi, index) in kpis" :key="index"
         class="group relative bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-xl border border-white/20 hover:shadow-2xl hover:-translate-y-1 transition-all duration-500">
         <!-- Gradient Background -->
-        <div class="absolute inset-0 bg-gradient-to-br opacity-5 rounded-3xl" :class="kpi.color"></div>
+        <div class="absolute inset-0 bg-linear-to-br opacity-5 rounded-3xl" :class="kpi.color"></div>
 
         <!-- Content -->
         <div class="relative space-y-4">
@@ -119,7 +119,7 @@ const sourceColors = ['from-violet-500 to-purple-600', 'from-blue-500 to-cyan-60
               <p class="text-sm font-bold text-gray-500 uppercase tracking-wide">{{ kpi.name }}</p>
               <h3 class="text-4xl font-black text-gray-900 mt-2">{{ kpi.value }}</h3>
             </div>
-            <div class="p-4 bg-gradient-to-br rounded-2xl shadow-lg" :class="kpi.color">
+            <div class="p-4 bg-linear-to-br rounded-2xl shadow-lg" :class="kpi.color">
               <component :is="kpi.icon" class="w-6 h-6 text-white" />
             </div>
           </div>
@@ -133,7 +133,7 @@ const sourceColors = ['from-violet-500 to-purple-600', 'from-blue-500 to-cyan-60
       <div class="xl:col-span-2 bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8">
         <div class="flex items-center justify-between mb-6">
           <div class="flex items-center gap-3">
-            <div class="p-2 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-xl">
+            <div class="p-2 bg-linear-to-br from-violet-500 to-fuchsia-500 rounded-xl">
               <TrendingUp class="w-5 h-5 text-white" />
             </div>
             <h2 class="text-2xl font-black text-gray-900">Revenue Trend</h2>
@@ -143,7 +143,7 @@ const sourceColors = ['from-violet-500 to-purple-600', 'from-blue-500 to-cyan-60
           </div>
         </div>
 
-        <div class="relative bg-gradient-to-br from-violet-50 to-fuchsia-50 rounded-2xl p-6">
+        <div class="relative bg-linear-to-br from-violet-50 to-fuchsia-50 rounded-2xl p-6">
           <svg :viewBox="`0 0 ${chartCfg.w} ${chartCfg.h}`" preserveAspectRatio="none" class="w-full h-56">
             <defs>
               <linearGradient id="lineFill" x1="0" y1="0" x2="0" y2="1">
@@ -166,7 +166,7 @@ const sourceColors = ['from-violet-500 to-purple-600', 'from-blue-500 to-cyan-60
       <!-- Traffic Sources -->
       <div class="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8">
         <div class="flex items-center gap-3 mb-6">
-          <div class="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl">
+          <div class="p-2 bg-linear-to-br from-blue-500 to-cyan-500 rounded-xl">
             <Activity class="w-5 h-5 text-white" />
           </div>
           <h2 class="text-2xl font-black text-gray-900">Traffic Sources</h2>
@@ -179,7 +179,7 @@ const sourceColors = ['from-violet-500 to-purple-600', 'from-blue-500 to-cyan-60
               <span class="text-sm font-black text-gray-900">{{ s.percent }}%</span>
             </div>
             <div class="relative h-3 bg-gray-100 rounded-full overflow-hidden">
-              <div class="absolute inset-y-0 left-0 bg-gradient-to-r rounded-full transition-all duration-500"
+              <div class="absolute inset-y-0 left-0 bg-linear-to-r rounded-full transition-all duration-500"
                 :class="sourceColors[index % sourceColors.length]"
                 :style="{ width: s.percent + '%' }"></div>
             </div>
@@ -191,7 +191,7 @@ const sourceColors = ['from-violet-500 to-purple-600', 'from-blue-500 to-cyan-60
     <!-- Top Pages -->
     <div class="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8">
       <div class="flex items-center gap-3 mb-6">
-        <div class="p-2 bg-gradient-to-br from-pink-500 to-rose-500 rounded-xl">
+        <div class="p-2 bg-linear-to-br from-pink-500 to-rose-500 rounded-xl">
           <Eye class="w-5 h-5 text-white" />
         </div>
         <h2 class="text-2xl font-black text-gray-900">Top Pages</h2>
@@ -212,7 +212,7 @@ const sourceColors = ['from-violet-500 to-purple-600', 'from-blue-500 to-cyan-60
               class="border-b border-gray-100 hover:bg-violet-50/50 transition-colors duration-200">
               <td class="py-4 px-4">
                 <div class="flex items-center gap-3">
-                  <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white font-black text-sm">
+                  <div class="w-8 h-8 rounded-xl bg-linear-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white font-black text-sm">
                     {{ index + 1 }}
                   </div>
                   <span class="font-bold text-gray-900">{{ p.path }}</span>

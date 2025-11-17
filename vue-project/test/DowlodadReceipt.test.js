@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { onClickDownloadReceipt } from "../utility/DownloadResipt.js";
+import { onClickDownloadReceipt } from "../src/utility/DownloadResipt.js";
 
 describe("DowlodadReceipt", () => {
   beforeEach(() => {
