@@ -1,4 +1,4 @@
-import pool from '../db.js';
+import pool from '../database/dbpool.js';
 
 // Get all users
 export const getAllUsers = async () => {
@@ -20,18 +20,19 @@ export const getUserByEmail = async (email) => {
 
 // Create user using insert_user function (handles hashing in Postgres)
 export const createUsers = async (userData) => {
-    const { username, email, passwordhash, fullname, role } = userData;
+    const { username, email, passwordhash, fullname = null , role = 'user' } = userData;
 
-    // Call PostgreSQL function insert_user
-    await pool.query(
-        'SELECT insert_user($1, $2, $3, $4, $5)',
-        [username, passwordhash, email, fullname, role || 'user']
+    if (!username || !email || !passwordhash) {
+        throw new Error('Missing required fields: username, email, or password');
+    }
+    
+    const result = await pool.query(
+        'INSERT INTO users (username, email, passwordhash, fullname, role) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        [username, email, passwordhash, fullname, role]
     );
-
-    // Return the inserted user
-    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
     return result.rows[0];
-}
+};
+
 
 // Update user
 export const updateUsers = async (id, userData) => {

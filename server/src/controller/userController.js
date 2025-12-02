@@ -16,7 +16,7 @@ export const getUserById = async (req, res) => {
         const users = await userService.getUserById();
         res.json(users);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(404).json({ message: error.message });
     }
 };
 
@@ -68,6 +68,21 @@ export const loginUser = async (req, res) => {
         const admin = user.role === 'admin';
         res.json({ token, user, admin });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(400).json({ message: error.message });
     }
 };
+
+//Register User
+export const registerUser = async (req, res) => {
+    const { username, email, passwordhash, fullname } = req.body;
+    if (!username || !email || !passwordhash) {
+        return res.status(400).json({ message: 'Username, email, and password are required' });
+    }
+
+    try {
+        const newUser = await userService.createUsers(req.body);
+        res.status(201).json(newUser);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+}

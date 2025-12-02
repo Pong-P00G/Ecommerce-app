@@ -4,12 +4,14 @@ import { RouterLink, useRoute } from 'vue-router';
 import { icons, ShoppingBagIcon, ShoppingCart } from 'lucide-vue-next';
 import Icons from '../assets/icons/icons.vue';
 import '../assets/navbar.css';
+// import * as  User  from '../views/UserProfile.vue'
 
 const route = useRoute();
 
 const isMenuOpen = ref(false);
 const openDropdown = ref(null);
 const dropdownTimeout = ref(null);
+// const User = ref(false);
 
 
 const toggleMenu = () => {
@@ -74,8 +76,8 @@ onUnmounted(() => {
             </nav>
             <div class="flex items-center gap-1">
                 <!-- User Account -->
-                <RouterLink to="/login" class="p-2 rounded-lg hover:bg-cyan-100" aria-label="User account">
-                    <Icons name="UserCircle2" class="w-7 h-7" />
+                <RouterLink to="/userprofile" class="p-2 rounded-lg hover:bg-cyan-100" aria-label="User account">
+                    <Icons name="UserCircle" class="w-7 h-7" />
                 </RouterLink>
                 <!-- Cart -->
                 <RouterLink to="/checkout" class="p-2 rounded-lg hover:bg-cyan-100 flex items-center justify-center"

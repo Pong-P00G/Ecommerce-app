@@ -1,4 +1,4 @@
-import pool  from "../db.js";
+import pool  from "../database/dbpool.js";
 
 // Get all product
 export const getAllProduct = async () => {
@@ -9,7 +9,7 @@ export const getAllProduct = async () => {
 
 // Get productby id 
 export const getAllProductById = async (id) => {
-    const result = await pool.query('SELECT * FROM products WHERE productid = $1', [id]);
+    const result = await pool.query('SELECT * FROM products WHERE id = $1', [id]);
     return result.rows[0];
 }
 
@@ -25,7 +25,7 @@ export const createProduct = async (productData) => {
     const { productname, productsize, productcolor, productprice, productdiscount, productcategory } = productData;
 
     const result = await pool.query(
-        'INSERT INTO products (productname, productsize, productcolor, productprice, productdiscount, productcategory) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+        'INSERT INTO products (name, size, color, productprice, productdiscount, productcategory) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
         [productname, productsize, productcolor, productprice, productdiscount, productcategory || 'products']
     );
 

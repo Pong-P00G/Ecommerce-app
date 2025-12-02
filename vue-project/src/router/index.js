@@ -43,6 +43,12 @@ const routes = [
                 path: '/Allproduct',
                 component: () => import("../views/products/AllProduct.vue"),
             },
+            {
+                name: 'userprofile',
+                path: '/userprofile',
+                component: () => import("../views/UserProfile.vue"),
+                // meta: { requiresAuth: true },
+            },
         ]
     },
     {

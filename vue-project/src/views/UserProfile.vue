@@ -1,13 +1,18 @@
 <script setup>
-import { ref, reactive } from 'vue'
-import { UserIcon, ShieldCheckIcon, CogIcon, CameraIcon } from '@heroicons/vue/24/outline'
+import { ref, reactive } from 'vue';
+import { UserIcon, ShieldCheckIcon, CogIcon, CameraIcon, ArrowLeftCircleIcon } from '@heroicons/vue/24/outline';
+import { RouterLink, useRoute } from 'vue-router';
+
+
+const route = useRoute();
 
 // Tab management
 const activeTab = ref('profile')
 const tabs = [
   { id: 'profile', name: 'Profile', icon: UserIcon },
   { id: 'security', name: 'Security', icon: ShieldCheckIcon },
-  { id: 'preferences', name: 'Preferences', icon: CogIcon }
+  { id: 'preferences', name: 'Preferences', icon: CogIcon },
+  { id: 'logout', name: 'Logout', icon: ArrowLeftCircleIcon },
 ]
 
 // User data
@@ -34,6 +39,10 @@ const preferences = reactive({
   smsNotifications: false,
   language: 'en',
   timezone: 'pst'
+})
+
+const logout = reactive({
+  status: '',
 })
 
 // UI states
@@ -70,7 +79,6 @@ const formatDate = (dateString) => {
         <h1 class="text-3xl font-bold text-gray-900">Profile Settings</h1>
         <p class="text-gray-600 mt-2">Manage your account settings and preferences</p>
       </div>
-
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Left Sidebar - Navigation -->
         <div class="lg:col-span-1">
@@ -95,7 +103,6 @@ const formatDate = (dateString) => {
             </nav>
           </div>
         </div>
-
         <!-- Main Content -->
         <div class="lg:col-span-2">
           <!-- Profile Tab -->
@@ -120,7 +127,6 @@ const formatDate = (dateString) => {
                 <p class="text-sm text-gray-500 mt-1">Joined {{ formatDate(user.joinDate) }}</p>
               </div>
             </div>
-
             <form @submit.prevent="updateProfile" class="space-y-6">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -140,7 +146,6 @@ const formatDate = (dateString) => {
                   />
                 </div>
               </div>
-
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Bio</label>
                 <textarea
@@ -150,7 +155,6 @@ const formatDate = (dateString) => {
                     placeholder="Tell us about yourself..."
                 ></textarea>
               </div>
-
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
@@ -169,7 +173,6 @@ const formatDate = (dateString) => {
                   />
                 </div>
               </div>
-
               <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
                 <button
                     type="button"
@@ -186,11 +189,9 @@ const formatDate = (dateString) => {
               </div>
             </form>
           </div>
-
           <!-- Security Tab -->
           <div v-if="activeTab === 'security'" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-6">Security Settings</h3>
-
             <div class="space-y-6">
               <div class="border-b border-gray-200 pb-6">
                 <h4 class="font-medium text-gray-900 mb-4">Change Password</h4>
@@ -227,7 +228,6 @@ const formatDate = (dateString) => {
                   </button>
                 </form>
               </div>
-
               <div>
                 <h4 class="font-medium text-gray-900 mb-4">Two-Factor Authentication</h4>
                 <div class="flex items-center justify-between">
@@ -242,11 +242,9 @@ const formatDate = (dateString) => {
               </div>
             </div>
           </div>
-
           <!-- Preferences Tab -->
           <div v-if="activeTab === 'preferences'" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-6">Preferences</h3>
-
             <div class="space-y-6">
               <div class="flex items-center justify-between">
                 <div>
@@ -258,7 +256,6 @@ const formatDate = (dateString) => {
                   <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                 </label>
               </div>
-
               <div class="flex items-center justify-between">
                 <div>
                   <p class="font-medium text-gray-900">SMS Notifications</p>
@@ -269,7 +266,6 @@ const formatDate = (dateString) => {
                   <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                 </label>
               </div>
-
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Language</label>
                 <select
@@ -282,7 +278,6 @@ const formatDate = (dateString) => {
                   <option value="de">German</option>
                 </select>
               </div>
-
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Timezone</label>
                 <select
@@ -296,6 +291,12 @@ const formatDate = (dateString) => {
                 </select>
               </div>
             </div>
+          </div>
+          <!-- Login Tab -->
+          <div v-if="activeTab === 'logout'" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
+            <RouterLink to="/login" class="bg-cyan-50 font-semibold px-8 py-4 rounded-2xl text-gray-900 mt-6 inline-block hover:scale-105">
+              Back to Login Page
+            </RouterLink>
           </div>
         </div>
       </div>
