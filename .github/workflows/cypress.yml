@@ -49,7 +49,7 @@ jobs:
           wait-on: 'http://localhost:3001'
           record: true
           parallel: true
-          working-directory: ./frontend
+          working-directory: ./
         env:
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
