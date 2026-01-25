@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
-import { useAuthStore } from "../stores/auth"; 
+import { useAuthStore } from "../stores/auth";
 import Mainlayout from "../Layout/Mainlayout.vue";
 import HomeLayout from "../Layout/HomeLayout.vue";
 
@@ -11,7 +11,11 @@ const routes = [
             {
                 name: 'home',
                 path: '/',
-                component: () => import("../views/Home.vue")
+                component: () => import("../views/Home.vue"),
+                meta: {
+                    title: 'Welcome to AlieeShop - Your One-Stop Online Store',
+                    description: 'Discover a wide range of products at unbeatable prices. Shop now and enjoy fast shipping and excellent customer service at AlieeShop!',
+                }
             },
             {
                 name: 'about',
@@ -26,63 +30,73 @@ const routes = [
             {
                 name: 'checkout',
                 path: '/checkout',
-                component:() => import("../views/checkout/Checkout.vue")
+                component: () => import("../views/checkout/Checkout.vue")
             },
             {
                 name: 'payment',
                 path: '/payment',
-                component:() => import("../views/Payment.vue")
+                component: () => import("../views/Payment.vue")
             },
             {
                 name: 'orderSucces',
                 path: '/orderSucces',
-                component:() => import("../views/OrderSucces.vue")
+                component: () => import("../views/OrderSucces.vue")
             },
             {
-                name: 'Allproduct',
-                path: '/Allproduct',
-                component: () => import("../views/products/AllProduct.vue"),
+                name: 'Product',
+                path: '/product',
+                component: () => import("../views/products/Product.vue"),
+            },
+            {
+                name: 'ProductDetail',
+                path: '/product/:id',
+                component: () => import("../views/products/ProductDetail.vue"),
             },
             {
                 name: 'userprofile',
                 path: '/userprofile',
                 component: () => import("../views/UserProfile.vue"),
-                // meta: { requiresAuth: true },
+                meta: { requiresAuth: true },
             },
         ]
     },
     {
-        path: '/dashboard',
+        path: '/admin/dashboard',
         component: Mainlayout,
-        // meta: { requiresAuth: true, requireRole: 'admin' },
+        meta: { requiresAuth: true, requiresAdmin: true },
         children: [
             {
-            name: 'DashboardHome',
-            path: '',
-            component: () => import('../views/dashboard/Dashboard.vue'),
+                name: 'DashboardHome',
+                path: '',
+                component: () => import('../views/dashboard/Dashboard.vue'),
             },
             {
-                path: '/add-product',
+                path: '/admin/add-product',
                 name: 'addproduct',
                 component: () => import('../views/dashboard/AddProduct.vue')
             },
             {
-                path: '/manage-stock',
+                path: '/admin/manage-products',
+                name: 'manageproducts',
+                component: () => import('../views/dashboard/ManageProducts.vue')
+            },
+            {
+                path: '/admin/manage-stock',
                 name: 'managestock',
                 component: () => import('../views/dashboard/ManageStocks.vue')
             },
             {
-                path: '/manage-user',
+                path: '/admin/manage-user',
                 name: 'manageuser',
                 component: () => import('../views/dashboard/ManageUser.vue')
             },
             {
-                path: '/analytics',
+                path: '/admin/analytics',
                 name: 'analytics',
                 component: () => import('../views/dashboard/Analytic.vue')
             },
             {
-                path: '/report',
+                path: '/admin/report',
                 name: 'report',
                 component: () => import('../views/dashboard/Reports.vue')
             },
@@ -116,18 +130,26 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
     const authStore = useAuthStore();
     const isAuthenticated = authStore.isAuthenticated;
-    const userRole = authStore.user?.role;
+    const user = authStore.user;
 
+    // Check if route requires authentication
     if (to.meta.requiresAuth && !isAuthenticated) {
-        return next({ name: 'Login' });
+        return next({ name: 'login' });
     }
 
-    else if (to.meta.requireRole && to.meta.requireRole !== userRole) {
-        return next({ name: 'DashboardHome' });
+    // Check if route requires admin privileges (role_id = 1)
+    if (to.meta.requiresAdmin && (!user || user.role_id !== 1)) {
+        return next({ name: 'home' });
     }
 
-    else if ((to.name === 'Login' || to.name === 'Register') && isAuthenticated) {
-        return next({ name: 'Home' });
+    // Redirect authenticated users away from login/register pages
+    if ((to.name === 'login' || to.name === 'register') && isAuthenticated) {
+        // Redirect based on role
+        if (user.role_id === 1) {
+            return next({ name: 'DashboardHome' });
+        } else {
+            return next({ name: 'home' });
+        }
     }
 
     next();

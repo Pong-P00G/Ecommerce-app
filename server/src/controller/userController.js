@@ -11,9 +11,10 @@ export const getAllUsers = async (req, res) => {
     }
 };
 
+// Get user by ID
 export const getUserById = async (req, res) => {
     try {
-        const users = await userService.getUserById();
+        const users = await userService.getUserById(req.params.id);
         res.json(users);
     } catch (error) {
         res.status(404).json({ message: error.message });
@@ -29,7 +30,6 @@ export const createUsers = async (req, res) => {
         res.status(400).json({ message: error.message });
     }
 };
-
 
 // Update User
 export const updateUser = async (req, res) => {
@@ -53,36 +53,104 @@ export const deleteUser = async (req, res) => {
     }
 };
 
-
-// Login User
-export const loginUser = async (req, res) => {
+// Register User
+export const registerUser = async (req, res) => {
     try {
-        const { email, username, password } = req.body;
-        const user = await userService.verifyUser(email, username, password);
-        if (!user) {
-            return res.status(400).json({ message: 'Invalid credentials' });
-        }
-        const token = jwt.sign({ id: user.userid, role: user.role }, process.env.JWT_SECRET, {
-            expiresIn: '1h',
+        const newUser = await userService.register(req.body);
+        
+        // Generate token for auto-login after registration
+        const token = jwt.sign(
+            { id: newUser.user_id, role_id: newUser.role_id },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+        
+        res.status(201).json({ 
+            user: newUser, 
+            token,
+            message: 'Registration successful' 
         });
-        const admin = user.role === 'admin';
-        res.json({ token, user, admin });
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
 };
 
-//Register User
-export const registerUser = async (req, res) => {
-    const { username, email, passwordhash, fullname } = req.body;
-    if (!username || !email || !passwordhash) {
-        return res.status(400).json({ message: 'Username, email, and password are required' });
-    }
-
+// Login User - supports both email and username
+export const loginUser = async (req, res) => {
     try {
-        const newUser = await userService.createUsers(req.body);
-        res.status(201).json(newUser);
+        const { identifier, password } = req.body;
+        
+        if (!identifier || !password) {
+            return res.status(400).json({ 
+                message: 'Email/Username and password are required' 
+            });
+        }
+        
+        // Login with identifier (can be email or username)
+        const user = await userService.login(identifier, password);
+        
+        // Generate JWT token
+        const token = jwt.sign(
+            { id: user.user_id, role_id: user.role_id },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+        
+        // Remove password from response
+        const { password_hash, ...userWithoutPassword } = user;
+        
+        res.json({ 
+            token, 
+            user: userWithoutPassword,
+            message: 'Login successful'
+        });
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(401).json({ message: error.message });
     }
-}
+};
+
+// Check username availability
+export const checkUsername = async (req, res) => {
+    try {
+        const { username } = req.params;
+
+        if (!username || username.length < 4) {
+            return res.status(400).json({
+                available: false,
+                message: 'Username must be at least 4 characters'
+            });
+        }
+
+        const existingUser = await userService.getUserByUsername(username);
+
+        res.json({
+            available: !existingUser,
+            message: existingUser ? 'Username already taken' : 'Username available'
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Check email availability
+export const checkEmail = async (req, res) => {
+    try {
+        const { email } = req.params;
+
+        if (!email) {
+            return res.status(400).json({
+                available: false,
+                message: 'Email is required'
+            });
+        }
+
+        const exists = await userService.emailExists(email);
+
+        res.json({
+            available: !exists,
+            message: exists ? 'Email already registered' : 'Email available'
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};

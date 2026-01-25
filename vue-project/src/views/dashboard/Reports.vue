@@ -1,233 +1,272 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { FileDown, BarChart3, RefreshCw, Download, Filter, XCircle } from 'lucide-vue-next';
-import html2pdf from 'html2pdf.js';
+import { ref } from 'vue';
 
-const dateFrom = ref(new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().slice(0, 10));
-const dateTo = ref(new Date().toISOString().slice(0, 10));
 const reportType = ref('sales');
-const loading = ref(false);
-const rows = ref([]);
-const reportEl = ref(null);
+const dateRange = ref('month');
+const startDate = ref('');
+const endDate = ref('');
+const generating = ref(false);
 
-const metrics = computed(() => {
-  if (!rows.value.length) {
-    return { total: 0, revenue: 0, avg: 0, refunds: 0 };
-  }
-  const total = rows.value.length;
-  const revenue = rows.value.reduce((s, r) => s + (r.total || 0), 0);
-  const refunds = rows.value.filter(r => r.status === 'Refunded').length;
-  const avg = revenue / (total || 1);
-  return { total, revenue, avg, refunds };
-});
+const reportHistory = ref([
+  { id: 1, name: 'Sales Report - January 2026', type: 'Sales', date: '2026-01-24', size: '245 KB' },
+  { id: 2, name: 'Inventory Report - January 2026', type: 'Inventory', date: '2026-01-23', size: '189 KB' },
+  { id: 3, name: 'Customer Report - January 2026', type: 'Customer', date: '2026-01-22', size: '156 KB' },
+  { id: 4, name: 'Sales Report - December 2025', type: 'Sales', date: '2026-01-15', size: '298 KB' }
+]);
 
-function resetFilters() {
-  dateFrom.value = new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().slice(0, 10);
-  dateTo.value = new Date().toISOString().slice(0, 10);
-  reportType.value = 'sales';
-  rows.value = [];
-}
+const reportTypes = [
+  { value: 'sales', label: 'Sales Report', icon: '📊', desc: 'Revenue, orders, and sales analytics' },
+  { value: 'inventory', label: 'Inventory Report', icon: '📦', desc: 'Stock levels and product performance' },
+  { value: 'customer', label: 'Customer Report', icon: '👥', desc: 'Customer data and behavior' },
+  { value: 'financial', label: 'Financial Report', icon: '💰', desc: 'Profit, expenses, and financial metrics' }
+];
 
+const generateReport = async () => {
+  generating.value = true;
 
+  // Simulate report generation
+  await new Promise(resolve => setTimeout(resolve, 2000));
 
-import { getReport } from '../../api/api.js';
-
-async function generateReport() {
-  loading.value = true;
-  try {
-    const response = await getReport({ 
-      type: reportType.value, 
-      from: dateFrom.value, 
-      to: dateTo.value 
-    });
-    rows.value = response.data;
-  } catch (error) {
-    console.error(error);
-  } finally {
-    loading.value = false;
-  }
-}
-
-function exportCSV() {
-  if (!rows.value.length) return;
-  const items = rows.value;
-  const headers = Object.keys(items[0]);
-  const csv = [
-    headers.join(','),
-    ...items.map(row =>
-      headers
-        .map(h => {
-          const v = row[h] ?? '';
-          const s = typeof v === 'string' ? v.replace(/"/g, '""') : String(v);
-          return `"${s}"`;
-        })
-        .join(',')
-    )
-  ].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `report_${reportType.value}_${dateFrom.value}_${dateTo.value}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function exportPDF() {
-  if (!rows.value.length || !reportEl.value) return;
-  const opt = {
-    margin: 10,
-    filename: `report_${reportType.value}_${dateFrom.value}_${dateTo.value}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+  const newReport = {
+    id: reportHistory.value.length + 1,
+    name: `${reportTypes.find(t => t.value === reportType.value).label} - ${new Date().toLocaleDateString()}`,
+    type: reportTypes.find(t => t.value === reportType.value).label,
+    date: new Date().toISOString().split('T')[0],
+    size: Math.floor(Math.random() * 300) + 100 + ' KB'
   };
-  html2pdf().set(opt).from(reportEl.value).save();
-}
+
+  reportHistory.value.unshift(newReport);
+  generating.value = false;
+
+  alert('Report generated successfully!');
+};
+
+const downloadReport = (report) => {
+  alert(`Downloading: ${report.name}`);
+  // TODO: Implement actual download
+};
+
+const deleteReport = (reportId) => {
+  if (confirm('Are you sure you want to delete this report?')) {
+    const index = reportHistory.value.findIndex(r => r.id === reportId);
+    if (index !== -1) {
+      reportHistory.value.splice(index, 1);
+      alert('Report deleted successfully!');
+    }
+  }
+};
+
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+};
 </script>
 
 <template>
-  <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 class="text-2xl font-semibold tracking-tight">Reports</h1>
-        <p class="text-gray-500">Generate and export dashboard reports.</p>
+  <div class="min-h-screen bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <!-- Header -->
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Reports</h1>
+        <p class="text-gray-600 mt-1">Generate and download business reports</p>
       </div>
-      <div class="flex gap-2">
-        <button type="button" class="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-gray-50 disabled:opacity-60"
-          @click="exportCSV" :disabled="!rows.length" aria-label="Export CSV">
-          <Download class="h-4 w-4" aria-hidden="true" />
-          CSV
-        </button>
-        <button type="button" class="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-gray-50 disabled:opacity-60" @click="exportPDF"
-          :disabled="!rows.length" aria-label="Export PDF">
-          <FileDown class="h-4 w-4" aria-hidden="true" />
-          PDF
-        </button>
-      </div>
-    </div>
-    <!-- Filters -->
-    <div class="rounded-xl border bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-      <div class="grid gap-3 md:grid-cols-5">
-        <div class="md:col-span-2">
-          <label for="from" class="mb-1 block text-sm font-medium">From</label>
-          <input id="from" type="date" v-model="dateFrom" class="w-full rounded-lg border px-3 py-2 text-sm" />
-        </div>
-        <div class="md:col-span-2">
-          <label for="to" class="mb-1 block text-sm font-medium">To</label>
-          <input id="to" type="date" v-model="dateTo" class="w-full rounded-lg border px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label for="type" class="mb-1 block text-sm font-medium">Type</label>
-          <select id="type" v-model="reportType" class="w-full rounded-lg border px-3 py-2 text-sm">
-            <option value="sales">Sales</option>
-            <option value="users">Users</option>
-            <option value="inventory">Inventory</option>
-          </select>
-        </div>
-      </div>
-      <div class="mt-4 flex items-center justify-end gap-2">
-        <button type="button" class="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-gray-50" @click="resetFilters">
-          <XCircle class="h-4 w-4" aria-hidden="true" />
-          Reset
-        </button>
-        <button type="button" class="inline-flex items-center gap-2 rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-black/90 disabled:opacity-60"
-          @click="generateReport" :disabled="loading">
-          <RefreshCw class="h-4 w-4 animate-spin" v-if="loading" aria-hidden="true" />
-          <Filter class="h-4 w-4" v-else aria-hidden="true" />
-          {{ loading ? 'Generating...' : 'Generate' }}
-        </button>
-      </div>
-    </div>
-    <!-- Metrics -->
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" v-if="rows.length">
-      <div class="rounded-xl border bg-white p-4">
-        <div class="text-sm text-gray-500">Records</div>
-        <div class="text-2xl font-semibold">{{ metrics.total.toLocaleString() }}</div>
-      </div>
-      <div class="rounded-xl border bg-white p-4" v-if="reportType === 'sales'">
-        <div class="text-sm text-gray-500">Revenue</div>
-        <div class="text-2xl font-semibold">
-          {{ new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(metrics.revenue) }}
-        </div>
-      </div>
-      <div class="rounded-xl border bg-white p-4" v-if="reportType === 'sales'">
-        <div class="text-sm text-gray-500">Avg Order</div>
-        <div class="text-2xl font-semibold">
-          {{ new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(metrics.avg) }}
-        </div>
-      </div>
-      <div class="rounded-xl border bg-white p-4" v-if="reportType === 'sales'">
-        <div class="text-sm text-gray-500">Refunds</div>
-        <div class="text-2xl font-semibold">{{ metrics.refunds }}</div>
-      </div>
-    </div>
-    <!-- Chart + Table -->
-    <div class="grid gap-4 lg:grid-cols-3" v-if="rows.length" ref="reportEl">
-      <div class="rounded-xl border bg-white p-4 lg:col-span-2">
-        <div class="mb-3 flex items-center justify-between">
-          <h2 class="text-lg font-semibold">Overview</h2>
-          <BarChart3 class="h-4 w-4 text-gray-400" aria-hidden="true" />
-        </div>
-        <div class="grid h-64 place-items-center rounded-lg border border-dashed text-gray-400">
-          Chart coming soon
-        </div>
-      </div>
-      <div class="rounded-xl border bg-white p-4 overflow-x-auto">
-        <h2 class="mb-3 text-lg font-semibold">Sample Data</h2>
-        <table class="min-w-full text-left text-sm">
-          <thead class="text-xs text-gray-500">
-            <tr>
-              <th class="px-3 py-2">ID</th>
-              <th class="px-3 py-2">Date</th>
-              <th class="px-3 py-2" v-if="reportType === 'sales'">Customer</th>
-              <th class="px-3 py-2" v-if="reportType === 'sales'">Total</th>
-              <th class="px-3 py-2" v-if="reportType === 'sales'">Status</th>
 
-              <th class="px-3 py-2" v-if="reportType === 'users'">Name</th>
-              <th class="px-3 py-2" v-if="reportType === 'users'">Email</th>
-              <th class="px-3 py-2" v-if="reportType === 'users'">Role</th>
-              <th class="px-3 py-2" v-if="reportType === 'users'">Status</th>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Report Generator -->
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Report Type Selection -->
+          <div class="bg-white rounded-2xl shadow-sm p-6">
+            <h2 class="text-lg font-bold text-gray-900 mb-6">Generate New Report</h2>
 
-              <th class="px-3 py-2" v-if="reportType === 'inventory'">SKU</th>
-              <th class="px-3 py-2" v-if="reportType === 'inventory'">Stock</th>
-              <th class="px-3 py-2" v-if="reportType === 'inventory'">Change</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="r in rows" :key="r.id" class="border-t">
-              <td class="px-3 py-2">{{ r.id }}</td>
-              <td class="px-3 py-2">{{ r.date }}</td>
-              <td class="px-3 py-2" v-if="reportType === 'sales'">{{ r.customer }}</td>
-              <td class="px-3 py-2" v-if="reportType === 'sales'">
-                {{ new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(r.total) }}
-              </td>
-              <td class="px-3 py-2" v-if="reportType === 'sales'">
-                <span class="rounded-full px-2 py-0.5 text-xs" :class="r.status === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
-                  {{ r.status }}
-                </span>
-              </td>
-              <td class="px-3 py-2" v-if="reportType === 'users'">{{ r.name }}</td>
-              <td class="px-3 py-2" v-if="reportType === 'users'">{{ r.email }}</td>
-              <td class="px-3 py-2" v-if="reportType === 'users'">{{ r.role }}</td>
-              <td class="px-3 py-2" v-if="reportType === 'users'">
-                <span class="rounded-full px-2 py-0.5 text-xs" :class="r.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'">
-                  {{ r.status }}
-                </span>
-              </td>
-              <td class="px-3 py-2" v-if="reportType === 'inventory'">{{ r.sku }}</td>
-              <td class="px-3 py-2" v-if="reportType === 'inventory'">{{ r.stock }}</td>
-              <td class="px-3 py-2" v-if="reportType === 'inventory'">
-                <span :class="r.change >= 0 ? 'text-green-700' : 'text-red-700'">{{ r.change }}</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <label v-for="type in reportTypes" :key="type.value" :class="{
+                'border-gray-900 bg-gray-50': reportType === type.value,
+                'border-gray-200': reportType !== type.value
+              }"
+                class="flex items-start gap-4 p-4 border-2 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                <input v-model="reportType" type="radio" :value="type.value" class="mt-1" />
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="text-2xl">{{ type.icon }}</span>
+                    <p class="font-semibold text-gray-900">{{ type.label }}</p>
+                  </div>
+                  <p class="text-sm text-gray-600">{{ type.desc }}</p>
+                </div>
+              </label>
+            </div>
+
+            <!-- Date Range -->
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-900 mb-2">Date Range</label>
+                <select v-model="dateRange"
+                  class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white">
+                  <option value="week">Last 7 Days</option>
+                  <option value="month">Last 30 Days</option>
+                  <option value="quarter">Last 3 Months</option>
+                  <option value="year">Last Year</option>
+                  <option value="custom">Custom Range</option>
+                </select>
+              </div>
+
+              <!-- Custom Date Range -->
+              <div v-if="dateRange === 'custom'" class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-900 mb-2">Start Date</label>
+                  <input v-model="startDate" type="date"
+                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400" />
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-900 mb-2">End Date</label>
+                  <input v-model="endDate" type="date"
+                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Generate Button -->
+            <button @click="generateReport" :disabled="generating"
+              class="w-full mt-6 px-6 py-4 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+              <svg v-if="!generating" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <div v-else class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              {{ generating ? 'Generating Report...' : 'Generate Report' }}
+            </button>
+          </div>
+
+          <!-- Report Preview Info -->
+          <div class="bg-blue-50 border border-blue-200 rounded-2xl p-6">
+            <div class="flex gap-3">
+              <svg class="h-6 w-6 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p class="font-semibold text-blue-900 mb-1">Report Information</p>
+                <p class="text-sm text-blue-700">
+                  Your report will include detailed analytics, charts, and export options.
+                  Reports are generated in real-time and can be downloaded as PDF or CSV.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="space-y-6">
+          <div class="bg-white rounded-2xl shadow-sm p-6">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">Quick Stats</h3>
+
+            <div class="space-y-4">
+              <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                <div>
+                  <p class="text-sm text-green-600 font-medium">Total Reports</p>
+                  <p class="text-2xl font-bold text-green-900">{{ reportHistory.length }}</p>
+                </div>
+                <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+
+              <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                <div>
+                  <p class="text-sm text-blue-600 font-medium">This Month</p>
+                  <p class="text-2xl font-bold text-blue-900">3</p>
+                </div>
+                <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Export Formats -->
+          <div class="bg-white rounded-2xl shadow-sm p-6">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">Export Formats</h3>
+
+            <div class="space-y-2">
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                  <span class="text-sm font-bold text-red-600">PDF</span>
+                </div>
+                <div class="flex-1">
+                  <p class="text-sm font-semibold text-gray-900">PDF Document</p>
+                  <p class="text-xs text-gray-500">Formatted report</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <span class="text-sm font-bold text-green-600">CSV</span>
+                </div>
+                <div class="flex-1">
+                  <p class="text-sm font-semibold text-gray-900">CSV Spreadsheet</p>
+                  <p class="text-xs text-gray-500">Raw data export</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <span class="text-sm font-bold text-blue-600">XLS</span>
+                </div>
+                <div class="flex-1">
+                  <p class="text-sm font-semibold text-gray-900">Excel File</p>
+                  <p class="text-xs text-gray-500">Advanced formatting</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-    <div v-else class="rounded-xl border border-dashed bg-white p-10 text-center text-gray-500">
-      Choose filters and click Generate to see results.
+
+      <!-- Report History -->
+      <div class="mt-8 bg-white rounded-2xl shadow-sm p-6">
+        <h2 class="text-lg font-bold text-gray-900 mb-6">Report History</h2>
+
+        <div class="space-y-3">
+          <div v-for="report in reportHistory" :key="report.id"
+            class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg transition-colors">
+            <div class="flex items-center gap-4 flex-1">
+              <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+                <svg class="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold text-gray-900 truncate">{{ report.name }}</p>
+                <div class="flex items-center gap-3 mt-1">
+                  <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
+                    {{ report.type }}
+                  </span>
+                  <span class="text-sm text-gray-500">{{ formatDate(report.date) }}</span>
+                  <span class="text-sm text-gray-500">{{ report.size }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button @click="downloadReport(report)"
+                class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium flex items-center gap-2">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download
+              </button>
+              <button @click="deleteReport(report.id)" class="p-2 text-gray-400 hover:text-red-600 transition-colors">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>

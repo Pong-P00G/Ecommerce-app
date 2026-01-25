@@ -1,16 +1,68 @@
-import JWT from 'jsonwebtoken'
+import jwt from 'jsonwebtoken';
 
-const authenticateToken = (req, res, next) => {
-    const authHeader = req.get("Authorization");
-    const token = authHeader && authHeader.split(" ")[1];
+const protect = async (req, res, next) => {
+    try {
+        let token;
+        // Check for token in Authorization header
+        if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+            token = req.headers.authorization.split(' ')[1];
+        }
+        if (!token) {
+            return res.status(401).json({ message: 'Not authorized, no token provided' });
+        }
+        // Verify token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    if (!token) return res.status(403).json({ message: "Acess denied, no token provided" });
-
-    JWT.verify(token, process.env.JWT_SECRET, (err, user) => {
-        if (err) return res.status(404).json({ message: "Invalid or expired token" });
-        req.user = user;
+        // Attach user info to request
+        req.user = {
+            id: decoded.id,
+            role_id: decoded.role_id
+        };
         next();
-    });
+    } catch (error) {
+        return res.status(401).json({ message: 'Not authorized, token failed' });
+    }
 };
 
-export default authenticateToken;
+// Check is admin
+export const isAdmin = (req, res, next) => {
+    // Check if user exists (should be set by protect middleware)
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            message: 'Not authorized, no user found'
+        });
+    }
+
+    // Check if user has admin role (role_id = 1)
+    if (req.user.role_id !== 1) {
+        return res.status(403).json({
+            success: false,
+            message: 'Access denied. Admin privileges required.'
+        });
+    }
+
+    next();
+};
+
+// Check is user
+export const isUser = (req, res, next) => {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            message: 'Not authorized, no user found'
+        });
+    }
+
+    // Check if user has User role (role_id = 2)
+    if (req.user.role_id !== 2) {
+        return res.status(403).json({
+            success: false,
+            message: 'Access denied. User role required.'
+        });
+    }
+
+    next();
+};
+
+export default protect;

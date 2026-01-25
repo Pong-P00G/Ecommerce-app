@@ -11,7 +11,14 @@ export default defineConfig({
     tailwindcss()
   ],
   server: {
-    port: Number(process.env.VITE_PORT) || 3001
+    port: Number(process.env.VITE_PORT) || 3001,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    },
   },
   resolve: {
     alias: {

@@ -1,0 +1,239 @@
+import Joi from 'joi';
+
+// ==================== VALIDATION MIDDLEWARE ====================
+
+export const validate = (req, res, next) => {
+    if (req.validationErrors) {
+        return res.status(400).json({
+            success: false,
+            errors: req.validationErrors
+        });
+    }
+    next();
+};
+
+// ==================== COMPLETE PRODUCT VALIDATION ====================
+
+export const validateCompleteProduct = (req, res, next) => {
+    const schema = Joi.object({
+        category_id: Joi.number().integer().positive().optional().allow(null),
+        product_name: Joi.string().min(1).max(150).required(),
+        base_price: Joi.number().positive().required(),
+        descriptions: Joi.string().max(1000).allow('', null).optional(),
+        product_status: Joi.string().valid('active', 'inactive', 'draft', 'out_of_stock').optional().default('active'),
+
+        images: Joi.array().items(
+            Joi.object({
+                image_url: Joi.string().uri().required(),
+                is_main: Joi.boolean().optional()
+            })
+        ).optional(),
+
+        variants: Joi.array().items(
+            Joi.object({
+                variant_name: Joi.string().min(1).max(200).required(),
+                sku: Joi.string().max(100).optional().allow('', null),
+                variant_color: Joi.string().max(200).optional().allow('', null),
+                variant_size: Joi.string().max(200).optional().allow('', null),
+                stock_quantity: Joi.number().integer().min(0).optional().default(0),
+                reorder_level: Joi.number().integer().min(0).optional().default(5)
+            })
+        ).optional()
+    });
+
+    const { error } = schema.validate(req.body, { abortEarly: false });
+    
+    if (error) {
+        return res.status(400).json({
+            success: false,
+            errors: error.details.map(detail => ({
+                field: detail.path.join('.'),
+                message: detail.message
+            }))
+        });
+    }
+    
+    next();
+};
+
+// ==================== PAGINATION VALIDATION ====================
+
+export const validatePagination = (req, res, next) => {
+    const schema = Joi.object({
+        page: Joi.number().integer().min(1).optional().default(1),
+        pageSize: Joi.number().integer().min(1).max(100).optional().default(10),
+        search: Joi.string().optional().allow(''),
+        category: Joi.string().optional().allow(''),
+        minPrice: Joi.number().min(0).optional(),
+        maxPrice: Joi.number().min(0).optional(),
+        status: Joi.string().valid('active', 'inactive', 'draft', 'out_of_stock').optional()
+    });
+
+    const { error } = schema.validate(req.query, { abortEarly: false });
+    
+    if (error) {
+        return res.status(400).json({
+            success: false,
+            errors: error.details.map(detail => ({
+                field: detail.path.join('.'),
+                message: detail.message
+            }))
+        });
+    }
+    
+    next();
+};
+
+// ==================== PRODUCT VALIDATION ====================
+
+export const validateProduct = (req, res, next) => {
+    const schema = Joi.object({
+        category_id: Joi.number().integer().positive().optional().allow(null),
+        product_name: Joi.string().min(1).max(150).required(),
+        base_price: Joi.number().positive().required(),
+        descriptions: Joi.string().max(1000).allow('', null).optional(),
+        product_status: Joi.string().valid('active', 'inactive', 'draft', 'out_of_stock').required()
+    });
+
+    const { error } = schema.validate(req.body, { abortEarly: false });
+    
+    if (error) {
+        req.validationErrors = error.details.map(detail => ({
+            field: detail.path[0],
+            message: detail.message
+        }));
+    }
+    
+    next();
+};
+
+// ==================== CATEGORY VALIDATION ====================
+
+export const validateCategory = (req, res, next) => {
+    const schema = Joi.object({
+        name: Joi.string().min(2).max(150).required()
+    });
+
+    const { error } = schema.validate(req.body, { abortEarly: false });
+    
+    if (error) {
+        req.validationErrors = error.details.map(detail => ({
+            field: detail.path[0],
+            message: detail.message
+        }));
+    }
+    
+    next();
+};
+
+// ==================== VARIANT VALIDATION ====================
+
+export const validateVariant = (req, res, next) => {
+    const schema = Joi.object({
+        product_id: Joi.number().integer().positive().required(),
+        variant_name: Joi.string().min(1).max(200).required(),
+        sku: Joi.string().max(100).optional().allow('', null),
+        variant_color: Joi.string().max(200).optional().allow('', null),
+        variant_size: Joi.string().max(200).optional().allow('', null),
+        initial_stock: Joi.number().integer().min(0).optional()
+    });
+
+    const { error } = schema.validate(req.body, { abortEarly: false });
+    
+    if (error) {
+        req.validationErrors = error.details.map(detail => ({
+            field: detail.path[0],
+            message: detail.message
+        }));
+    }
+    
+    next();
+};
+
+// ==================== STOCK VALIDATION ====================
+
+export const validateStock = (req, res, next) => {
+    const schema = Joi.object({
+        quantity: Joi.number().integer().min(0).required(),
+        reorder_level: Joi.number().integer().min(0).optional().default(5),
+        amount: Joi.number().integer().positive().optional()
+    });
+
+    const { error } = schema.validate(req.body, { abortEarly: false });
+    
+    if (error) {
+        req.validationErrors = error.details.map(detail => ({
+            field: detail.path[0],
+            message: detail.message
+        }));
+    }
+    
+    next();
+};
+
+// ==================== DISCOUNT VALIDATION ====================
+
+export const validateDiscount = (req, res, next) => {
+    const schema = Joi.object({
+        discount_amount: Joi.number().positive().required(),
+        start_date: Joi.date().required(),
+        end_date: Joi.date().greater(Joi.ref('start_date')).required()
+    });
+
+    const { error } = schema.validate(req.body, { abortEarly: false });
+    
+    if (error) {
+        req.validationErrors = error.details.map(detail => ({
+            field: detail.path[0],
+            message: detail.message
+        }));
+    }
+    
+    next();
+};
+
+// ==================== BULK VALIDATION ====================
+
+export const validateBulkProducts = (req, res, next) => {
+    const schema = Joi.object({
+        products: Joi.array().items(
+            Joi.object({
+                category_id: Joi.number().integer().positive().optional().allow(null),
+                product_name: Joi.string().min(1).max(150).required(),
+                base_price: Joi.number().positive().required(),
+                descriptions: Joi.string().max(1000).allow('', null).optional(),
+                product_status: Joi.string().valid('active', 'inactive', 'draft', 'out_of_stock').optional(),
+                images: Joi.array().items(
+                    Joi.object({
+                        image_url: Joi.string().uri().required(),
+                        is_main: Joi.boolean().optional()
+                    })
+                ).optional(),
+                variants: Joi.array().items(
+                    Joi.object({
+                        variant_name: Joi.string().min(1).max(200).required(),
+                        sku: Joi.string().max(100).optional().allow('', null),
+                        variant_color: Joi.string().max(200).optional().allow('', null),
+                        variant_size: Joi.string().max(200).optional().allow('', null),
+                        stock_quantity: Joi.number().integer().min(0).optional(),
+                        reorder_level: Joi.number().integer().min(0).optional()
+                    })
+                ).optional()
+            })
+        ).min(1).max(50).required()
+    });
+
+    const { error } = schema.validate(req.body, { abortEarly: false });
+    
+    if (error) {
+        return res.status(400).json({
+            success: false,
+            errors: error.details.map(detail => ({
+                field: detail.path.join('.'),
+                message: detail.message
+            }))
+        });
+    }
+    
+    next();
+};

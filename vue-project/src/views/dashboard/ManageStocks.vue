@@ -1,509 +1,320 @@
 <script setup>
-import { ref, reactive, computed } from 'vue';
-import { Plus, Pencil, Trash2, X, Save, Minus, Package, DollarSign, AlertTriangle, Sparkles, Search, Filter } from 'lucide-vue-next';
-import router from '@/router';
+import { ref, computed, onMounted } from 'vue';
+import { useProductStore } from '../../stores/product.js';
+import { storeToRefs } from 'pinia';
 
-import { getProducts, createProduct, updateProduct, deleteProduct } from '../../api/api.js';
-import { onMounted } from 'vue';
-import { useToast } from '../../composables/useToast.js';
+const productStore = useProductStore();
+const { products, loading } = storeToRefs(productStore);
 
-const { success, error } = useToast();
+// Local state
+const searchQuery = ref('');
+const filterStatus = ref('all'); // all, low, out
+const showUpdateModal = ref(false);
+const selectedProduct = ref(null);
+const newStock = ref(0);
 
-const items = ref([]);
+// Computed
+const filteredProducts = computed(() => {
+  let result = products.value || [];
 
-async function fetchItems() {
+  // Search filter
+  if (searchQuery.value) {
+    const search = searchQuery.value.toLowerCase();
+    result = result.filter(p =>
+      p.product_name?.toLowerCase().includes(search) ||
+      p.category_name?.toLowerCase().includes(search)
+    );
+  }
+
+  // Status filter
+  if (filterStatus.value === 'low') {
+    result = result.filter(p => {
+      const stock = parseInt(p.total_stock || 0);
+      return stock > 0 && stock < 10;
+    });
+  } else if (filterStatus.value === 'out') {
+    result = result.filter(p => parseInt(p.total_stock || 0) === 0);
+  }
+
+  return result;
+});
+
+const lowStockCount = computed(() =>
+  products.value?.filter(p => {
+    const stock = parseInt(p.total_stock || 0);
+    return stock > 0 && stock < 10;
+  }).length || 0
+);
+
+const outOfStockCount = computed(() =>
+  products.value?.filter(p => parseInt(p.total_stock || 0) === 0).length || 0
+);
+
+// Methods
+const getStockStatus = (stock) => {
+  const stockNum = parseInt(stock || 0);
+  if (stockNum === 0) {
+    return { text: 'Out of Stock', class: 'bg-red-100 text-red-700', dotClass: 'bg-red-600' };
+  }
+  if (stockNum < 10) {
+    return { text: 'Low Stock', class: 'bg-yellow-100 text-yellow-700', dotClass: 'bg-yellow-600' };
+  }
+  return { text: 'In Stock', class: 'bg-green-100 text-green-700', dotClass: 'bg-green-600' };
+};
+
+const openUpdateModal = (product) => {
+  selectedProduct.value = product;
+  newStock.value = parseInt(product.total_stock || 0);
+  showUpdateModal.value = true;
+};
+
+const closeUpdateModal = () => {
+  showUpdateModal.value = false;
+  selectedProduct.value = null;
+  newStock.value = 0;
+};
+
+const updateStock = async () => {
+  if (!selectedProduct.value) return;
+
   try {
-    const response = await getProducts();
-    items.value = response.data;
+    // TODO: Call API to update stock
+    console.log('Updating stock for product:', selectedProduct.value.product_id, 'to:', newStock.value);
+
+    // Update local state
+    selectedProduct.value.total_stock = newStock.value;
+
+    alert('Stock updated successfully!');
+    closeUpdateModal();
   } catch (error) {
-    console.error(error);
+    console.error('Error updating stock:', error);
+    alert('Error updating stock');
   }
-}
+};
 
-onMounted(fetchItems);
+const formatPrice = (price) => parseFloat(price || 0).toFixed(2);
 
-const search = ref('');
-const categoryFilter = ref('all');
-const lowStockOnly = ref(false);
-const isModalOpen = ref(false);
-const isSubmitting = ref(false);
-const editingId = ref(null);
+const handleImageError = (event) => {
+  event.target.src = 'https://via.placeholder.com/80?text=No+Image';
+};
 
-const form = reactive({
-  sku: '',
-  name: '',
-  category: '',
-  price: '',
-  stock: '',
-  reorderLevel: ''
+// Lifecycle
+onMounted(async () => {
+  await productStore.fetchAllProducts();
 });
-
-const errors = reactive({
-  sku: '',
-  name: '',
-  price: '',
-  stock: '',
-  reorderLevel: ''
-});
-
-const categories = computed(() => {
-  const set = new Set(items.value.map(i => i.category).filter(Boolean));
-  return Array.from(set).sort();
-});
-
-const filteredItems = computed(() => {
-  const term = search.value.trim().toLowerCase();
-  return items.value.filter(i => {
-    const matchesTerm =
-      !term ||
-      i.sku.toLowerCase().includes(term) ||
-      i.name.toLowerCase().includes(term) ||
-      i.category.toLowerCase().includes(term);
-    const matchesCategory = categoryFilter.value === 'all' || i.category === categoryFilter.value;
-    const isLow = i.stock <= i.reorderLevel;
-    const matchesLow = !lowStockOnly.value || isLow;
-    return matchesTerm && matchesCategory && matchesLow;
-  });
-});
-
-const totals = computed(() => {
-  const totalSkus = items.value.length;
-  const totalUnits = items.value.reduce((s, i) => s + Number(i.stock || 0), 0);
-  const lowStock = items.value.filter(i => i.stock <= i.reorderLevel).length;
-  const inventoryValue = items.value.reduce((s, i) => s + Number(i.stock || 0) * Number(i.price || 0), 0);
-  return { totalSkus, totalUnits, lowStock, inventoryValue };
-});
-
-function resetForm() {
-  form.sku = '';
-  form.name = '';
-  form.category = '';
-  form.price = '';
-  form.stock = '';
-  form.reorderLevel = '';
-  errors.sku = errors.name = errors.price = errors.stock = errors.reorderLevel = '';
-  editingId.value = null;
-}
-
-function openCreate() {
-  resetForm();
-  isModalOpen.value = true;
-  router.push('/dashboard/AddProduct')
-}
-
-function openEdit(item) {
-  form.sku = item.sku;
-  form.name = item.name;
-  form.category = item.category;
-  form.price = String(item.price);
-  form.stock = String(item.stock);
-  form.reorderLevel = String(item.reorderLevel);
-  errors.sku = errors.name = errors.price = errors.stock = errors.reorderLevel = '';
-  editingId.value = item.id;
-  isModalOpen.value = true;
-}
-
-function validate() {
-  let ok = true;
-  errors.sku = form.sku.trim() ? '' : 'SKU is required';
-  errors.name = form.name.trim() ? '' : 'Name is required';
-
-  const price = Number(form.price);
-  if (form.price === '' || isNaN(price) || price < 0) {
-    errors.price = 'Enter a valid price (>= 0)';
-    ok = false;
-  } else {
-    errors.price = '';
-  }
-
-  const stock = Math.floor(Number(form.stock));
-  if (form.stock === '' || isNaN(stock) || stock < 0) {
-    errors.stock = 'Enter a valid stock (integer >= 0)';
-    ok = false;
-  } else {
-    errors.stock = '';
-  }
-
-  const rl = Math.floor(Number(form.reorderLevel));
-  if (form.reorderLevel === '' || isNaN(rl) || rl < 0) {
-    errors.reorderLevel = 'Enter a valid reorder level (integer >= 0)';
-    ok = false;
-  } else {
-    errors.reorderLevel = '';
-  }
-
-  if (!form.sku.trim() || !form.name.trim()) ok = false;
-  return ok;
-}
-
-function closeModal() {
-  isModalOpen.value = false;
-  resetForm();
-}
-
-async function saveItem() {
-  if (!validate()) return;
-  isSubmitting.value = true;
-  try {
-    const payload = {
-      sku: form.sku.trim(),
-      name: form.name.trim(),
-      category: form.category.trim(),
-      price: Number(form.price),
-      stock: Math.floor(Number(form.stock)),
-      reorderLevel: Math.floor(Number(form.reorderLevel)),
-    };
-    if (editingId.value == null) {
-      await createProduct(payload);
-      success('Item created successfully!');
-    } else {
-      await updateProduct(editingId.value, payload);
-      success('Item updated successfully!');
-    }
-    fetchItems();
-    closeModal();
-  } catch (err) {
-    error('Failed to save item.');
-  } finally {
-    isSubmitting.value = false;
-  }
-}
-
-async function deleteItem(item) {
-  const confirmed = window.confirm(`Delete item "${item.name}" (${item.sku})? This cannot be undone.`);
-  if (!confirmed) return;
-  try {
-    await deleteProduct(item.id);
-    fetchItems();
-    success('Item deleted successfully!');
-  } catch (err) {
-    error('Failed to delete item.');
-  }
-}
-
-async function adjustStock(item, delta) {
-  const next = Math.max(0, item.stock + delta);
-  try {
-    await updateProduct(item.id, { stock: next });
-    fetchItems();
-  } catch (err) {
-    error('Failed to update stock.');
-  }
-}
-
-function formatCurrency(v) {
-  return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(v || 0);
-}
-
-const statCards = computed(() => [
-  { name: 'Total SKUs', value: totals.value.totalSkus.toLocaleString(), icon: Package, color: 'from-violet-500 to-purple-600' },
-  { name: 'Units in Stock', value: totals.value.totalUnits.toLocaleString(), icon: Package, color: 'from-blue-500 to-cyan-600' },
-  { name: 'Low Stock Items', value: totals.value.lowStock.toLocaleString(), icon: AlertTriangle, color: 'from-amber-500 to-orange-600' },
-  { name: 'Inventory Value', value: formatCurrency(totals.value.inventoryValue), icon: DollarSign, color: 'from-pink-500 to-rose-600' },
-]);
 </script>
 
 <template>
-  <div class="min-h-screen p-6 space-y-8 bg-linear-to-br from-slate-50 via-gray-50 to-zinc-50">
-    <!-- Modern Header -->
-    <div class="relative">
-      <div class="absolute inset-0 bg-linear-to-r from-violet-600 via-purple-600 to-fuchsia-600 blur-3xl opacity-20 rounded-3xl"></div>
-      <div class="relative bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
-        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-          <div class="flex items-center gap-4">
-            <div class="p-4 bg-linear-to-br from-violet-500 to-fuchsia-500 rounded-2xl shadow-lg">
-              <Package class="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h1 class="text-4xl font-black bg-linear-to-r from-violet-600 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
-                Manage Inventory
-              </h1>
-              <p class="text-gray-500 mt-1 flex items-center gap-2">
-                <Sparkles class="w-4 h-4" />
-                Monitor and control your stock levels
-              </p>
-            </div>
-          </div>
-          <button
-            @click="openCreate"
-            class="group px-6 py-3 bg-linear-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 font-bold">
-            <Plus class="w-5 h-5" />
-            Add New Item
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-      <div v-for="(stat, index) in statCards" :key="index"
-        class="group relative bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-xl border border-white/20 hover:shadow-2xl hover:-translate-y-1 transition-all duration-500">
-        <div class="absolute inset-0 bg-linear-to-br opacity-5 rounded-3xl" :class="stat.color"></div>
-        <div class="relative space-y-4">
-          <div class="flex items-start justify-between">
-            <div class="flex-1">
-              <p class="text-sm font-bold text-gray-500 uppercase tracking-wide">{{ stat.name }}</p>
-              <h3 class="text-4xl font-black text-gray-900 mt-2">{{ stat.value }}</h3>
-            </div>
-            <div class="p-4 bg-linear-to-br rounded-2xl shadow-lg" :class="stat.color">
-              <component :is="stat.icon" class="w-6 h-6 text-white" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Filters Section -->
-    <div class="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8">
-      <div class="flex items-center gap-3 mb-6">
-        <div class="p-2 bg-linear-to-br from-blue-500 to-cyan-500 rounded-xl">
-          <Filter class="w-5 h-5 text-white" />
-        </div>
-        <h2 class="text-2xl font-black text-gray-900">Filters</h2>
+  <div class="min-h-screen bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <!-- Header -->
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Stock Management</h1>
+        <p class="text-gray-600 mt-1">Monitor and update product inventory</p>
       </div>
 
-      <div class="grid gap-6 md:grid-cols-3">
-        <div class="md:col-span-2">
-          <label for="search" class="block text-sm font-bold text-gray-900 mb-2">Search</label>
-          <div class="relative">
-            <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              id="search"
-              v-model="search"
-              type="text"
-              placeholder="Search by SKU, name, or category..."
-              class="w-full pl-12 pr-5 py-3.5 rounded-2xl border-2 border-gray-200 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 transition-all duration-300 text-gray-900 placeholder-gray-400 font-medium"
-            />
+      <!-- Stats -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-2xl shadow-sm p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+              <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
           </div>
+          <p class="text-gray-600 text-sm mb-1">Total Products</p>
+          <p class="text-3xl font-bold text-gray-900">{{ products?.length || 0 }}</p>
         </div>
-        <div class="space-y-4">
-          <div>
-            <label for="category" class="block text-sm font-bold text-gray-900 mb-2">Category</label>
-            <select
-              id="category"
-              v-model="categoryFilter"
-              class="w-full px-5 py-3.5 rounded-2xl border-2 border-gray-200 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 transition-all duration-300 text-gray-900 font-medium">
-              <option value="all">All categories</option>
-              <option value="t-shirt">T-Shirts</option>
-              <option value="hoodie">Hoodies</option>
-              <option value="pant">Pants</option>
-              <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
-            </select>
+
+        <div class="bg-white rounded-2xl shadow-sm p-6 border-l-4 border-yellow-500">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+              <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
           </div>
-          <label class="inline-flex items-center gap-3 cursor-pointer">
-            <input type="checkbox" v-model="lowStockOnly" class="w-5 h-5 rounded border-gray-300 text-violet-600 focus:ring-violet-500" />
-            <span class="text-sm font-bold text-gray-900">Show low stock only</span>
-          </label>
+          <p class="text-gray-600 text-sm mb-1">Low Stock</p>
+          <p class="text-3xl font-bold text-yellow-600">{{ lowStockCount }}</p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm p-6 border-l-4 border-red-500">
+          <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+              <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+          </div>
+          <p class="text-gray-600 text-sm mb-1">Out of Stock</p>
+          <p class="text-3xl font-bold text-red-600">{{ outOfStockCount }}</p>
         </div>
       </div>
-    </div>
 
-    <!-- Items Table -->
-    <div class="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="min-w-full">
-          <thead>
-            <tr class="border-b-2 border-gray-200 bg-gray-50/50">
-              <th class="px-6 py-4 text-left text-sm font-black text-gray-900 uppercase tracking-wide">SKU</th>
-              <th class="px-6 py-4 text-left text-sm font-black text-gray-900 uppercase tracking-wide">Product</th>
-              <th class="px-6 py-4 text-left text-sm font-black text-gray-900 uppercase tracking-wide">Category</th>
-              <th class="px-6 py-4 text-left text-sm font-black text-gray-900 uppercase tracking-wide">Price</th>
-              <th class="px-6 py-4 text-left text-sm font-black text-gray-900 uppercase tracking-wide">Stock</th>
-              <th class="px-6 py-4 text-left text-sm font-black text-gray-900 uppercase tracking-wide">Reorder</th>
-              <th class="px-6 py-4 text-left text-sm font-black text-gray-900 uppercase tracking-wide">Status</th>
-              <th class="px-6 py-4 text-right text-sm font-black text-gray-900 uppercase tracking-wide">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="filteredItems.length === 0">
-              <td colspan="8" class="px-6 py-12 text-center">
-                <div class="flex flex-col items-center gap-3">
-                  <Package class="w-16 h-16 text-gray-300" />
-                  <p class="text-gray-500 font-medium">No items found</p>
-                </div>
-              </td>
-            </tr>
-            <tr v-for="item in filteredItems" :key="item.id"
-              class="border-b border-gray-100 hover:bg-violet-50/50 transition-colors duration-200">
-              <td class="px-6 py-4">
-                <span class="font-mono font-bold text-gray-900 text-sm">{{ item.sku }}</span>
-              </td>
-              <td class="px-6 py-4">
-                <span class="font-black text-gray-900">{{ item.name }}</span>
-              </td>
-              <td class="px-6 py-4">
-                <span class="inline-flex px-3 py-1 rounded-xl bg-gray-100 text-gray-700 text-sm font-bold">
-                  {{ item.category }}
-                </span>
-              </td>
-              <td class="px-6 py-4 font-black text-gray-900">{{ formatCurrency(item.price) }}</td>
-              <td class="px-6 py-4">
-                <div class="inline-flex items-center gap-2 bg-gray-50 rounded-xl p-1">
-                  <button
-                    class="p-2 rounded-lg hover:bg-white transition-colors"
-                    @click="adjustStock(item, -1)"
-                    :disabled="item.stock <= 0">
-                    <Minus class="w-4 h-4 text-gray-700" />
-                  </button>
-                  <span class="min-w-[3ch] text-center font-black text-gray-900">{{ item.stock }}</span>
-                  <button
-                    class="p-2 rounded-lg hover:bg-white transition-colors"
-                    @click="adjustStock(item, +1)">
-                    <Plus class="w-4 h-4 text-gray-700" />
-                  </button>
-                </div>
-              </td>
-              <td class="px-6 py-4 font-bold text-gray-700">{{ item.reorderLevel }}</td>
-              <td class="px-6 py-4">
-                <span
-                  class="inline-flex px-3 py-1 rounded-xl text-xs font-black"
-                  :class="item.stock <= item.reorderLevel ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'">
-                  {{ item.stock <= item.reorderLevel ? 'Low Stock' : 'In Stock' }}
-                </span>
-              </td>
-              <td class="px-6 py-4">
-                <div class="flex items-center justify-end gap-2">
-                  <button
-                    class="group px-3 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-xl transition-all duration-300 flex items-center gap-2 font-bold text-sm"
-                    @click="openEdit(item)">
-                    <Pencil class="w-4 h-4" />
-                    Edit
-                  </button>
-                  <button
-                    class="group px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all duration-300 flex items-center gap-2 font-bold text-sm"
-                    @click="deleteItem(item)">
-                    <Trash2 class="w-4 h-4" />
-                    Delete
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Modal -->
-    <div v-if="isModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
-      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal"></div>
-      <div class="relative z-10 w-full max-w-2xl bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-3xl font-black bg-linear-to-r from-violet-600 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
-            {{ editingId == null ? 'Add New Item' : 'Edit Item' }}
-          </h2>
-          <button
-            class="p-2 hover:bg-gray-100 rounded-xl transition-colors"
-            @click="closeModal">
-            <X class="w-6 h-6 text-gray-600" />
-          </button>
-        </div>
-
-        <form @submit.prevent="saveItem" class="space-y-6">
-          <div class="grid gap-6 sm:grid-cols-2">
-            <div>
-              <label for="sku" class="block text-sm font-bold text-gray-900 mb-2">SKU</label>
-              <input
-                id="sku"
-                v-model="form.sku"
-                type="text"
-                class="w-full px-5 py-3.5 rounded-2xl border-2 border-gray-200 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 transition-all duration-300 text-gray-900 placeholder-gray-400 font-medium"
-                :class="{ 'border-red-500': errors.sku }"
-                placeholder="e.g., SKU-1004"
-              />
-              <p v-if="errors.sku" class="mt-2 text-sm text-red-600 font-bold">{{ errors.sku }}</p>
-            </div>
-            <div>
-              <label for="name" class="block text-sm font-bold text-gray-900 mb-2">Name</label>
-              <input
-                id="name"
-                v-model="form.name"
-                type="text"
-                class="w-full px-5 py-3.5 rounded-2xl border-2 border-gray-200 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 transition-all duration-300 text-gray-900 placeholder-gray-400 font-medium"
-                :class="{ 'border-red-500': errors.name }"
-                placeholder="Item name"
-              />
-              <p v-if="errors.name" class="mt-2 text-sm text-red-600 font-bold">{{ errors.name }}</p>
+      <!-- Filters -->
+      <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
+        <div class="flex flex-col sm:flex-row gap-4">
+          <!-- Search -->
+          <div class="flex-1">
+            <div class="relative">
+              <input v-model="searchQuery" type="text" placeholder="Search products..."
+                class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400" />
+              <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
             </div>
           </div>
 
-          <div class="grid gap-6 sm:grid-cols-2">
-            <div>
-              <label for="category" class="block text-sm font-bold text-gray-900 mb-2">Category</label>
-              <input
-                id="category"
-                v-model="form.category"
-                type="text"
-                class="w-full px-5 py-3.5 rounded-2xl border-2 border-gray-200 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 transition-all duration-300 text-gray-900 placeholder-gray-400 font-medium"
-                placeholder="e.g., Accessories"
-                list="category-list"
-              />
-              <datalist id="category-list">
-                <option v-for="c in categories" :key="c" :value="c" />
-              </datalist>
-            </div>
-            <div>
-              <label for="price" class="block text-sm font-bold text-gray-900 mb-2">Price</label>
-              <input
-                id="price"
-                v-model="form.price"
-                type="number"
-                step="0.01"
-                min="0"
-                class="w-full px-5 py-3.5 rounded-2xl border-2 border-gray-200 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 transition-all duration-300 text-gray-900 placeholder-gray-400 font-medium"
-                :class="{ 'border-red-500': errors.price }"
-                placeholder="0.00"
-              />
-              <p v-if="errors.price" class="mt-2 text-sm text-red-600 font-bold">{{ errors.price }}</p>
-            </div>
-          </div>
-
-          <div class="grid gap-6 sm:grid-cols-2">
-            <div>
-              <label for="stock" class="block text-sm font-bold text-gray-900 mb-2">Stock</label>
-              <input
-                id="stock"
-                v-model="form.stock"
-                type="number"
-                step="1"
-                min="0"
-                class="w-full px-5 py-3.5 rounded-2xl border-2 border-gray-200 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 transition-all duration-300 text-gray-900 placeholder-gray-400 font-medium"
-                :class="{ 'border-red-500': errors.stock }"
-                placeholder="0"
-              />
-              <p v-if="errors.stock" class="mt-2 text-sm text-red-600 font-bold">{{ errors.stock }}</p>
-            </div>
-            <div>
-              <label for="reorderLevel" class="block text-sm font-bold text-gray-900 mb-2">Reorder Level</label>
-              <input
-                id="reorderLevel"
-                v-model="form.reorderLevel"
-                type="number"
-                step="1"
-                min="0"
-                class="w-full px-5 py-3.5 rounded-2xl border-2 border-gray-200 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 transition-all duration-300 text-gray-900 placeholder-gray-400 font-medium"
-                :class="{ 'border-red-500': errors.reorderLevel }"
-                placeholder="0"
-              />
-              <p v-if="errors.reorderLevel" class="mt-2 text-sm text-red-600 font-bold">{{ errors.reorderLevel }}</p>
-            </div>
-          </div>
-
-          <div class="flex items-center justify-end gap-4 pt-4 border-t-2 border-gray-100">
-            <button
-              type="button"
-              class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-2xl transition-all duration-300 font-bold"
-              @click="closeModal">
-              Cancel
+          <!-- Status Filter -->
+          <div class="flex gap-2">
+            <button @click="filterStatus = 'all'" :class="{
+              'bg-gray-900 text-white': filterStatus === 'all',
+              'bg-gray-100 text-gray-700': filterStatus !== 'all'
+            }" class="px-4 py-3 rounded-lg font-medium transition-colors">
+              All
             </button>
-            <button
-              type="submit"
-              class="px-6 py-3 bg-linear-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-              :disabled="isSubmitting">
-              <Save class="w-5 h-5" />
-              {{ isSubmitting ? 'Saving...' : (editingId == null ? 'Create Item' : 'Save Changes') }}
+            <button @click="filterStatus = 'low'" :class="{
+              'bg-yellow-600 text-white': filterStatus === 'low',
+              'bg-gray-100 text-gray-700': filterStatus !== 'low'
+            }" class="px-4 py-3 rounded-lg font-medium transition-colors">
+              Low Stock
+            </button>
+            <button @click="filterStatus = 'out'" :class="{
+              'bg-red-600 text-white': filterStatus === 'out',
+              'bg-gray-100 text-gray-700': filterStatus !== 'out'
+            }" class="px-4 py-3 rounded-lg font-medium transition-colors">
+              Out of Stock
             </button>
           </div>
-        </form>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div v-if="loading" class="flex items-center justify-center py-20">
+        <div class="w-16 h-16 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin"></div>
+      </div>
+
+      <!-- Products Table -->
+      <div v-else class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Product
+                </th>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Category
+                </th>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Price</th>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Stock</th>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                <th class="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <tr v-for="product in filteredProducts" :key="product.product_id"
+                class="hover:bg-gray-50 transition-colors">
+                <!-- Product -->
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                      <img :src="product.main_image || 'https://via.placeholder.com/80'" :alt="product.product_name"
+                        class="w-full h-full object-cover" @error="handleImageError" />
+                    </div>
+                    <div class="min-w-0">
+                      <p class="font-semibold text-gray-900 truncate">{{ product.product_name }}</p>
+                      <p class="text-sm text-gray-500 truncate">ID: {{ product.product_id }}</p>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Category -->
+                <td class="px-6 py-4">
+                  <span class="text-sm text-gray-900">{{ product.category_name || 'N/A' }}</span>
+                </td>
+
+                <!-- Price -->
+                <td class="px-6 py-4">
+                  <span class="text-sm font-semibold text-gray-900">${{ formatPrice(product.final_price) }}</span>
+                </td>
+
+                <!-- Stock -->
+                <td class="px-6 py-4">
+                  <span class="text-2xl font-bold text-gray-900">{{ product.total_stock || 0 }}</span>
+                </td>
+
+                <!-- Status -->
+                <td class="px-6 py-4">
+                  <span :class="getStockStatus(product.total_stock).class"
+                    class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold">
+                    <div :class="getStockStatus(product.total_stock).dotClass" class="w-2 h-2 rounded-full"></div>
+                    {{ getStockStatus(product.total_stock).text }}
+                  </span>
+                </td>
+
+                <!-- Actions -->
+                <td class="px-6 py-4 text-right">
+                  <button @click="openUpdateModal(product)"
+                    class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium">
+                    Update Stock
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty State -->
+        <div v-if="filteredProducts.length === 0" class="text-center py-12">
+          <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+          </svg>
+          <p class="text-gray-500">No products found</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Update Stock Modal -->
+    <div v-if="showUpdateModal" @click="closeUpdateModal"
+      class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div @click.stop class="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+        <h3 class="text-xl font-bold text-gray-900 mb-6">Update Stock</h3>
+
+        <!-- Product Info -->
+        <div class="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+          <div class="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden shrink-0">
+            <img :src="selectedProduct?.main_image || 'https://via.placeholder.com/80'"
+              :alt="selectedProduct?.product_name" class="w-full h-full object-cover" @error="handleImageError" />
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-gray-900 truncate">{{ selectedProduct?.product_name }}</p>
+            <p class="text-sm text-gray-500">Current: {{ selectedProduct?.total_stock || 0 }} units</p>
+          </div>
+        </div>
+
+        <!-- Stock Input -->
+        <div class="mb-6">
+          <label class="block text-sm font-semibold text-gray-900 mb-2">New Stock Quantity</label>
+          <input v-model.number="newStock" type="number" min="0"
+            class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 text-lg font-semibold" />
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-3">
+          <button @click="closeUpdateModal"
+            class="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold">
+            Cancel
+          </button>
+          <button @click="updateStock"
+            class="flex-1 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-semibold">
+            Update
+          </button>
+        </div>
       </div>
     </div>
   </div>

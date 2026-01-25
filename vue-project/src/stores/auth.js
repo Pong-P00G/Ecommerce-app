@@ -1,70 +1,113 @@
 import { defineStore } from 'pinia';
-import { login as loginApi, register as registerApi } from '../api/api.js';
+import { authAPI } from '../api/authApi';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    user: JSON.parse(localStorage.getItem('auth_user') || 'null'),
-    token: localStorage.getItem('auth_token') || null,
-    loading: false,
+    user: null,
+    token: null,
     error: null,
+    loading: false
   }),
-  getters: {
-    isAuthenticated: (state) => !!state.token && !!state.user,
-    isAdmin: (state) => state.user?.role === 'admin',
-  },
-  actions: {
-    async login({ email, password }) {
-      this.loading = true;
-      this.error = null;
-      try {
-        const data = await loginApi({ email, password });
-        const token = data?.token || data?.accessToken || null;
-        const user = data?.user || data?.profile || null;
-        if (!token || !user) throw new Error('Invalid login response');
 
-        localStorage.setItem('auth_token', token);
-        localStorage.setItem('auth_user', JSON.stringify(user));
+  getters: {
+    isAuthenticated: (state) => !!state.token,
+    currentUser: (state) => state.user,
+    hasError: (state) => !!state.error
+  },
+
+  actions: {
+    /**
+     * Initialize auth state from localStorage
+     */
+    init() {
+      const token = authAPI.getToken();
+      const user = authAPI.getCurrentUser();
+      
+      if (token && user) {
         this.token = token;
         this.user = user;
-
-        return user;
-      } catch (e) {
-        this.error = e.response?.data?.message || e.message || 'Login failed';
-        throw e;
-      } finally {
-        this.loading = false;
       }
     },
-    async register(payload) {
+
+    // Login with email or username
+    async login(credentials) {
       this.loading = true;
       this.error = null;
+
       try {
-        const data = await registerApi(payload);
-        const token = data?.token || data?.accessToken || null;
-        const user = data?.user || data?.profile || null;
+        // Call authAPI login with identifier
+        const response = await authAPI.login(
+          credentials.identifier,
+          credentials.password
+        );
 
-        if (token) {
-          localStorage.setItem('auth_token', token);
-          this.token = token;
-        }
-        if (user) {
-          localStorage.setItem('auth_user', JSON.stringify(user));
-          this.user = user;
-        }
+        // Store token and user
+        this.token = response.token;
+        this.user = response.user;
 
-        return data;
-      } catch (e) {
-        this.error = e.response?.data?.message || e.message || 'Registration failed';
-        throw e;
+        return { success: true, user: response.user };
+      } catch (err) {
+        this.error = err.response?.data?.message || 'Login failed';
+        return { success: false, error: this.error };
       } finally {
         this.loading = false;
       }
     },
+
+    // Register new user
+    async register(userData) {
+      this.loading = true;
+      this.error = null;
+
+      try {
+        const response = await authAPI.register(userData);
+
+        // Auto-login after registration
+        this.token = response.token;
+        this.user = response.user;
+
+        return { success: true, user: response.user };
+      } catch (err) {
+        this.error = err.response?.data?.message || 'Registration failed';
+        return { success: false, error: this.error };
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    // logout
     logout() {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_user');
+      authAPI.logout();
       this.token = null;
       this.user = null;
+      this.error = null;
     },
-  },
+
+    // Clear messeges
+    clearError() {
+      this.error = null;
+    },
+
+    // Update user profile
+    async updateProfile(userData) {
+      this.loading = true;
+      this.error = null;
+
+      try {
+        // Assuming you have a userAPI with updateProfile method
+        const response = await userAPI.updateProfile(userData);
+        this.user = response;
+        
+        // Update localStorage
+        localStorage.setItem('auth_user', JSON.stringify(response));
+
+        return { success: true, user: response };
+      } catch (err) {
+        this.error = err.response?.data?.message || 'Update failed';
+        return { success: false, error: this.error };
+      } finally {
+        this.loading = false;
+      }
+    }
+  }
 });
