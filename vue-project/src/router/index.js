@@ -7,15 +7,15 @@ const routes = [
     {
         path: '/',
         component: HomeLayout,
+        meta: {
+            title: 'Welcome to AlieeShop - Your One-Stop Online Store',
+            description: 'Discover a wide range of products at unbeatable prices. Shop now and enjoy fast shipping and excellent customer service at AlieeShop!',
+        },
         children: [
             {
                 name: 'home',
                 path: '/',
                 component: () => import("../views/Home.vue"),
-                meta: {
-                    title: 'Welcome to AlieeShop - Your One-Stop Online Store',
-                    description: 'Discover a wide range of products at unbeatable prices. Shop now and enjoy fast shipping and excellent customer service at AlieeShop!',
-                }
             },
             {
                 name: 'about',
@@ -131,6 +131,7 @@ router.beforeEach((to, from, next) => {
     const authStore = useAuthStore();
     const isAuthenticated = authStore.isAuthenticated;
     const user = authStore.user;
+    const isAdmin = Number(user?.role_id) === 1;
 
     // Check if route requires authentication
     if (to.meta.requiresAuth && !isAuthenticated) {
@@ -138,21 +139,20 @@ router.beforeEach((to, from, next) => {
     }
 
     // Check if route requires admin privileges (role_id = 1)
-    if (to.meta.requiresAdmin && (!user || user.role_id !== 1)) {
-        return next({ name: 'home' });
+    if (to.meta.requiresAdmin && !isAdmin) {
+        return next({ name: isAuthenticated ? 'home' : 'login' });
     }
 
     // Redirect authenticated users away from login/register pages
     if ((to.name === 'login' || to.name === 'register') && isAuthenticated) {
         // Redirect based on role
-        if (user.role_id === 1) {
+        if (isAdmin) {
             return next({ name: 'DashboardHome' });
-        } else {
-            return next({ name: 'home' });
         }
+        return next({ name: 'home' });
     }
 
-    next();
+    return next();
 });
 
 export default router;

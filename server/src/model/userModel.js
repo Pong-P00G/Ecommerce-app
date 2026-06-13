@@ -142,35 +142,5 @@ export const usernameExists = async(username) => {
     return rows.length > 0;
 }
 
-// Verify user password with email (uses SHA2 comparison from trigger)
-export const verifyUserByEmail = async (email, password) => {
-    const [rows] = await db.query(
-        'SELECT * FROM users WHERE email = ? AND password_hash = SHA2(?, 256)',
-        [email, password]
-    );
-    return rows[0] || null;
-};
-
-// Verify user password with username (uses SHA2 comparison from trigger)
-export const verifyUserByUsername = async (username, password) => {
-    const [rows] = await db.query(
-        'SELECT * FROM users WHERE username = ? AND password_hash = SHA2(?, 256)',
-        [username, password]
-    );
-    return rows[0] || null;
-};
-
-// Verify user with email or username (uses SHA2 comparison from trigger)
-export const verifyUser = async (identifier, password) => {
-    const [rows] = await db.query(`
-        SELECT 
-          u.user_id, u.username, u.first_name, u.mid_name, u.last_name, 
-          u.full_name, u.email, u.password_hash, u.created_at, 
-          r.role_name, r.role_id
-        FROM users u
-        LEFT JOIN roles r ON u.role_id = r.role_id
-        WHERE (u.email = ? OR u.username = ?) 
-        AND u.password_hash = SHA2(?, 256)
-    `, [identifier, identifier, password]);
-    return rows[0] || null;
-};
+// Methods verifyUserByEmail, verifyUserByUsername, and verifyUser have been removed 
+// as password verification is now handled by the service layer using bcrypt.

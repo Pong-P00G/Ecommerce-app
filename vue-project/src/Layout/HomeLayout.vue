@@ -1,10 +1,11 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import Navbar from '../components/Navbar.vue'
 import Footer from '../components/Footer.vue'
 import { useUIStore } from '../stores/ui.js'
 
 const ui = useUIStore()
+const scrolled = ref(false)
 
 const logoText = computed(() => (ui.expanded ? 'Alie Shop' : 'AS'))
 
@@ -23,20 +24,30 @@ const applyHybridBehavior = () => {
     }
 }
 
+const handleScroll = () => {
+    scrolled.value = window.scrollY > 0
+}
+
 onMounted(() => {
     applyHybridBehavior()
     window.addEventListener('resize', applyHybridBehavior)
+    window.addEventListener('scroll', handleScroll)
 })
 </script>
 
 <template>
-    <div class="flex min-h-screen">
-        <div class="flex flex-col min-h-screen transition-all duration-300 w-full">
-            <Navbar />
-            <main class="flex-1 bg-cyan-200" role="main">
+    <div class="flex min-h-screen flex-col">
+        <Navbar />
+        <main class="flex-1 pt-20" role="main">
+            <div class="min-h-screen bg-linear-to-br from-white via-gray-50 to-blue-50">
                 <router-view />
-            </main>
-            <Footer />
-        </div>
+            </div>
+        </main>
+        <Footer />
     </div>
 </template>
+
+<style scoped>
+main {
+    scroll-behavior: smooth;
+}</style>

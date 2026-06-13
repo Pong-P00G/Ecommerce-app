@@ -10,9 +10,9 @@ export const validateRegister = (req, res, next) => {
                 'string.alphanum': 'Username must contain only letters and numbers',
                 'any.required': 'Username is required'
             }),
-        password: Joi.string().min(6).max(30).required()
+        password: Joi.string().min(8).max(30).required()
             .messages({
-                'string.min': 'Password must be at least 6 characters',
+                'string.min': 'Password must be at least 8 characters',
                 'string.max': 'Password must not exceed 30 characters',
                 'any.required': 'Password is required'
             }),
@@ -72,7 +72,7 @@ export const validateUpdate = (req, res, next) => {
     const schema = Joi.object({
         username: Joi.string().alphanum().min(4).max(30).optional(),
         email: Joi.string().email().optional(),
-        password: Joi.string().min(6).max(30).optional(),
+        password: Joi.string().min(8).max(30).optional(),
         first_name: Joi.string().min(2).max(75).optional(),
         mid_name: Joi.string().max(75).allow(null, '').optional(),
         last_name: Joi.string().min(2).max(75).optional(),

@@ -7,16 +7,12 @@
   "scripts": {
     "dev": "node --watch --env-file=.env --experimental-strip-types --experimental-sqlite ./src/main.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "ts": "ts-node",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "seed": "ts-node prisma/seed.ts"
+    "ts": "ts-node"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@prisma/client": "^7.0.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
@@ -29,7 +25,6 @@
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
-    "prisma": "^6.19.0",
     "ts-node": "^1.7.1",
     "typescript": "^5.9.3"
   }

@@ -8,7 +8,12 @@ export const db = mysql.createPool({
     port: process.env.DB_PORT || 3306,
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    authPlugins: {
+        mysql_native_password: () => () => process.env.DB_PASSWORD,
+        mysql_clear_password: () => () => process.env.DB_PASSWORD,
+        auth_gssapi_client: () => () => process.env.DB_PASSWORD
+    }
 });
 
 // Test connection

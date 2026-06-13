@@ -65,85 +65,85 @@ watch(route, () => {
 </script>
 
 <template>
-    <header class="fixed top-0 left-0 right-0 z-50 transition-all duration-500" :class="scrolled ? 'py-3' : 'py-5'"
+<header class="fixed top-0 left-0 right-0 z-50 transition-all duration-500" :class="scrolled ? 'py-2' : 'py-5'"
         role="banner">
         <!-- Refined Background -->
         <div class="absolute inset-0 transition-all duration-500"
-            :class="scrolled ? 'bg-white/90 backdrop-blur-xl border-b border-gray-100 shadow-sm' : 'bg-transparent'">
+            :class="scrolled ? 'bg-white/95 backdrop-blur-2xl border-b border-gray-200 shadow-md' : 'bg-white/50 backdrop-blur-md'">
         </div>
         <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center">
                 <!-- Logo Section -->
                 <RouterLink to="/"
-                    class="flex items-center gap-2 group transition-transform duration-300 hover:scale-[1.02]"
+                    class="flex items-center gap-2 group transition-transform duration-300 hover:scale-[1.02] z-10"
                     aria-label="AlieeShop Home">
-                    <span class="text-2xl tracking-tight text-gray-900">
-                        <span class="font-light">Aliee</span><span class="font-black italic">Shop</span>
+                    <span class="text-2xl tracking-tight text-gray-900 font-semibold">
+                        <span class="font-light">Aliee</span><span class="font-black italic text-green-600">Shop</span>
                     </span>
                 </RouterLink>
                 <!-- Desktop Navigation -->
-                <nav class="hidden lg:flex items-center bg-gray-50/50 backdrop-blur-md border border-gray-100 rounded-full px-2 py-1"
+                <nav class="hidden lg:flex items-center bg-white/40 backdrop-blur-md border border-white/60 rounded-full px-2 py-1 shadow-sm"
                     role="navigation" aria-label="Main navigation">
                     <RouterLink v-for="link in Navlinks" :key="link.label" :to="link.to"
-                        class="relative px-6 py-2 rounded-full text-gray-500 font-medium text-sm transition-all duration-300 group overflow-hidden"
+                        class="relative px-6 py-2 rounded-full text-gray-600 font-medium text-sm transition-all duration-300 group overflow-hidden"
                         :class="isActiveRoute(link.to) ? 'text-gray-900' : 'hover:text-gray-900'"
                         :aria-label="link.ariaLabel">
                         <span class="relative z-10">{{ link.label }}</span>
                         <!-- Active Indicator -->
-                        <div v-if="isActiveRoute(link.to)" class="absolute inset-0 bg-white shadow-sm rounded-full">
+                        <div v-if="isActiveRoute(link.to)" class="absolute inset-0 bg-white shadow-md rounded-full -z-10 animate-pulse">
                         </div>
                         <!-- Hover Slide Effect -->
                         <div
-                            class="absolute inset-0 bg-white/50 translate-y-full group-hover:translate-y-0 transition-transform duration-300 rounded-full">
+                            class="absolute inset-0 bg-linear-to-r from-white/30 to-white/0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 rounded-full -z-10">
                         </div>
                     </RouterLink>
                 </nav>
                 <!-- Desktop Actions -->
-                <div class="hidden lg:flex items-center gap-2">
+                <div class="hidden lg:flex items-center gap-3">
                     <!-- Search Button -->
                     <button @click="toggleSearch"
-                        class="p-3 rounded-full hover:bg-gray-100 transition-all duration-300 text-gray-600 hover:text-gray-900"
+                        class="p-3 rounded-full hover:bg-gray-100 transition-all duration-300 text-gray-600 hover:text-gray-900 hover:shadow-md"
                         aria-label="Search">
                         <Search class="w-5 h-5" />
                     </button>
                     <!-- Wishlist Button -->
                     <RouterLink to="/wishlist"
-                        class="p-3 rounded-full hover:bg-gray-100 transition-all duration-300 text-gray-600 hover:text-gray-900"
+                        class="p-3 rounded-full hover:bg-gray-100 transition-all duration-300 text-gray-600 hover:text-red-500 hover:shadow-md"
                         aria-label="Wishlist">
                         <Heart class="w-5 h-5" />
                     </RouterLink>
                     <!-- Cart Button -->
                     <RouterLink to="/checkout"
-                        class="relative p-3 rounded-full hover:bg-gray-100 transition-all duration-300 text-gray-600 hover:text-gray-900"
+                        class="relative p-3 rounded-full hover:bg-gray-100 transition-all duration-300 text-gray-600 hover:text-gray-900 hover:shadow-md"
                         aria-label="Checkout Cart">
                         <ShoppingCart class="w-5 h-5" />
                         <span v-if="cartCount > 0"
-                            class="absolute top-2 right-2 w-4 h-4 bg-gray-900 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                            class="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-md">
                             {{ cartCount }}
                         </span>
                     </RouterLink>
                     <!-- Vertical Divider -->
-                    <div class="w-px h-4 bg-gray-200 mx-2"></div>
+                    <div class="w-px h-6 bg-gray-200 mx-2"></div>
                     <!-- Login Button -->
                     <RouterLink to="/login"
-                        class="ml-2 px-8 py-3 text-sm font-bold text-white bg-gray-800 rounded-full hover:bg-black transition-all duration-300 shadow-lg hover:shadow-violet-200 flex items-center gap-2 group">
+                        class="ml-2 px-8 py-3 text-sm font-bold text-white bg-linear-to-r from-gray-900 to-gray-800 rounded-full hover:shadow-lg hover:shadow-gray-400/30 transition-all duration-300 flex items-center gap-2 group">
                         <User class="w-4 h-4 group-hover:scale-110 transition-transform" />
                         Sign In
                     </RouterLink>
                 </div>
                 <!-- Mobile Menu Button -->
                 <button @click="toggleMenu"
-                    class="lg:hidden p-3 rounded-full bg-gray-50 hover:bg-gray-100 transition-all duration-300"
+                    class="lg:hidden p-3 rounded-full bg-white hover:bg-gray-50 transition-all duration-300 shadow-md"
                     :aria-expanded="isMenuOpen" aria-controls="mobile-menu" aria-label="Toggle menu">
                     <Menu class="w-6 h-6 text-gray-900" />
                 </button>
             </div>
             <!-- Search Bar (Desktop) -->
             <transition name="slide-fade">
-                <div v-if="isSearchOpen" class="hidden lg:block px-4 sm:px-6 lg:px-8 pb-4">
+                <div v-if="isSearchOpen" class="hidden lg:block px-4 sm:px-6 lg:px-8 pb-4 mt-4">
                     <div class="relative max-w-2xl mx-auto">
                         <input type="text" placeholder="Search products, categories, brands..."
-                            class="w-full px-5 py-3 pl-12 pr-4 rounded-xl border-2 border-gray-200 focus:border-violet-600 focus:outline-none transition-colors bg-white/80 backdrop-blur-sm"
+                            class="w-full px-5 py-3 pl-12 pr-4 rounded-2xl border-2 border-gray-200 focus:border-green-500 focus:outline-none transition-colors bg-white/80 backdrop-blur-sm shadow-md"
                             autofocus />
                         <Search class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                     </div>
@@ -152,44 +152,44 @@ watch(route, () => {
         </div>
         <!-- Mobile Menu -->
         <transition name="mobile-menu">
-            <div v-if="isMenuOpen" id="mobile-menu" class="lg:hidden fixed inset-0 z-50" aria-label="Mobile navigation"
+            <div v-if="isMenuOpen" id="mobile-menu" class="lg:hidden fixed inset-0 z-40" aria-label="Mobile navigation"
                 role="region">
                 <!-- Backdrop -->
-                <div class="absolute inset-0 bg-black/20 backdrop-blur-sm" @click="closeMenu" aria-hidden="true"></div>
+                <div class="absolute inset-0 bg-black/30 backdrop-blur-sm" @click="closeMenu" aria-hidden="true"></div>
                 <!-- Sidebar -->
                 <div class="absolute top-0 right-0 w-80 h-full bg-white shadow-2xl overflow-y-auto">
                     <!-- Header -->
-                    <div class="flex justify-between items-center p-6 border-b border-gray-50">
+                    <div class="flex justify-between items-center p-6 border-b border-gray-100">
                         <div class="flex items-center gap-2">
-                            <span class="text-xl font-light text-gray-900">Aliee<span
-                                    class="font-bold italic">Shop</span></span>
+                            <span class="text-xl font-semibold text-gray-900">Aliee<span
+                                    class="font-bold italic text-green-600">Shop</span></span>
                         </div>
-                        <button @click="closeMenu" class="p-2 rounded-full hover:bg-gray-50 transition-colors"
+                        <button @click="closeMenu" class="p-2 rounded-full hover:bg-gray-100 transition-colors"
                             aria-label="Close navigation menu">
                             <Icons name="X" class="w-6 h-6 text-gray-800" />
                         </button>
                     </div>
                     <!-- Mobile Search -->
-                    <div class="p-6">
+                    <div class="p-6 border-b border-gray-100">
                         <div class="relative">
                             <input type="text" placeholder="Search products..."
-                                class="w-full px-4 py-3 pl-11 rounded-2xl bg-gray-50 border-0 focus:ring-2 focus:ring-gray-900 focus:outline-none transition-all" />
+                                class="w-full px-4 py-3 pl-11 rounded-2xl bg-gray-50 border-2 border-gray-200 focus:ring-2 focus:ring-green-500 focus:outline-none transition-all" />
                             <Search class="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                         </div>
                     </div>
                     <!-- Navigation Links -->
-                    <nav class="p-6 pt-0">
+                    <nav class="p-6">
                         <ul class="space-y-2">
                             <li v-for="link in Navlinks" :key="link.label + '-mobile'">
                                 <RouterLink :to="link.to"
                                     class="flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 group"
                                     :class="isActiveRoute(link.to)
-                                        ? 'bg-gray-900 text-white shadow-xl'
-                                        : 'text-gray-600 hover:bg-gray-50'" @click="closeMenu" :aria-label="link.ariaLabel">
+                                        ? 'bg-gray-900 text-white shadow-lg'
+                                        : 'text-gray-600 hover:bg-gray-100' " @click="closeMenu" :aria-label="link.ariaLabel">
                                     <div class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors"
                                         :class="isActiveRoute(link.to)
-                                            ? 'bg-white/10'
-                                            : 'bg-gray-100 group-hover:bg-white'">
+                                            ? 'bg-white/20'
+                                            : 'bg-gray-100 group-hover:bg-gray-200'">
                                         <Icons :name="link.icon" class="w-5 h-5" />
                                     </div>
                                     <span class="font-bold">{{ link.label }}</span>
@@ -198,12 +198,12 @@ watch(route, () => {
                         </ul>
                     </nav>
                     <!-- Mobile Actions -->
-                    <div class="p-6 mt-auto space-y-4 border-t border-gray-50">
+                    <div class="p-6 mt-auto space-y-4 border-t border-gray-100">
                         <!-- Quick Actions -->
                         <div class="grid grid-cols-2 gap-3">
                             <RouterLink to="/wishlist" @click="closeMenu"
                                 class="flex flex-col items-center gap-2 p-4 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-colors">
-                                <Heart class="w-5 h-5 text-gray-700" />
+                                <Heart class="w-5 h-5 text-red-500" />
                                 <span
                                     class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Wishlist</span>
                             </RouterLink>
@@ -212,14 +212,14 @@ watch(route, () => {
                                 <ShoppingCart class="w-5 h-5 text-gray-700" />
                                 <span class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Cart</span>
                                 <span v-if="cartCount > 0"
-                                    class="absolute top-3 right-6 w-4 h-4 bg-gray-900 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                                    class="absolute top-3 right-3 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                                     {{ cartCount }}
                                 </span>
                             </RouterLink>
                         </div>
                         <!-- Login Button -->
                         <RouterLink to="/login" @click="closeMenu"
-                            class="flex items-center justify-center gap-3 w-full px-6 py-4 text-sm font-bold text-white bg-gray-900 rounded-2xl hover:bg-violet-600 transition-all duration-300 shadow-xl">
+                            class="flex items-center justify-center gap-3 w-full px-6 py-4 text-sm font-bold text-white bg-linear-to-r from-gray-900 to-gray-800 rounded-2xl hover:shadow-lg transition-all duration-300">
                             <User class="w-5 h-5" />
                             Sign In / Join Now
                         </RouterLink>

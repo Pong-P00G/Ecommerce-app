@@ -7,8 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest",
-    "start": "cypress.config.js --project ./cypress/e2e --spec \"./cypress/e2e/**/*.cy.js\" run"
+    "test": "vitest"
   },
   "dependencies": {
     "@heroicons/vue": "^2.2.0",
@@ -27,7 +26,6 @@
     "@types/chai": "^5.2.3",
     "@types/html2pdf.js": "^0.10.0",
     "@vitejs/plugin-vue": "^6.0.0",
-    "cypress": "^15.7.0",
     "jsdom": "^26.1.0",
     "vite": "^7.0.0",
     "vite-plugin-vue-devtools": "^7.7.7",
