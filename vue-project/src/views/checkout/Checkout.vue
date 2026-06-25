@@ -123,7 +123,7 @@ const handleSubmit = async () => {
   setTimeout(() => {
       processing.value = false;
       // Redirect to success page
-      router.push('/order-success');
+      router.push('/orderSucces');
   }, 2000);
 };
 </script>

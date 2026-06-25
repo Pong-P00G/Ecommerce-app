@@ -58,6 +58,47 @@ const routes = [
                 component: () => import("../views/UserProfile.vue"),
                 meta: { requiresAuth: true },
             },
+            {
+                name: 'wishlist',
+                path: '/wishlist',
+                component: () => import("../views/Wishlist.vue"),
+                meta: { requiresAuth: true },
+            },
+            {
+                name: 'giftCards',
+                path: '/gift-cards',
+                component: () => import("../views/pages/GiftCards.vue"),
+            },
+            {
+                name: 'trackOrder',
+                path: '/track-order',
+                component: () => import("../views/pages/TrackOrder.vue"),
+            },
+            {
+                name: 'returns',
+                path: '/returns',
+                component: () => import("../views/pages/Returns.vue"),
+            },
+            {
+                name: 'shipping',
+                path: '/shipping',
+                component: () => import("../views/pages/Shipping.vue"),
+            },
+            {
+                name: 'faq',
+                path: '/faq',
+                component: () => import("../views/pages/FAQ.vue"),
+            },
+            {
+                name: 'careers',
+                path: '/careers',
+                component: () => import("../views/pages/Careers.vue"),
+            },
+            {
+                name: 'press',
+                path: '/press',
+                component: () => import("../views/pages/Press.vue"),
+            },
         ]
     },
     {
