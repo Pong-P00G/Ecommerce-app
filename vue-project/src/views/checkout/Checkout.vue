@@ -130,12 +130,12 @@ const handleSubmit = async () => {
 
 
 <template>
-  <div class="min-h-screen bg-gray-50 py-8">
+  <div class="min-h-screen bg-neutral-50 py-6 sm:py-8">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <!-- Header -->
-          <div class="mb-8 mt-16">
-              <h1 class="text-3xl font-bold text-gray-900 mb-2">Checkout</h1>
-              <p class="text-gray-600">Complete your purchase</p>
+          <div class="mb-6 sm:mb-8 mt-12 sm:mt-16">
+              <h1 class="text-2xl sm:text-3xl font-bold text-ink mb-2">Checkout</h1>
+              <p class="text-neutral-600 text-sm sm:text-base">Complete your purchase</p>
           </div>
           <!-- Progress Steps -->
           <div class="mb-8">
@@ -150,8 +150,8 @@ const handleSubmit = async () => {
                       <div class="flex flex-col items-center">
                           <div 
                               :class="{
-                                  'bg-gray-900 text-white': currentStep >= index + 1,
-                                  'bg-white text-gray-400 border-2 border-gray-300': currentStep < index + 1
+                                  'bg-ink text-white': currentStep >= index + 1,
+                                  'bg-paper text-neutral-400 border-2 border-neutral-300': currentStep < index + 1
                               }"
                               class="w-10 h-10 rounded-full flex items-center justify-center font-semibold mb-2 transition-all"
                           >
@@ -162,39 +162,39 @@ const handleSubmit = async () => {
                           </div>
                           <span 
                               :class="{
-                                  'text-gray-900 font-medium': currentStep >= index + 1,
-                                  'text-gray-400': currentStep < index + 1
+                                  'text-ink font-medium': currentStep >= index + 1,
+                                  'text-neutral-400': currentStep < index + 1
                               }"
-                              class="text-sm hidden sm:block"
+                              class="text-[10px] sm:text-sm"
                           >
                               {{ step }}
                           </span>
                       </div>
 
                       <!-- Connector Line -->
-                      <div 
+                      <div
                           v-if="index < steps.length - 1"
                           :class="{
-                              'bg-gray-900': currentStep > index + 1,
-                              'bg-gray-300': currentStep <= index + 1
+                              'bg-ink': currentStep > index + 1,
+                              'bg-neutral-300': currentStep <= index + 1
                           }"
-                          class="flex-1 h-1 mx-4 transition-all"
+                          class="flex-1 h-1 mx-2 sm:mx-4 transition-all"
                       ></div>
                   </div>
               </div>
           </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
               <!-- Left Column - Forms -->
               <div class="lg:col-span-2 space-y-6">
                   <!-- Step 1: Shipping Information -->
-                  <div v-if="currentStep === 1" class="bg-white rounded-2xl shadow-sm p-6">
+                  <div v-if="currentStep === 1" class="bg-paper rounded-2xl shadow-sm p-4 sm:p-6">
                       <div class="flex items-center justify-between mb-6">
-                          <h2 class="text-xl font-semibold text-gray-900">Shipping Information</h2>
+                          <h2 class="text-xl font-semibold text-ink">Shipping Information</h2>
                           <button 
                               v-if="isLoggedIn && savedAddresses.length > 0"
                               @click="showAddressBook = true"
-                              class="text-sm text-gray-600 hover:text-gray-900"
+                              class="text-sm text-neutral-600 hover:text-ink"
                           >
                               Use saved address
                           </button>
@@ -204,22 +204,22 @@ const handleSubmit = async () => {
                           <!-- Full Name -->
                           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               <div>
-                                  <label class="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
+                                  <label class="block text-sm font-medium text-neutral-700 mb-2">First Name *</label>
                                   <input 
                                       v-model="shippingInfo.firstName"
                                       type="text" 
                                       required
-                                      class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                                      class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
                                       placeholder="John"
                                   />
                               </div>
                               <div>
-                                  <label class="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
+                                  <label class="block text-sm font-medium text-neutral-700 mb-2">Last Name *</label>
                                   <input 
                                       v-model="shippingInfo.lastName"
                                       type="text" 
                                       required
-                                      class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                                      class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
                                       placeholder="Doe"
                                   />
                               </div>
@@ -228,22 +228,22 @@ const handleSubmit = async () => {
                           <!-- Email & Phone -->
                           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               <div>
-                                  <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                                  <label class="block text-sm font-medium text-neutral-700 mb-2">Email *</label>
                                   <input 
                                       v-model="shippingInfo.email"
                                       type="email" 
                                       required
-                                      class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                                      class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
                                       placeholder="john@example.com"
                                   />
                               </div>
                               <div>
-                                  <label class="block text-sm font-medium text-gray-700 mb-2">Phone *</label>
+                                  <label class="block text-sm font-medium text-neutral-700 mb-2">Phone *</label>
                                   <input 
                                       v-model="shippingInfo.phone"
                                       type="tel" 
                                       required
-                                      class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                                      class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
                                       placeholder="+1 (555) 000-0000"
                                   />
                               </div>
@@ -251,12 +251,12 @@ const handleSubmit = async () => {
 
                           <!-- Address -->
                           <div>
-                              <label class="block text-sm font-medium text-gray-700 mb-2">Street Address *</label>
+                              <label class="block text-sm font-medium text-neutral-700 mb-2">Street Address *</label>
                               <input 
                                   v-model="shippingInfo.address"
                                   type="text" 
                                   required
-                                  class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                                  class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
                                   placeholder="123 Main Street"
                               />
                           </div>
@@ -264,32 +264,32 @@ const handleSubmit = async () => {
                           <!-- City, State, Zip -->
                           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                               <div>
-                                  <label class="block text-sm font-medium text-gray-700 mb-2">City *</label>
+                                  <label class="block text-sm font-medium text-neutral-700 mb-2">City *</label>
                                   <input 
                                       v-model="shippingInfo.city"
                                       type="text" 
                                       required
-                                      class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                                      class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
                                       placeholder="New York"
                                   />
                               </div>
                               <div>
-                                  <label class="block text-sm font-medium text-gray-700 mb-2">State *</label>
+                                  <label class="block text-sm font-medium text-neutral-700 mb-2">State *</label>
                                   <input 
                                       v-model="shippingInfo.state"
                                       type="text" 
                                       required
-                                      class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                                      class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
                                       placeholder="NY"
                                   />
                               </div>
                               <div>
-                                  <label class="block text-sm font-medium text-gray-700 mb-2">ZIP Code *</label>
+                                  <label class="block text-sm font-medium text-neutral-700 mb-2">ZIP Code *</label>
                                   <input 
                                       v-model="shippingInfo.zipCode"
                                       type="text" 
                                       required
-                                      class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                                      class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
                                       placeholder="10001"
                                   />
                               </div>
@@ -297,11 +297,11 @@ const handleSubmit = async () => {
 
                           <!-- Country -->
                           <div>
-                              <label class="block text-sm font-medium text-gray-700 mb-2">Country *</label>
+                              <label class="block text-sm font-medium text-neutral-700 mb-2">Country *</label>
                               <select 
                                   v-model="shippingInfo.country"
                                   required
-                                  class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent bg-white"
+                                  class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent bg-paper"
                               >
                                   <option value="">Select Country</option>
                                   <option value="US">United States</option>
@@ -317,16 +317,16 @@ const handleSubmit = async () => {
                                   v-model="saveAddress"
                                   type="checkbox" 
                                   id="saveAddress"
-                                  class="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-400"
+                                  class="w-4 h-4 text-ink border-neutral-300 rounded focus:ring-neutral-400"
                               />
-                              <label for="saveAddress" class="ml-2 text-sm text-gray-700">
+                              <label for="saveAddress" class="ml-2 text-sm text-neutral-700">
                                   Save this address for future orders
                               </label>
                           </div>
 
                           <button 
                               type="submit"
-                              class="w-full py-4 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+                              class="w-full py-4 bg-ink text-white rounded-lg hover:bg-neutral-800 transition-colors font-medium"
                           >
                               Continue to Shipping Method
                           </button>
@@ -334,8 +334,8 @@ const handleSubmit = async () => {
                   </div>
 
                   <!-- Step 2: Shipping Method -->
-                  <div v-if="currentStep === 2" class="bg-white rounded-2xl shadow-sm p-6">
-                      <h2 class="text-xl font-semibold text-gray-900 mb-6">Shipping Method</h2>
+                  <div v-if="currentStep === 2" class="bg-paper rounded-2xl shadow-sm p-4 sm:p-6">
+                      <h2 class="text-lg sm:text-xl font-semibold text-ink mb-5 sm:mb-6">Shipping Method</h2>
 
                       <div class="space-y-3">
                           <label 
@@ -343,8 +343,8 @@ const handleSubmit = async () => {
                               :key="method.id"
                               class="flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-all"
                               :class="{
-                                  'border-gray-900 bg-gray-50': selectedShipping === method.id,
-                                  'border-gray-200 hover:border-gray-300': selectedShipping !== method.id
+                                  'border-ink bg-neutral-50': selectedShipping === method.id,
+                                  'border-neutral-200 hover:border-neutral-300': selectedShipping !== method.id
                               }"
                           >
                               <div class="flex items-center gap-4">
@@ -352,14 +352,14 @@ const handleSubmit = async () => {
                                       v-model="selectedShipping"
                                       type="radio" 
                                       :value="method.id"
-                                      class="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-400"
+                                      class="w-4 h-4 text-ink border-neutral-300 focus:ring-neutral-400"
                                   />
                                   <div>
-                                      <div class="font-medium text-gray-900">{{ method.name }}</div>
-                                      <div class="text-sm text-gray-500">{{ method.description }}</div>
+                                      <div class="font-medium text-ink">{{ method.name }}</div>
+                                      <div class="text-sm text-neutral-500">{{ method.description }}</div>
                                   </div>
                               </div>
-                              <div class="font-semibold text-gray-900">
+                              <div class="font-semibold text-ink">
                                   {{ method.price === 0 ? 'Free' : `$${method.price.toFixed(2)}` }}
                               </div>
                           </label>
@@ -368,14 +368,14 @@ const handleSubmit = async () => {
                       <div class="flex gap-4 mt-6">
                           <button 
                               @click="goToStep(1)"
-                              class="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                              class="flex-1 py-3 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-50 transition-colors font-medium"
                           >
                               Back
                           </button>
                           <button 
                               @click="goToStep(3)"
                               :disabled="!selectedShipping"
-                              class="flex-1 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                              class="flex-1 py-3 bg-ink text-white rounded-lg hover:bg-neutral-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                               Continue to Payment
                           </button>
@@ -383,8 +383,8 @@ const handleSubmit = async () => {
                   </div>
 
                   <!-- Step 3: Payment -->
-                  <div v-if="currentStep === 3" class="bg-white rounded-2xl shadow-sm p-6">
-                      <h2 class="text-xl font-semibold text-gray-900 mb-6">Payment Information</h2>
+                  <div v-if="currentStep === 3" class="bg-paper rounded-2xl shadow-sm p-4 sm:p-6">
+                      <h2 class="text-lg sm:text-xl font-semibold text-ink mb-5 sm:mb-6">Payment Information</h2>
 
                       <!-- Payment Method Selection -->
                       <div class="space-y-3 mb-6">
@@ -393,21 +393,21 @@ const handleSubmit = async () => {
                               :key="method.id"
                               class="flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all"
                               :class="{
-                                  'border-gray-900 bg-gray-50': selectedPayment === method.id,
-                                  'border-gray-200 hover:border-gray-300': selectedPayment !== method.id
+                                  'border-ink bg-neutral-50': selectedPayment === method.id,
+                                  'border-neutral-200 hover:border-neutral-300': selectedPayment !== method.id
                               }"
                           >
                               <input 
                                   v-model="selectedPayment"
                                   type="radio" 
                                   :value="method.id"
-                                  class="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-400"
+                                  class="w-4 h-4 text-ink border-neutral-300 focus:ring-neutral-400"
                               />
                               <div class="ml-4 flex items-center gap-3">
-                                  <svg class="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <svg class="h-6 w-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path :d="method.icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
                                   </svg>
-                                  <span class="font-medium text-gray-900">{{ method.name }}</span>
+                                  <span class="font-medium text-ink">{{ method.name }}</span>
                               </div>
                           </label>
                       </div>
@@ -415,50 +415,50 @@ const handleSubmit = async () => {
                       <!-- Credit Card Form -->
                       <form v-if="selectedPayment === 'card'" @submit.prevent="handleSubmit" class="space-y-4">
                           <div>
-                              <label class="block text-sm font-medium text-gray-700 mb-2">Card Number *</label>
+                              <label class="block text-sm font-medium text-neutral-700 mb-2">Card Number *</label>
                               <input 
                                   v-model="paymentInfo.cardNumber"
                                   type="text" 
                                   required
                                   maxlength="19"
                                   placeholder="1234 5678 9012 3456"
-                                  class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                                  class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
                               />
                           </div>
 
                           <div class="grid grid-cols-2 gap-4">
                               <div>
-                                  <label class="block text-sm font-medium text-gray-700 mb-2">Expiry Date *</label>
+                                  <label class="block text-sm font-medium text-neutral-700 mb-2">Expiry Date *</label>
                                   <input 
                                       v-model="paymentInfo.expiry"
                                       type="text" 
                                       required
                                       placeholder="MM/YY"
                                       maxlength="5"
-                                      class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                                      class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
                                   />
                               </div>
                               <div>
-                                  <label class="block text-sm font-medium text-gray-700 mb-2">CVV *</label>
+                                  <label class="block text-sm font-medium text-neutral-700 mb-2">CVV *</label>
                                   <input 
                                       v-model="paymentInfo.cvv"
                                       type="text" 
                                       required
                                       maxlength="4"
                                       placeholder="123"
-                                      class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                                      class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
                                   />
                               </div>
                           </div>
 
                           <div>
-                              <label class="block text-sm font-medium text-gray-700 mb-2">Cardholder Name *</label>
+                              <label class="block text-sm font-medium text-neutral-700 mb-2">Cardholder Name *</label>
                               <input 
                                   v-model="paymentInfo.cardName"
                                   type="text" 
                                   required
                                   placeholder="John Doe"
-                                  class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                                  class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
                               />
                           </div>
 
@@ -466,14 +466,14 @@ const handleSubmit = async () => {
                               <button 
                                   type="button"
                                   @click="goToStep(2)"
-                                  class="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                                  class="flex-1 py-3 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-50 transition-colors font-medium"
                               >
                                   Back
                               </button>
                               <button 
                                   type="submit"
                                   :disabled="processing"
-                                  class="flex-1 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                  class="flex-1 py-3 bg-ink text-white rounded-lg hover:bg-neutral-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                   {{ processing ? 'Processing...' : `Pay $${orderTotal.toFixed(2)}` }}
                               </button>
@@ -482,19 +482,19 @@ const handleSubmit = async () => {
 
                       <!-- PayPal/Other Methods -->
                       <div v-else class="space-y-4">
-                          <p class="text-sm text-gray-600">You will be redirected to complete your payment securely.</p>
+                          <p class="text-sm text-neutral-600">You will be redirected to complete your payment securely.</p>
                           
                           <div class="flex gap-4">
                               <button 
                                   @click="goToStep(2)"
-                                  class="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                                  class="flex-1 py-3 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-50 transition-colors font-medium"
                               >
                                   Back
                               </button>
                               <button 
                                   @click="handleSubmit"
                                   :disabled="processing"
-                                  class="flex-1 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+                                  class="flex-1 py-3 bg-ink text-white rounded-lg hover:bg-neutral-800 transition-colors font-medium"
                               >
                                   {{ processing ? 'Processing...' : 'Continue to Payment' }}
                               </button>
@@ -505,8 +505,8 @@ const handleSubmit = async () => {
 
               <!-- Right Column - Order Summary -->
               <div class="lg:col-span-1">
-                  <div class="bg-white rounded-2xl shadow-sm p-6 sticky top-8">
-                      <h2 class="text-lg font-semibold text-gray-900 mb-4">Order Summary</h2>
+                  <div class="bg-paper rounded-2xl shadow-sm p-5 sm:p-6 lg:sticky lg:top-8">
+                      <h2 class="text-base sm:text-lg font-semibold text-ink mb-4">Order Summary</h2>
 
                       <!-- Cart Items -->
                       <div class="space-y-4 mb-6">
@@ -515,7 +515,7 @@ const handleSubmit = async () => {
                               :key="item.id"
                               class="flex gap-4"
                           >
-                              <div class="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                              <div class="w-16 h-16 sm:w-20 sm:h-20 bg-neutral-100 rounded-lg overflow-hidden shrink-0">
                                   <img 
                                       :src="item.image" 
                                       :alt="item.name"
@@ -523,9 +523,9 @@ const handleSubmit = async () => {
                                   />
                               </div>
                               <div class="flex-1 min-w-0">
-                                  <h4 class="text-sm font-medium text-gray-900 truncate">{{ item.name }}</h4>
-                                  <p class="text-sm text-gray-500">Qty: {{ item.quantity }}</p>
-                                  <p class="text-sm font-semibold text-gray-900">${{ (item.price * item.quantity).toFixed(2) }}</p>
+                                  <h4 class="text-sm font-medium text-ink truncate">{{ item.name }}</h4>
+                                  <p class="text-sm text-neutral-500">Qty: {{ item.quantity }}</p>
+                                  <p class="text-sm font-semibold text-ink">${{ (item.price * item.quantity).toFixed(2) }}</p>
                               </div>
                           </div>
                       </div>
@@ -537,11 +537,11 @@ const handleSubmit = async () => {
                                   v-model="promoCode"
                                   type="text" 
                                   placeholder="Promo code"
-                                  class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                                  class="flex-1 px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
                               />
                               <button 
                                   @click="applyPromo"
-                                  class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                                  class="px-4 py-2 bg-neutral-100 text-neutral-700 rounded-lg hover:bg-neutral-200 transition-colors text-sm font-medium"
                               >
                                   Apply
                               </button>
@@ -550,14 +550,14 @@ const handleSubmit = async () => {
                       </div>
 
                       <!-- Price Breakdown -->
-                      <div class="space-y-3 py-4 border-t border-gray-200">
+                      <div class="space-y-3 py-4 border-t border-neutral-200">
                           <div class="flex justify-between text-sm">
-                              <span class="text-gray-600">Subtotal</span>
-                              <span class="font-medium text-gray-900">${{ subtotal.toFixed(2) }}</span>
+                              <span class="text-neutral-600">Subtotal</span>
+                              <span class="font-medium text-ink">${{ subtotal.toFixed(2) }}</span>
                           </div>
                           <div class="flex justify-between text-sm">
-                              <span class="text-gray-600">Shipping</span>
-                              <span class="font-medium text-gray-900">
+                              <span class="text-neutral-600">Shipping</span>
+                              <span class="font-medium text-ink">
                                   {{ shippingCost === 0 ? 'Free' : `$${shippingCost.toFixed(2)}` }}
                               </span>
                           </div>
@@ -566,20 +566,20 @@ const handleSubmit = async () => {
                               <span>-${{ discount.toFixed(2) }}</span>
                           </div>
                           <div class="flex justify-between text-sm">
-                              <span class="text-gray-600">Tax</span>
-                              <span class="font-medium text-gray-900">${{ tax.toFixed(2) }}</span>
+                              <span class="text-neutral-600">Tax</span>
+                              <span class="font-medium text-ink">${{ tax.toFixed(2) }}</span>
                           </div>
                       </div>
 
                       <!-- Total -->
-                      <div class="flex justify-between items-center pt-4 border-t-2 border-gray-900">
-                          <span class="text-lg font-semibold text-gray-900">Total</span>
-                          <span class="text-2xl font-bold text-gray-900">${{ orderTotal.toFixed(2) }}</span>
+                      <div class="flex justify-between items-center pt-4 border-t-2 border-ink">
+                          <span class="text-lg font-semibold text-ink">Total</span>
+                          <span class="text-2xl font-bold text-ink">${{ orderTotal.toFixed(2) }}</span>
                       </div>
 
                       <!-- Security Badge -->
-                      <div class="mt-6 p-3 bg-gray-50 rounded-lg">
-                          <div class="flex items-center gap-2 text-sm text-gray-600">
+                      <div class="mt-6 p-3 bg-neutral-50 rounded-lg">
+                          <div class="flex items-center gap-2 text-sm text-neutral-600">
                               <svg class="h-5 w-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                                   <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                               </svg>

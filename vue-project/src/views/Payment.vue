@@ -1,365 +1,162 @@
 <script setup>
-import {ref, onMounted, computed} from 'vue';
-import {useRouter} from 'vue-router';
-import {CreditCard, Lock, Shield, CheckCircle} from 'lucide-vue-next';
+import { ref, computed } from 'vue';
+import { useRouter, RouterLink } from 'vue-router';
+import {
+    CreditCard, Lock, ShieldCheck, CheckCircle2, ArrowLeft, Loader2,
+    Sparkles, Wallet, Smartphone, Building2, ChevronRight,
+} from 'lucide-vue-next';
 
 const router = useRouter();
-
-// Form fields
-const cardNumber = ref('');
-const expiryDate = ref('');
-const cvv = ref('');
-const cardholderName = ref('');
-const billingAddress = ref('');
-const zipCode = ref('');
-const errorMessage = ref('');
-const totalPrice = ref('');
+const method = ref('card');
 const isProcessing = ref(false);
+const isSuccess = ref(false);
 
-// Retrieve total price from localStorage
-onMounted(() => {
-  totalPrice.value = JSON.parse(localStorage.getItem('totalPrice')) || '0.00';
+const form = ref({
+    cardNumber: '',
+    cardName: '',
+    expiry: '',
+    cvc: '',
+    saveCard: true,
 });
 
-// Format card number with spaces
-const formattedCardNumber = computed({
-  get: () => cardNumber.value,
-  set: (value) => {
-    const cleaned = value.replace(/\s/g, '');
-    const formatted = cleaned.replace(/(.{4})/g, '$1 ').trim();
-    cardNumber.value = formatted.substring(0, 19);
-  }
-});
+const methods = [
+    { id: 'card', label: 'Credit / Debit Card', icon: CreditCard },
+    { id: 'wallet', label: 'Digital Wallet', icon: Wallet },
+    { id: 'mobile', label: 'Mobile Pay', icon: Smartphone },
+    { id: 'bank', label: 'Bank Transfer', icon: Building2 },
+];
 
-// Detect card type
-const cardType = computed(() => {
-  const number = cardNumber.value.replace(/\s/g, '');
-  if (number.startsWith('4')) return 'visa';
-  if (number.startsWith('5') || number.startsWith('2')) return 'mastercard';
-  if (number.startsWith('3')) return 'amex';
-  return 'unknown';
-});
+const orderSummary = { items: 3, subtotal: 142, shipping: 6, tax: 0, total: 148 };
 
-// Format expiry date
-const formattedExpiryDate = computed({
-  get: () => expiryDate.value,
-  set: (value) => {
-    const cleaned = value.replace(/\D/g, '');
-    if (cleaned.length >= 2) {
-      expiryDate.value = cleaned.substring(0, 2) + '/' + cleaned.substring(2, 4);
-    } else {
-      expiryDate.value = cleaned;
-    }
-  }
-});
-
-// Validate form
-const validateForm = () => {
-  if (!cardNumber.value || !expiryDate.value || !cvv.value || !cardholderName.value || !billingAddress.value) {
-    errorMessage.value = 'Please fill out all fields.';
-    return false;
-  }
-  if (cardNumber.value.replace(/\s/g, '').length !== 16) {
-    errorMessage.value = 'Card number must be 16 digits.';
-    return false;
-  }
-  if (!/^\d{2}\/\d{2}$/.test(expiryDate.value)) {
-    errorMessage.value = 'Expiry date must be in MM/YY format.';
-    return false;
-  }
-  if (cvv.value.length !== 3) {
-    errorMessage.value = 'CVV must be 3 digits.';
-    return false;
-  }
-  errorMessage.value = '';
-  return true;
-};
-
-// Handle payment submission
-const handlePayment = async () => {
-  if (!validateForm()) return;
-
-  isProcessing.value = true;
-
-  // Simulate payment processing with delay
-  setTimeout(() => {
-    console.log('Processing payment...', {
-      cardNumber: cardNumber.value,
-      expiryDate: expiryDate.value,
-      cvv: cvv.value,
-      cardholderName: cardholderName.value,
-      totalPrice: totalPrice.value
-    });
+const processPayment = async () => {
+    isProcessing.value = true;
+    await new Promise((r) => setTimeout(r, 1500));
     isProcessing.value = false;
-    router.push('/orderSucces');
-  }, 3000);
+    isSuccess.value = true;
+    setTimeout(() => router.push('/orderSucces'), 1200);
 };
 </script>
 
 <template>
-  <div
-      class="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white py-10 relative overflow-hidden">
-    <!-- Background decorative elements -->
-    <div class="absolute inset-0 overflow-hidden">
-      <div
-          class="absolute -top-1/2 -right-1/2 w-96 h-96 rounded-full bg-gradient-to-br from-purple-600/20 to-pink-600/20 blur-3xl animate-pulse"></div>
-      <div
-          class="absolute -bottom-1/2 -left-1/2 w-96 h-96 rounded-full bg-gradient-to-br from-blue-600/20 to-purple-600/20 blur-3xl animate-pulse delay-1000"></div>
-    </div>
-
-    <div class="container mx-auto px-4 relative z-10">
-      <!-- Header -->
-      <div class="text-center mb-10">
-        <div
-            class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mb-4 shadow-lg">
-          <CreditCard class="w-8 h-8 text-white"/>
-        </div>
-        <h1 class="text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent mb-2">
-          Secure Payment
-        </h1>
-        <p class="text-gray-400">Complete your purchase securely</p>
-      </div>
-
-      <div class="max-w-4xl mx-auto grid lg:grid-cols-2 gap-8">
-        <!-- Payment Form -->
-        <div class="bg-white/5 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border border-white/10">
-          <!-- Total Price -->
-          <div
-              class="mb-8 p-6 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl border border-purple-400/30">
-            <div class="flex items-center justify-between">
-              <span class="text-gray-300">Total Amount</span>
-              <span
-                  class="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                ${{ totalPrice }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Error Message -->
-          <div v-if="errorMessage"
-               class="mb-6 p-4 bg-red-500/20 border border-red-400/50 text-red-300 rounded-lg backdrop-blur-sm animate-shake">
-            {{ errorMessage }}
-          </div>
-
-          <!-- Payment Form -->
-          <form @submit.prevent="handlePayment" class="space-y-6">
-            <!-- Card Number -->
-            <div class="group">
-              <label for="card-number"
-                     class="block text-sm font-medium text-purple-300 mb-2 group-focus-within:text-purple-200 transition-colors">
-                Card Number
-              </label>
-              <div class="relative">
-                <input
-                    type="text"
-                    id="card-number"
-                    v-model="formattedCardNumber"
-                    placeholder="0000 0000 0000 0000"
-                    maxlength="19"
-                    class="w-full px-4 py-4 bg-white/10 border border-white/20 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-white placeholder-gray-400 backdrop-blur-sm hover:bg-white/15"
-                />
-                <div class="absolute right-4 top-1/2 transform -translate-y-1/2">
-                  <div v-if="cardType === 'visa'"
-                       class="w-8 h-5 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">
-                    VISA
-                  </div>
-                  <div v-else-if="cardType === 'mastercard'"
-                       class="w-8 h-5 bg-red-600 rounded text-white text-xs flex items-center justify-center font-bold">
-                    MC
-                  </div>
-                  <div v-else-if="cardType === 'amex'"
-                       class="w-8 h-5 bg-green-600 rounded text-white text-xs flex items-center justify-center font-bold">
-                    AMEX
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Expiry Date and CVV -->
-            <div class="grid grid-cols-2 gap-4">
-              <div class="group">
-                <label for="expiry-date"
-                       class="block text-sm font-medium text-purple-300 mb-2 group-focus-within:text-purple-200 transition-colors">
-                  Expiry Date
-                </label>
-                <input
-                    type="text"
-                    id="expiry-date"
-                    v-model="formattedExpiryDate"
-                    placeholder="MM/YY"
-                    maxlength="5"
-                    class="w-full px-4 py-4 bg-white/10 border border-white/20 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-white placeholder-gray-400 backdrop-blur-sm hover:bg-white/15"
-                />
-              </div>
-              <div class="group">
-                <label for="cvv"
-                       class="block text-sm font-medium text-purple-300 mb-2 group-focus-within:text-purple-200 transition-colors">
-                  CVV
-                </label>
-                <div class="relative">
-                  <input
-                      type="password"
-                      id="cvv"
-                      v-model="cvv"
-                      placeholder="123"
-                      maxlength="3"
-                      class="w-full px-4 py-4 bg-white/10 border border-white/20 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-white placeholder-gray-400 backdrop-blur-sm hover:bg-white/15"
-                  />
-                  <Shield class="absolute right-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"/>
-                </div>
-              </div>
-            </div>
-
-            <!-- Cardholder Name -->
-            <div class="group">
-              <label for="cardholder-name"
-                     class="block text-sm font-medium text-purple-300 mb-2 group-focus-within:text-purple-200 transition-colors">
-                Cardholder Name
-              </label>
-              <input
-                  type="text"
-                  id="cardholder-name"
-                  v-model="cardholderName"
-                  placeholder="John Doe"
-                  class="w-full px-4 py-4 bg-white/10 border border-white/20 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-white placeholder-gray-400 backdrop-blur-sm hover:bg-white/15"
-              />
-            </div>
-
-            <!-- Billing Address -->
-            <div class="group">
-              <label for="billing-address"
-                     class="block text-sm font-medium text-purple-300 mb-2 group-focus-within:text-purple-200 transition-colors">
-                Billing Address
-              </label>
-              <input
-                  type="text"
-                  id="billing-address"
-                  v-model="billingAddress"
-                  placeholder="123 Main Street, City, State 12345"
-                  class="w-full px-4 py-4 bg-white/10 border border-white/20 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-white placeholder-gray-400 backdrop-blur-sm hover:bg-white/15"
-              />
-            </div>
-
-            <!-- Submit Button -->
-            <button
-                type="submit"
-                :disabled="isProcessing"
-                class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center space-x-2"
-            >
-              <span v-if="!isProcessing">
-                <Lock class="w-5 h-5 inline mr-2"/>
-                Pay Securely
-              </span>
-              <span v-else class="flex items-center">
-                <div class="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
-                Processing Payment...
-              </span>
+    <div class="bg-neutral-50 min-h-screen">
+        <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+            <button @click="router.back()" class="inline-flex items-center gap-2 text-sm font-bold text-neutral-600 hover:text-ink mb-6 transition-colors">
+                <ArrowLeft class="w-4 h-4" /> Back
             </button>
-          </form>
-        </div>
 
-        <!-- Security Features -->
-        <div class="space-y-6">
-          <!-- Security Badge -->
-          <div class="bg-white/5 backdrop-blur-xl rounded-2xl shadow-2xl p-6 border border-white/10">
-            <div class="flex items-center space-x-3 mb-4">
-              <div class="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
-                <Shield class="w-5 h-5 text-green-400"/>
-              </div>
-              <div>
-                <h3 class="text-lg font-semibold text-white">Secure Payment</h3>
-                <p class="text-gray-400 text-sm">256-bit SSL encryption</p>
-              </div>
-            </div>
-            <div class="space-y-3">
-              <div class="flex items-center space-x-2">
-                <CheckCircle class="w-4 h-4 text-green-400"/>
-                <span class="text-gray-300 text-sm">PCI DSS Compliant</span>
-              </div>
-              <div class="flex items-center space-x-2">
-                <CheckCircle class="w-4 h-4 text-green-400"/>
-                <span class="text-gray-300 text-sm">Bank-level Security</span>
-              </div>
-              <div class="flex items-center space-x-2">
-                <CheckCircle class="w-4 h-4 text-green-400"/>
-                <span class="text-gray-300 text-sm">Fraud Protection</span>
-              </div>
-            </div>
-          </div>
-          <!-- Accepted Cards -->
-          <div class="bg-white/5 backdrop-blur-xl rounded-2xl shadow-2xl p-6 border border-white/10">
-            <h3 class="text-lg font-semibold text-white mb-4">Accepted Payment Methods</h3>
-            <div class="grid grid-cols-4 gap-3">
-              <div class="bg-white/10 rounded-lg p-3 text-center hover:bg-white/20 transition-colors">
-                <div
-                    class="w-full h-6 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">
-                  VISA
+            <div class="grid lg:grid-cols-3 gap-6 sm:gap-8">
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-paper border border-neutral-200 rounded-2xl p-5 sm:p-6 lg:p-8">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-10 h-10 rounded-xl bg-accent text-white flex items-center justify-center">
+                                <Lock class="w-4 h-4" />
+                            </div>
+                            <div>
+                                <h1 class="text-xl sm:text-2xl font-bold text-ink">Secure payment</h1>
+                                <p class="text-sm text-neutral-500 flex items-center gap-1.5">
+                                    <ShieldCheck class="w-3.5 h-3.5 text-accent" /> 256-bit SSL encryption
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="mb-8">
+                            <label class="text-xs font-bold uppercase tracking-[0.2em] text-neutral-500 mb-3 block">Payment method</label>
+                            <div class="grid sm:grid-cols-2 gap-2">
+                                <button v-for="m in methods" :key="m.id" @click="method = m.id" type="button" :class="['flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all', method === m.id ? 'border-ink bg-ink text-paper' : 'border-neutral-200 text-ink hover:border-ink']">
+                                    <component :is="m.icon" class="w-5 h-5 shrink-0" />
+                                    <span class="text-sm font-bold flex-1">{{ m.label }}</span>
+                                    <span class="w-4 h-4 rounded-full border-2 flex items-center justify-center" :class="method === m.id ? 'border-paper bg-accent' : 'border-neutral-300'">
+                                        <span v-if="method === m.id" class="w-1.5 h-1.5 rounded-full bg-white"></span>
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <form v-if="method === 'card'" @submit.prevent="processPayment" class="space-y-5">
+                            <div>
+                                <label class="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1.5 block">Card number</label>
+                                <div class="relative">
+                                    <CreditCard class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                                    <input v-model="form.cardNumber" type="text" placeholder="1234 5678 9012 3456" class="input-base pl-11" maxlength="19" />
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1.5 block">Name on card</label>
+                                <input v-model="form.cardName" type="text" placeholder="John Doe" class="input-base" />
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1.5 block">Expiry</label>
+                                    <input v-model="form.expiry" type="text" placeholder="MM/YY" class="input-base" maxlength="5" />
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1.5 block">CVC</label>
+                                    <input v-model="form.cvc" type="text" placeholder="123" class="input-base" maxlength="4" />
+                                </div>
+                            </div>
+                            <label class="flex items-center gap-2 text-sm text-ink cursor-pointer">
+                                <input type="checkbox" v-model="form.saveCard" class="w-4 h-4 rounded border-neutral-300 text-accent focus:ring-accent" />
+                                <span>Save this card for future purchases</span>
+                            </label>
+                            <button type="submit" :disabled="isProcessing || isSuccess" class="w-full btn-accent shine-effect justify-center py-4 text-base">
+                                <Loader2 v-if="isProcessing" class="w-5 h-5 animate-spin" />
+                                <CheckCircle2 v-else-if="isSuccess" class="w-5 h-5" />
+                                <Lock v-else class="w-5 h-5" />
+                                {{ isProcessing ? 'Processing...' : isSuccess ? 'Payment successful!' : ('Pay ' + ('$' ) + orderSummary.total + ' securely') }}
+                            </button>
+                        </form>
+
+                        <div v-else class="text-center py-12 px-6 bg-neutral-50 rounded-2xl border-2 border-dashed border-neutral-200">
+                            <Sparkles class="w-10 h-10 text-accent mx-auto mb-3" />
+                            <h3 class="text-lg font-bold text-ink mb-2">{{ methods.find(m => m.id === method).label }}</h3>
+                            <p class="text-sm text-neutral-500 mb-5">You'll be redirected to complete this payment securely.</p>
+                            <button @click="processPayment" :disabled="isProcessing" class="btn-accent">
+                                <Loader2 v-if="isProcessing" class="w-4 h-4 animate-spin" />
+                                <Lock v-else class="w-4 h-4" />
+                                {{ isProcessing ? 'Redirecting...' : 'Continue to ' + methods.find(m => m.id === method).label }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+                        <div v-for="b in [
+                            { icon: ShieldCheck, label: 'Buyer protection' },
+                            { icon: Lock, label: 'SSL encrypted' },
+                            { icon: CheckCircle2, label: 'PCI compliant' },
+                        ]" :key="b.label" class="bg-paper border border-neutral-200 rounded-xl p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+                            <component :is="b.icon" class="w-5 h-5 text-accent" />
+                            <span class="text-xs font-bold text-ink">{{ b.label }}</span>
+                        </div>
+                    </div>
                 </div>
-              </div>
-              <div class="bg-white/10 rounded-lg p-3 text-center hover:bg-white/20 transition-colors">
-                <div
-                    class="w-full h-6 bg-red-600 rounded text-white text-xs flex items-center justify-center font-bold">
-                  MC
-                </div>
-              </div>
-              <div class="bg-white/10 rounded-lg p-3 text-center hover:bg-white/20 transition-colors">
-                <div
-                    class="w-full h-6 bg-green-600 rounded text-white text-xs flex items-center justify-center font-bold">
-                  AMEX
-                </div>
-              </div>
-              <div class="bg-white/10 rounded-lg p-3 text-center hover:bg-white/20 transition-colors">
-                <div
-                    class="w-full h-6 bg-purple-600 rounded text-white text-xs flex items-center justify-center font-bold">
-                  DISC
-                </div>
-              </div>
+
+                <aside class="lg:col-span-1">
+                    <div class="bg-paper border border-neutral-200 rounded-2xl p-5 sm:p-6 lg:sticky lg:top-24 space-y-4 sm:space-y-5">
+                        <h2 class="text-sm font-bold uppercase tracking-[0.2em] text-ink">Order summary</h2>
+                        <div class="space-y-3 pb-5 border-b border-neutral-200">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-neutral-600">Items ({{ orderSummary.items }})</span>
+                                <span class="font-bold text-ink tabular-nums">{{ '$' }}{{ orderSummary.subtotal }}</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-neutral-600">Shipping</span>
+                                <span class="font-bold text-ink tabular-nums">{{ '$' }}{{ orderSummary.shipping }}</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-neutral-600">Tax</span>
+                                <span class="font-bold text-accent">Free</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-baseline">
+                            <span class="text-sm font-bold text-ink">Total</span>
+                            <span class="text-3xl font-elegant font-bold text-ink tabular-nums">{{ '$' }}{{ orderSummary.total }}</span>
+                        </div>
+                        <RouterLink to="/checkout" class="inline-flex items-center gap-1 text-xs font-bold text-neutral-500 hover:text-accent transition-colors">
+                            <ChevronRight class="w-3 h-3 rotate-180" /> Edit order
+                        </RouterLink>
+                    </div>
+                </aside>
             </div>
-          </div>
-          <!-- Money Back Guarantee -->
-          <div
-              class="bg-gradient-to-r from-green-500/20 to-blue-500/20 backdrop-blur-xl rounded-2xl shadow-2xl p-6 border border-green-400/30">
-            <div class="text-center">
-              <div class="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                <CheckCircle class="w-6 h-6 text-green-400"/>
-              </div>
-              <h3 class="text-lg font-semibold text-white mb-2">Money Back Guarantee</h3>
-              <p class="text-gray-300 text-sm">100% secure transactions with full refund protection</p>
-            </div>
-          </div>
-        </div>
-      </div>
+        </section>
     </div>
-  </div>
 </template>
-
-<style scoped>
-@keyframes shake {
-  0%, 100% {
-    transform: translateX(0);
-  }
-  25% {
-    transform: translateX(-5px);
-  }
-  75% {
-    transform: translateX(5px);
-  }
-}
-
-.animate-shake {
-  animation: shake 0.5s ease-in-out;
-}
-
-/* Custom focus styles */
-input:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.3);
-}
-
-/* Smooth transitions for all interactive elements */
-* {
-  transition-property: color, background-color, border-color, transform, box-shadow;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 300ms;
-}
-</style>

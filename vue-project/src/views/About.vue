@@ -1,244 +1,156 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { Building2, Users, Target, Heart, Globe, Sparkles, Shield, Truck, Award, Star } from 'lucide-vue-next'
-import { RouterLink } from 'vue-router'
-
-const isVisible = ref(false)
-
-const stats = [
-    { number: '25K+', label: 'Happy Customers' },
-    { number: '200+', label: 'Premium Products' },
-    { number: '30+', label: 'Countries Worldwide' },
-    { number: '24/7', label: 'Customer Support' }
-]
-
-const companyFeatures = [
-    {
-        title: 'Our Heritage',
-        icon: Building2,
-        description: 'Since 2025, we\'ve been crafting premium menswear and accessories, setting new standards in masculine fashion and style.',
-        gradient: 'from-slate-600 to-gray-800'
-    },
-    {
-        title: 'Expert Team',
-        icon: Users,
-        description: 'Our team of fashion designers and style experts curate every piece to ensure you look your absolute best.',
-        gradient: 'from-blue-600 to-indigo-700'
-    },
-    {
-        title: 'Our Vision',
-        icon: Target,
-        description: 'To be the go-to destination for modern men seeking premium quality clothing and accessories that define their unique style.',
-        gradient: 'from-emerald-600 to-teal-700'
-    }
-]
+import { RouterLink } from 'vue-router';
+import {
+    Sparkles,
+    Heart,
+    Leaf,
+    Award,
+    Users,
+    Globe,
+    ArrowRight,
+    Quote,
+} from 'lucide-vue-next';
 
 const values = [
-    {
-        icon: Shield,
-        title: 'Premium Quality',
-        description: 'Every shirt, hoodie, pant, and accessory is crafted with the finest materials and attention to detail.'
-    },
-    {
-        icon: Star,
-        title: 'Style Excellence',
-        description: 'From classic essentials to trendy pieces, we curate collections that elevate your wardrobe.'
-    },
-    {
-        icon: Heart,
-        title: 'Customer First',
-        description: 'Your satisfaction is our priority. We\'re committed to providing exceptional service and quality.'
-    }
-]
+    { icon: Heart, title: 'Crafted with care', desc: 'Every product is selected for its quality, design, and durability.' },
+    { icon: Leaf, title: 'Built to last', desc: 'Sustainable materials and timeless silhouettes that age beautifully.' },
+    { icon: Award, title: 'Honest pricing', desc: 'No markups, no shortcuts. Premium goods at fair prices.' },
+    { icon: Globe, title: 'Globally sourced', desc: 'Curated from independent makers and ethical brands worldwide.' },
+];
 
-const productCategories = [
-    {
-        name: 'Clothing',
-        items: ['Premium Shirts', 'Comfortable Hoodies', 'Stylish Pants', 'Classic Jeans'],
-        icon: '👕'
-    },
-    {
-        name: 'Accessories',
-        items: ['Trendy Caps', 'Luxury Belts', 'Stylish Bags', 'Premium Shoes'],
-        icon: '🎒'
-    },
-    {
-        name: 'Lifestyle',
-        items: ['Designer Glasses', 'Statement Necklaces', 'Quality Socks', 'And Much More...'],
-        icon: '🕶️'
-    }
-]
+const stats = [
+    { number: '120K+', label: 'Happy customers' },
+    { number: '4.9', label: 'Average rating' },
+    { number: '50+', label: 'Countries shipped' },
+    { number: '98%', label: 'Return satisfaction' },
+];
 
-const features = [
-    {
-        icon: Truck,
-        title: 'Fast Shipping',
-        description: 'Free worldwide shipping on orders over $100'
-    },
-    {
-        icon: Award,
-        title: 'Premium Quality',
-        description: 'Only the finest materials and craftsmanship'
-    },
-    {
-        icon: Shield,
-        title: 'Secure Shopping',
-        description: '100% secure payment and data protection'
-    },
-    {
-        icon: Heart,
-        title: 'Customer Care',
-        description: 'Dedicated support team ready to help you'
-    }
-]
-
-onMounted(() => {
-    isVisible.value = true
-})
-
-
-const bubbleColors = ['#3b82f6', '#8b5cf6', '#f472b6', '#10b981', '#facc15']
-
-function random(min, max) {
-    return Math.random() * (max - min) + min
-}
-
-function bubbleStyle(i) {
-    const size = random(30, 120) // width & height
-    const left = random(0, 100) // vw position
-    const duration = random(15, 30) // animation duration
-    const delay = random(0, 10) // animation delay
-    const color = bubbleColors[i % bubbleColors.length]
-
-    return {
-        width: `${size}px`,
-        height: `${size}px`,
-        top: '100vh', // start from bottom
-        left: `${left}vw`,
-        backgroundColor: color,
-        borderRadius: '50%',
-        opacity: 0.2,
-        animation: `floatUp ${duration}s ease-in-out ${delay}s infinite`,
-    }
-}
-
+const team = [
+    { name: 'Sokha Lim', role: 'Founder & Creative Director', img: 'https://i.pravatar.cc/400?img=12' },
+    { name: 'Dara Pich', role: 'Head of Curation', img: 'https://i.pravatar.cc/400?img=47' },
+    { name: 'Rithya Chan', role: 'Operations Lead', img: 'https://i.pravatar.cc/400?img=33' },
+    { name: 'Lina Seng', role: 'Customer Experience', img: 'https://i.pravatar.cc/400?img=24' },
+];
 </script>
 
 <template>
-    <div class="min-h-screen bg-white relative overflow-hidden">
-        <!-- Hero Section -->
-        <section class="relative bg-gray-50 border-b border-gray-100 py-32 px-4">
-            <div class="relative z-20 max-w-5xl mx-auto space-y-8 text-center">
-                <h1 class="text-6xl md:text-7xl font-black text-gray-900 tracking-tight">
-                    SHOPPING
-                </h1>
-                <h2 class="text-3xl md:text-4xl font-light text-gray-600">
-                    Premium Fashion & Accessories
-                </h2>
-                <p class="text-lg md:text-xl text-gray-500 max-w-3xl mx-auto font-light leading-relaxed">
-                    Discover our exclusive collection of shirts, hoodies, pants, jeans, and premium accessories for the
-                    modern gentleman
-                </p>
-            </div>
-        </section>
-
-        <!-- Product Categories Preview -->
-        <section class="container mx-auto px-4 py-24">
-            <h2 class="text-4xl md:text-5xl font-black text-center mb-16 text-gray-900 tracking-tight">
-                What We Offer
-            </h2>
-            <div class="grid md:grid-cols-3 gap-8">
-                <div v-for="category in productCategories" :key="category.name"
-                    class="bg-gray-50 border border-gray-100 rounded-3xl shadow-sm p-8 hover:shadow-xl transform hover:scale-105 transition-all duration-500">
-                    <div class="text-5xl mb-6 text-center">{{ category.icon }}</div>
-                    <h3 class="text-2xl font-bold mb-6 text-center text-gray-900">{{ category.name }}</h3>
-                    <ul class="space-y-3">
-                        <li v-for="item in category.items" :key="item"
-                            class="flex items-center text-gray-600 font-medium">
-                            <div class="w-2 h-2 bg-gray-900 rounded-full mr-3"></div>
-                            {{ item }}
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </section>
-
-        <!-- Stats Section -->
-        <section class="bg-gray-50 border-y border-gray-100 py-24">
-            <div class="container mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8">
-                <div v-for="stat in stats" :key="stat.number"
-                    class="text-center transform hover:scale-110 transition-transform duration-300">
-                    <div class="text-5xl font-black text-gray-900 mb-2">
-                        {{ stat.number }}
+    <div class="bg-paper">
+        <!-- Hero -->
+        <section class="bg-ink text-paper overflow-hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
+                <div class="grid lg:grid-cols-2 gap-12 items-center">
+                    <div class="space-y-6">
+                        <span class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-accent">
+                            <Sparkles class="w-4 h-4" />
+                            Our Story
+                        </span>
+                        <h1 class="text-5xl md:text-6xl lg:text-7xl font-elegant font-bold leading-[1.05]">
+                            We curate <span class="italic text-accent">objects</span> worth keeping.
+                        </h1>
+                        <p class="text-lg text-neutral-300 font-light leading-relaxed max-w-xl">
+                            ALIESHOP was founded on a simple belief: better things, made well, last longer.
+                            We work with independent makers and ethical brands to bring you products that feel personal.
+                        </p>
+                        <div class="flex items-center gap-3 pt-2">
+                            <RouterLink to="/product" class="btn-accent shine-effect">
+                                Shop the catalog
+                                <ArrowRight class="w-4 h-4" />
+                            </RouterLink>
+                            <RouterLink to="/contact" class="btn-outline border-neutral-700 text-paper hover:bg-paper hover:text-ink">
+                                Get in touch
+                            </RouterLink>
+                        </div>
                     </div>
-                    <div class="text-gray-600 text-lg font-medium">{{ stat.label }}</div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Company Features -->
-        <section class="container mx-auto px-4 py-24">
-            <h2 class="text-4xl md:text-5xl font-black text-center mb-16 text-gray-900 tracking-tight">
-                Why Choose Us
-            </h2>
-            <div class="grid md:grid-cols-3 gap-8">
-                <div v-for="feature in companyFeatures" :key="feature.title"
-                    class="relative group overflow-hidden rounded-3xl shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100 bg-white">
-                    <div class="relative p-10 h-full flex flex-col justify-center items-center">
-                        <component :is="feature.icon"
-                            class="w-16 h-16 mb-6 text-gray-900 transform group-hover:scale-110 transition-transform duration-300" />
-                        <h3 class="text-2xl font-bold mb-6 text-center text-gray-900">{{ feature.title }}</h3>
-                        <p class="text-gray-600 text-center leading-relaxed text-lg font-light">{{ feature.description
-                        }}</p>
+                    <div class="relative hidden lg:block">
+                        <div class="absolute -top-12 -right-12 w-64 h-64 rounded-full bg-accent/30 blur-3xl"></div>
+                        <div class="relative grid grid-cols-2 gap-4">
+                            <img src="https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=600&h=800&fit=crop" alt="" class="rounded-2xl h-72 w-full object-cover mt-12" />
+                            <img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600&h=800&fit=crop" alt="" class="rounded-2xl h-72 w-full object-cover" />
+                            <img src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=600&h=800&fit=crop" alt="" class="rounded-2xl h-72 w-full object-cover" />
+                            <img src="https://images.unsplash.com/photo-1485518882345-15568b007407?w=600&h=800&fit=crop" alt="" class="rounded-2xl h-72 w-full object-cover -mt-12" />
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Values Section -->
-        <section class="bg-gray-50 py-24">
-            <div class="container mx-auto px-4">
-                <h2 class="text-4xl md:text-5xl font-black text-center mb-16 text-gray-900 tracking-tight">
-                    Our Commitment
-                </h2>
-                <div class="grid md:grid-cols-3 gap-8">
-                    <div v-for="value in values" :key="value.title"
-                        class="bg-white border border-gray-100 p-8 rounded-3xl shadow-sm transform hover:scale-105 hover:shadow-xl transition-all duration-500 text-center">
-                        <component :is="value.icon" class="w-16 h-16 mb-6 text-gray-900 mx-auto" />
-                        <h3 class="text-2xl font-bold mb-4 text-gray-900">{{ value.title }}</h3>
-                        <p class="text-gray-600 leading-relaxed font-light">{{ value.description }}</p>
-                    </div>
+        <!-- Stats -->
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-10">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 bg-paper border border-neutral-200 rounded-3xl p-6 lg:p-8 shadow-[0_12px_32px_-8px_rgb(0_0_0_/_0.12)]">
+                <div v-for="s in stats" :key="s.label" class="text-center lg:text-left space-y-1">
+                    <p class="text-3xl lg:text-4xl font-elegant font-bold text-ink tabular-nums">{{ s.number }}</p>
+                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-neutral-500">{{ s.label }}</p>
                 </div>
             </div>
         </section>
 
-        <!-- Call to Action -->
-        <section class="bg-white py-24">
-            <div class="container mx-auto px-4 text-center">
-                <div class="max-w-4xl mx-auto space-y-8">
-                    <h2 class="text-4xl md:text-5xl font-black mb-6 text-gray-900 tracking-tight">Elevate Your Style
-                        Today</h2>
-                    <p class="text-xl text-gray-600 leading-relaxed font-light">
-                        Join thousands of satisfied customers who trust us for their fashion needs.
-                    </p>
-                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                        <router-link to="/product"
-                            class="px-10 py-4 bg-gray-900 hover:bg-black text-white rounded-full font-bold text-lg hover:scale-105 hover:shadow-xl transition-all">
-                            Shop Collection
-                        </router-link>
-                        <router-link to="/contact"
-                            class="px-10 py-4 border-2 border-gray-900 text-gray-900 rounded-full font-bold text-lg hover:bg-gray-900 hover:text-white transition-all">
-                            Contact Us
-                        </router-link>
+        <!-- Values -->
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+            <div class="text-center mb-16 space-y-3">
+                <span class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-accent">
+                    <Award class="w-4 h-4" />
+                    What we stand for
+                </span>
+                <h2 class="text-4xl md:text-5xl font-elegant font-bold text-ink">Built on principles, not promises.</h2>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div v-for="v in values" :key="v.title" class="card-flat p-6 space-y-4 hover:border-ink hover:-translate-y-1 transition-all duration-300 group">
+                    <div class="w-12 h-12 rounded-2xl bg-accent-50 group-hover:bg-accent flex items-center justify-center transition-colors">
+                        <component :is="v.icon" class="w-5 h-5 text-accent group-hover:text-white transition-colors" />
                     </div>
+                    <h3 class="text-lg font-bold text-ink">{{ v.title }}</h3>
+                    <p class="text-sm text-neutral-600 leading-relaxed">{{ v.desc }}</p>
                 </div>
+            </div>
+        </section>
+
+        <!-- Quote -->
+        <section class="bg-neutral-50">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center">
+                <Quote class="w-10 h-10 text-accent mx-auto mb-6" />
+                <blockquote class="text-3xl md:text-4xl font-elegant font-medium text-ink leading-relaxed">
+                    "We don't sell products. We share the things we love with people who will love them too."
+                </blockquote>
+                <p class="mt-6 text-sm font-bold text-neutral-500 uppercase tracking-[0.2em]">— Sokha Lim, Founder</p>
+            </div>
+        </section>
+
+        <!-- Team -->
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+            <div class="flex items-end justify-between mb-12 flex-wrap gap-4">
+                <div class="space-y-2">
+                    <span class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-accent">
+                        <Users class="w-4 h-4" />
+                        The team
+                    </span>
+                    <h2 class="text-4xl md:text-5xl font-elegant font-bold text-ink">People behind the pixels.</h2>
+                </div>
+                <RouterLink to="/careers" class="inline-flex items-center gap-2 text-sm font-bold text-ink hover:text-accent transition-colors">
+                    Join us
+                    <ArrowRight class="w-4 h-4" />
+                </RouterLink>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div v-for="m in team" :key="m.name" class="group">
+                    <div class="aspect-[3/4] rounded-2xl overflow-hidden bg-neutral-100 mb-4">
+                        <img :src="m.img" :alt="m.name" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
+                    </div>
+                    <h3 class="text-lg font-bold text-ink">{{ m.name }}</h3>
+                    <p class="text-sm text-neutral-500">{{ m.role }}</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+            <div class="bg-accent rounded-3xl p-10 lg:p-16 text-center text-white">
+                <h2 class="text-3xl md:text-5xl font-elegant font-bold mb-4">Ready to find your next favorite?</h2>
+                <p class="text-lg text-white/80 max-w-xl mx-auto mb-8">Browse our handpicked catalog of products designed to last.</p>
+                <RouterLink to="/product" class="inline-flex items-center gap-2 px-7 py-3.5 bg-ink text-white font-bold rounded-full hover:bg-neutral-800 transition-all hover:-translate-y-0.5">
+                    Shop now
+                    <ArrowRight class="w-4 h-4" />
+                </RouterLink>
             </div>
         </section>
     </div>
 </template>
-
-<style scoped>
-html {
-    scroll-behavior: smooth;
-}
-</style>

@@ -1,153 +1,88 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { Heart, ShoppingCart, Trash2, ArrowLeft } from 'lucide-vue-next'
+import { computed } from 'vue';
+import { RouterLink } from 'vue-router';
+import { Heart, ShoppingCart, Trash2, ArrowRight, Sparkles } from 'lucide-vue-next';
+import { useShopStore } from '../stores/shop';
+import WishListBtn from '../components/WishListBtn.vue';
 
-const router = useRouter()
+const shop = useShopStore();
 
-const wishlistItems = ref([
-    {
-        id: 1,
-        name: 'Premium Cotton Hoodie',
-        price: 59.99,
-        image: 'https://via.placeholder.com/300x300?text=Hoodie',
-        inStock: true
-    },
-    {
-        id: 2,
-        name: 'Classic Denim Jacket',
-        price: 89.99,
-        image: 'https://via.placeholder.com/300x300?text=Jacket',
-        inStock: true
-    },
-    {
-        id: 3,
-        name: 'Leather Wallet',
-        price: 39.99,
-        image: 'https://via.placeholder.com/300x300?text=Wallet',
-        inStock: false
+const items = computed(() => shop.wishlist.map(id => ({ id })));
+const totalValue = computed(() => items.value.reduce((sum, i) => sum + (i.price || 0), 0));
+
+const clearAll = () => {
+    if (confirm('Clear all items from wishlist?')) {
+        items.value.forEach((i) => shop.toggleWishlist(i.id));
     }
-])
-
-const itemCount = computed(() => wishlistItems.value.length)
-
-const removeItem = (id) => {
-    wishlistItems.value = wishlistItems.value.filter(item => item.id !== id)
-}
-
-const moveToCart = (item) => {
-    // Placeholder: integrate with cart store
-    console.log('Moving to cart:', item)
-    removeItem(item.id)
-}
-
-const clearWishlist = () => {
-    wishlistItems.value = []
-}
-
-const continueShopping = () => {
-    router.push('/product')
-}
+};
 </script>
 
 <template>
-    <div class="min-h-screen bg-linear-to-br from-white via-gray-50 to-blue-50 py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="bg-paper min-h-[70vh]">
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <!-- Header -->
-            <div class="mb-8 mt-8 flex items-center justify-between">
-                <div>
-                    <h1 class="text-4xl font-bold bg-linear-to-r from-gray-900 via-pink-800 to-red-900 bg-clip-text text-transparent flex items-center gap-3">
-                        <Heart class="w-10 h-10 text-red-500 fill-red-500" />
-                        My Wishlist
-                    </h1>
-                    <p class="text-gray-600 mt-2">{{ itemCount }} {{ itemCount === 1 ? 'item' : 'items' }} saved for later</p>
+            <div class="flex flex-wrap items-end justify-between gap-4 mb-10">
+                <div class="space-y-2">
+                    <span class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-accent">
+                        <Heart class="w-4 h-4 fill-accent" />
+                        Saved for later
+                    </span>
+                    <h1 class="text-4xl md:text-5xl font-elegant font-bold text-ink">Your wishlist</h1>
+                    <p class="text-sm text-neutral-500">
+                        <span class="font-bold text-ink tabular-nums">{{ items.length }}</span> {{ items.length === 1 ? 'item' : 'items' }}
+                        <span v-if="items.length" class="mx-2">·</span>
+                        <span v-if="items.length" class="font-bold text-accent tabular-nums">{{ '$' }}{{ totalValue.toFixed(2) }}</span> total
+                    </p>
                 </div>
                 <button
-                    v-if="itemCount > 0"
-                    @click="clearWishlist"
-                    class="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                    v-if="items.length"
+                    @click="clearAll"
+                    class="inline-flex items-center gap-2 px-4 py-2 bg-paper border border-neutral-300 text-ink text-sm font-bold rounded-full hover:border-accent hover:text-accent transition-all"
                 >
-                    Clear All
+                    <Trash2 class="w-4 h-4" />
+                    Clear all
                 </button>
             </div>
 
-            <!-- Empty State -->
-            <div v-if="itemCount === 0" class="bg-white rounded-3xl shadow-lg p-12 text-center border border-gray-100">
-                <div class="w-24 h-24 mx-auto mb-6 bg-linear-to-br from-pink-100 to-red-100 rounded-full flex items-center justify-center">
-                    <Heart class="w-12 h-12 text-red-400" />
+            <!-- Empty state -->
+            <div v-if="!items.length" class="card-flat text-center py-20 px-6">
+                <div class="w-20 h-20 rounded-full bg-neutral-100 flex items-center justify-center mx-auto mb-5">
+                    <Heart class="w-10 h-10 text-neutral-400" />
                 </div>
-                <h2 class="text-2xl font-bold text-gray-900 mb-2">Your wishlist is empty</h2>
-                <p class="text-gray-600 mb-8">Save items you love to your wishlist and revisit them anytime.</p>
-                <button
-                    @click="continueShopping"
-                    class="inline-flex items-center gap-2 px-8 py-3 bg-linear-to-r from-gray-900 to-gray-800 text-white font-semibold rounded-full hover:shadow-lg hover:shadow-gray-400/30 transition-all duration-300"
-                >
-                    <ArrowLeft class="w-5 h-5" />
-                    Browse Products
-                </button>
+                <h2 class="text-2xl font-elegant font-bold text-ink mb-2">No favorites yet</h2>
+                <p class="text-neutral-500 mb-6 max-w-md mx-auto">Tap the heart on any product to save it for later. Your wishlist syncs across all your devices.</p>
+                <RouterLink to="/product" class="btn-accent">
+                    Discover products
+                    <ArrowRight class="w-4 h-4" />
+                </RouterLink>
             </div>
 
-            <!-- Wishlist Grid -->
-            <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                <div
-                    v-for="item in wishlistItems"
+            <!-- Grid -->
+            <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                <article
+                    v-for="item in items"
                     :key="item.id"
-                    class="group bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100"
+                    class="bg-paper border border-neutral-200 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-ink hover:shadow-[0_12px_32px_-8px_rgb(0_0_0_/_0.12)] group/card"
                 >
-                    <!-- Product Image -->
-                    <div class="relative aspect-square overflow-hidden bg-gray-100">
-                        <img
-                            :src="item.image"
-                            :alt="item.name"
-                            class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
-                        <button
-                            @click="removeItem(item.id)"
-                            class="absolute top-3 right-3 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-md"
-                            aria-label="Remove from wishlist"
-                        >
-                            <Trash2 class="w-5 h-5" />
-                        </button>
-                        <span
-                            v-if="!item.inStock"
-                            class="absolute top-3 left-3 px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full"
-                        >
-                            Out of Stock
-                        </span>
-                    </div>
-
-                    <!-- Product Info -->
-                    <div class="p-5">
-                        <h3 class="font-bold text-gray-900 mb-2 line-clamp-1">{{ item.name }}</h3>
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="text-2xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                                ${{ item.price.toFixed(2) }}
-                            </span>
+                    <RouterLink :to="'/product/' + item.id" class="block">
+                        <div class="relative aspect-square bg-neutral-100 overflow-hidden">
+                            <img :src="item.image" :alt="item.name" class="w-full h-full object-cover transition-transform duration-700 group-hover/card:scale-110" />
+                            <div class="absolute top-3 right-3">
+                                <WishListBtn :item="item" />
+                            </div>
                         </div>
-                        <button
-                            @click="moveToCart(item)"
-                            :disabled="!item.inStock"
-                            :class="{
-                                'opacity-50 cursor-not-allowed': !item.inStock
-                            }"
-                            class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-linear-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all duration-300 disabled:hover:shadow-none"
-                        >
-                            <ShoppingCart class="w-5 h-5" />
-                            {{ item.inStock ? 'Move to Cart' : 'Unavailable' }}
-                        </button>
-                    </div>
-                </div>
+                        <div class="p-5 space-y-2">
+                            <p v-if="item.category" class="text-[10px] font-bold uppercase tracking-[0.2em] text-accent">{{ item.category }}</p>
+                            <h3 class="font-bold text-base text-ink group-hover/card:text-accent transition-colors">{{ item.name }}</h3>
+                            <p class="text-lg font-bold text-ink tabular-nums">{{ '$' }}{{ item.price }}</p>
+                            <button class="mt-3 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-ink text-paper text-sm font-bold rounded-full hover:bg-accent transition-all">
+                                <ShoppingCart class="w-4 h-4" />
+                                Move to cart
+                            </button>
+                        </div>
+                    </RouterLink>
+                </article>
             </div>
-        </div>
+        </section>
     </div>
 </template>
-
-<style scoped>
-.line-clamp-1 {
-    display: -webkit-box;
-    line-clamp: 1;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-</style>

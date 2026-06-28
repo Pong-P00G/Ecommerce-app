@@ -105,17 +105,17 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="min-h-screen bg-neutral-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       <!-- Header -->
       <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">Stock Management</h1>
-        <p class="text-gray-600 mt-1">Monitor and update product inventory</p>
+        <h1 class="text-2xl sm:text-3xl font-bold text-ink">Stock Management</h1>
+        <p class="text-neutral-600 mt-1 text-sm sm:text-base">Monitor and update product inventory</p>
       </div>
 
       <!-- Stats -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="bg-white rounded-2xl shadow-sm p-6">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8">
+        <div class="bg-paper rounded-2xl shadow-sm p-6">
           <div class="flex items-center justify-between mb-4">
             <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
               <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -123,11 +123,11 @@ onMounted(async () => {
               </svg>
             </div>
           </div>
-          <p class="text-gray-600 text-sm mb-1">Total Products</p>
-          <p class="text-3xl font-bold text-gray-900">{{ products?.length || 0 }}</p>
+          <p class="text-neutral-600 text-sm mb-1">Total Products</p>
+          <p class="text-3xl font-bold text-ink">{{ products?.length || 0 }}</p>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-sm p-6 border-l-4 border-yellow-500">
+        <div class="bg-paper rounded-2xl shadow-sm p-6 border-l-4 border-yellow-500">
           <div class="flex items-center justify-between mb-4">
             <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
               <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -136,11 +136,11 @@ onMounted(async () => {
               </svg>
             </div>
           </div>
-          <p class="text-gray-600 text-sm mb-1">Low Stock</p>
+          <p class="text-neutral-600 text-sm mb-1">Low Stock</p>
           <p class="text-3xl font-bold text-yellow-600">{{ lowStockCount }}</p>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-sm p-6 border-l-4 border-red-500">
+        <div class="bg-paper rounded-2xl shadow-sm p-6 border-l-4 border-red-500">
           <div class="flex items-center justify-between mb-4">
             <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
               <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -148,20 +148,20 @@ onMounted(async () => {
               </svg>
             </div>
           </div>
-          <p class="text-gray-600 text-sm mb-1">Out of Stock</p>
+          <p class="text-neutral-600 text-sm mb-1">Out of Stock</p>
           <p class="text-3xl font-bold text-red-600">{{ outOfStockCount }}</p>
         </div>
       </div>
 
       <!-- Filters -->
-      <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
+      <div class="bg-paper rounded-2xl shadow-sm p-6 mb-6">
         <div class="flex flex-col sm:flex-row gap-4">
           <!-- Search -->
           <div class="flex-1">
             <div class="relative">
               <input v-model="searchQuery" type="text" placeholder="Search products..."
-                class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400" />
-              <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
+                class="w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400" />
+              <svg class="absolute left-3 top-3.5 h-5 w-5 text-neutral-400" fill="none" stroke="currentColor"
                 viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -170,22 +170,22 @@ onMounted(async () => {
           </div>
 
           <!-- Status Filter -->
-          <div class="flex gap-2">
+          <div class="flex flex-wrap gap-2">
             <button @click="filterStatus = 'all'" :class="{
-              'bg-gray-900 text-white': filterStatus === 'all',
-              'bg-gray-100 text-gray-700': filterStatus !== 'all'
+              'bg-ink text-white': filterStatus === 'all',
+              'bg-neutral-100 text-neutral-700': filterStatus !== 'all'
             }" class="px-4 py-3 rounded-lg font-medium transition-colors">
               All
             </button>
             <button @click="filterStatus = 'low'" :class="{
               'bg-yellow-600 text-white': filterStatus === 'low',
-              'bg-gray-100 text-gray-700': filterStatus !== 'low'
+              'bg-neutral-100 text-neutral-700': filterStatus !== 'low'
             }" class="px-4 py-3 rounded-lg font-medium transition-colors">
               Low Stock
             </button>
             <button @click="filterStatus = 'out'" :class="{
               'bg-red-600 text-white': filterStatus === 'out',
-              'bg-gray-100 text-gray-700': filterStatus !== 'out'
+              'bg-neutral-100 text-neutral-700': filterStatus !== 'out'
             }" class="px-4 py-3 rounded-lg font-medium transition-colors">
               Out of Stock
             </button>
@@ -195,56 +195,56 @@ onMounted(async () => {
 
       <!-- Loading -->
       <div v-if="loading" class="flex items-center justify-center py-20">
-        <div class="w-16 h-16 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin"></div>
+        <div class="w-16 h-16 border-4 border-neutral-200 border-t-ink rounded-full animate-spin"></div>
       </div>
 
       <!-- Products Table -->
-      <div v-else class="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div v-else class="bg-paper rounded-2xl shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
-          <table class="w-full">
-            <thead class="bg-gray-50 border-b border-gray-200">
+          <table class="w-full min-w-[800px]">
+            <thead class="bg-neutral-50 border-b border-neutral-200">
               <tr>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Product
+                <th class="px-6 py-4 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wider">Product
                 </th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Category
+                <th class="px-6 py-4 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wider">Category
                 </th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Price</th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Stock</th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                <th class="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions
+                <th class="px-6 py-4 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wider">Price</th>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wider">Stock</th>
+                <th class="px-6 py-4 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wider">Status</th>
+                <th class="px-6 py-4 text-right text-xs font-semibold text-neutral-600 uppercase tracking-wider">Actions
                 </th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200">
+            <tbody class="divide-y divide-neutral-200">
               <tr v-for="product in filteredProducts" :key="product.product_id"
-                class="hover:bg-gray-50 transition-colors">
+                class="hover:bg-neutral-50 transition-colors">
                 <!-- Product -->
                 <td class="px-6 py-4">
                   <div class="flex items-center gap-4">
-                    <div class="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                    <div class="w-16 h-16 bg-neutral-100 rounded-lg overflow-hidden shrink-0">
                       <img :src="product.main_image || 'https://via.placeholder.com/80'" :alt="product.product_name"
                         class="w-full h-full object-cover" @error="handleImageError" />
                     </div>
                     <div class="min-w-0">
-                      <p class="font-semibold text-gray-900 truncate">{{ product.product_name }}</p>
-                      <p class="text-sm text-gray-500 truncate">ID: {{ product.product_id }}</p>
+                      <p class="font-semibold text-ink truncate">{{ product.product_name }}</p>
+                      <p class="text-sm text-neutral-500 truncate">ID: {{ product.product_id }}</p>
                     </div>
                   </div>
                 </td>
 
                 <!-- Category -->
                 <td class="px-6 py-4">
-                  <span class="text-sm text-gray-900">{{ product.category_name || 'N/A' }}</span>
+                  <span class="text-sm text-ink">{{ product.category_name || 'N/A' }}</span>
                 </td>
 
                 <!-- Price -->
                 <td class="px-6 py-4">
-                  <span class="text-sm font-semibold text-gray-900">${{ formatPrice(product.final_price) }}</span>
+                  <span class="text-sm font-semibold text-ink">${{ formatPrice(product.final_price) }}</span>
                 </td>
 
                 <!-- Stock -->
                 <td class="px-6 py-4">
-                  <span class="text-2xl font-bold text-gray-900">{{ product.total_stock || 0 }}</span>
+                  <span class="text-2xl font-bold text-ink">{{ product.total_stock || 0 }}</span>
                 </td>
 
                 <!-- Status -->
@@ -259,7 +259,7 @@ onMounted(async () => {
                 <!-- Actions -->
                 <td class="px-6 py-4 text-right">
                   <button @click="openUpdateModal(product)"
-                    class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium">
+                    class="px-4 py-2 bg-ink text-white rounded-lg hover:bg-neutral-800 transition-colors text-sm font-medium">
                     Update Stock
                   </button>
                 </td>
@@ -270,48 +270,48 @@ onMounted(async () => {
 
         <!-- Empty State -->
         <div v-if="filteredProducts.length === 0" class="text-center py-12">
-          <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="mx-auto h-12 w-12 text-neutral-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
           </svg>
-          <p class="text-gray-500">No products found</p>
+          <p class="text-neutral-500">No products found</p>
         </div>
       </div>
     </div>
 
     <!-- Update Stock Modal -->
     <div v-if="showUpdateModal" @click="closeUpdateModal"
-      class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div @click.stop class="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
-        <h3 class="text-xl font-bold text-gray-900 mb-6">Update Stock</h3>
+      class="fixed inset-0 bg-ink/50 z-50 flex items-center justify-center p-4">
+      <div @click.stop class="bg-paper rounded-2xl p-5 sm:p-8 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+        <h3 class="text-xl font-bold text-ink mb-6">Update Stock</h3>
 
         <!-- Product Info -->
-        <div class="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
-          <div class="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden shrink-0">
+        <div class="flex items-center gap-4 mb-6 p-4 bg-neutral-50 rounded-lg">
+          <div class="w-16 h-16 bg-neutral-200 rounded-lg overflow-hidden shrink-0">
             <img :src="selectedProduct?.main_image || 'https://via.placeholder.com/80'"
               :alt="selectedProduct?.product_name" class="w-full h-full object-cover" @error="handleImageError" />
           </div>
           <div class="flex-1 min-w-0">
-            <p class="font-semibold text-gray-900 truncate">{{ selectedProduct?.product_name }}</p>
-            <p class="text-sm text-gray-500">Current: {{ selectedProduct?.total_stock || 0 }} units</p>
+            <p class="font-semibold text-ink truncate">{{ selectedProduct?.product_name }}</p>
+            <p class="text-sm text-neutral-500">Current: {{ selectedProduct?.total_stock || 0 }} units</p>
           </div>
         </div>
 
         <!-- Stock Input -->
         <div class="mb-6">
-          <label class="block text-sm font-semibold text-gray-900 mb-2">New Stock Quantity</label>
+          <label class="block text-sm font-semibold text-ink mb-2">New Stock Quantity</label>
           <input v-model.number="newStock" type="number" min="0"
-            class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 text-lg font-semibold" />
+            class="w-full px-4 py-3 border-2 border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 text-lg font-semibold" />
         </div>
 
         <!-- Actions -->
         <div class="flex gap-3">
           <button @click="closeUpdateModal"
-            class="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-semibold">
+            class="flex-1 px-6 py-3 bg-neutral-100 text-neutral-700 rounded-lg hover:bg-neutral-200 transition-colors font-semibold">
             Cancel
           </button>
           <button @click="updateStock"
-            class="flex-1 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-semibold">
+            class="flex-1 px-6 py-3 bg-ink text-white rounded-lg hover:bg-neutral-800 transition-colors font-semibold">
             Update
           </button>
         </div>

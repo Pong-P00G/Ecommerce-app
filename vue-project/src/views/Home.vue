@@ -1,272 +1,418 @@
 <script setup>
-import { ref, computed } from 'vue'
-import { RouterLink } from 'vue-router'
-import { ArrowRight } from 'lucide-vue-next'
-import ProductCarousel from '../components/ProductCarousel.vue'
-import HeroCarousel from '../components/HeroCarousel.vue'
+import { ref, computed } from 'vue';
+import { RouterLink } from 'vue-router';
+import {
+    ArrowRight,
+    Sparkles,
+    Truck,
+    ShieldCheck,
+    RotateCcw,
+    Headphones,
+    Search,
+    SlidersHorizontal,
+    Grid3x3,
+    List,
+    Heart,
+    Plus,
+    Tag,
+    ChevronLeft,
+    ChevronRight,
+} from 'lucide-vue-next';
+import ProductCarousel from '../components/ProductCarousel.vue';
+import HeroCarousel from '../components/HeroCarousel.vue';
 
-// sample product data (replace with real API/source)
 const rawProducts = [
-    { id: 1, name: 'Aurora Tee', price: 29, category: 'Tops', tags: ['casual', 'cotton'], description: 'Soft breathable cotton tee', image: '/p1.jpg', badge: 'New' },
-    { id: 2, name: 'Nimbus Hoodie', price: 59, category: 'Outerwear', tags: ['cozy', 'fleece'], description: 'Warm hoodie for everyday wear', image: '/p2.jpg', badge: 'Hot' },
-    { id: 3, name: 'Voyager Pants', price: 69, category: 'Bottoms', tags: ['stretch', 'travel'], description: 'Comfortable stretch pants', image: '/p3.jpg', badge: 'Bestseller' },
-    { id: 4, name: 'Lumen Cap', price: 19, category: 'Accessories', tags: ['sun', 'casual'], description: 'Lightweight cap', image: '/p4.jpg', badge: 'Popular' },
-    { id: 5, name: 'Echo Socks', price: 9, category: 'Accessories', tags: ['comfort'], description: 'Everyday socks', image: '/p5.jpg', badge: '' },
-    { id: 6, name: 'Haven Jacket', price: 129, category: 'Outerwear', tags: ['waterproof'], description: 'Weather-ready jacket', image: '/p6.jpg', badge: 'New' }
-]
+    { id: 1, name: 'Aurora Tee', price: 29, category: 'Tops', tags: ['casual', 'cotton'], description: 'Soft breathable cotton tee', image: '/p1.jpg', badge: 'New', href: '/product/1' },
+    { id: 2, name: 'Nimbus Hoodie', price: 59, category: 'Outerwear', tags: ['cozy', 'fleece'], description: 'Warm hoodie for everyday wear', image: '/p2.jpg', badge: 'Hot', href: '/product/2' },
+    { id: 3, name: 'Voyager Pants', price: 69, category: 'Bottoms', tags: ['stretch', 'travel'], description: 'Comfortable stretch pants', image: '/p3.jpg', badge: 'Bestseller', href: '/product/3' },
+    { id: 4, name: 'Lumen Cap', price: 19, category: 'Accessories', tags: ['sun', 'casual'], description: 'Lightweight cap', image: '/p4.jpg', badge: 'Popular', href: '/product/4' },
+    { id: 5, name: 'Echo Socks', price: 9, category: 'Accessories', tags: ['comfort'], description: 'Everyday socks', image: '/p5.jpg', badge: '', href: '/product/5' },
+    { id: 6, name: 'Haven Jacket', price: 129, category: 'Outerwear', tags: ['waterproof'], description: 'Weather-ready jacket', image: '/p6.jpg', badge: 'New', href: '/product/6' },
+    { id: 7, name: 'Sierra Boots', price: 149, category: 'Footwear', tags: ['leather', 'rugged'], description: 'Handcrafted leather boots', image: '/p7.jpg', badge: '', href: '/product/7' },
+    { id: 8, name: 'Drift Backpack', price: 89, category: 'Accessories', tags: ['travel', 'canvas'], description: 'Roomy canvas backpack', image: '/p8.jpg', badge: 'Hot', href: '/product/8' },
+    { id: 9, name: 'Mirage Sunglasses', price: 79, category: 'Accessories', tags: ['uv', 'unisex'], description: 'Polarised UV lenses', image: '/p9.jpg', badge: 'New', href: '/product/9' },
+];
 
-// reactive UI state
-const filters = ref({ q: '', category: '', tag: '', minPrice: null, maxPrice: null, sort: 'new' })
-const view = ref('grid')
-const page = ref(1)
-const perPage = ref(6)
-const products = ref(rawProducts)
-const categories = computed(() => [...new Set(products.value.map(p => p.category))])
-const tags = computed(() => [...new Set(products.value.flatMap(p => p.tags))])
+const filters = ref({ q: '', category: '', tag: '', minPrice: null, maxPrice: null, sort: 'new' });
+const view = ref('grid');
+const page = ref(1);
+const perPage = ref(9);
+const products = ref(rawProducts);
+const showFilters = ref(false);
+
+const categories = computed(() => [...new Set(products.value.map((p) => p.category))]);
+const tags = computed(() => [...new Set(products.value.flatMap((p) => p.tags))]);
 
 function toggleTag(t) {
-    filters.value.tag = filters.value.tag === t ? '' : t
+    filters.value.tag = filters.value.tag === t ? '' : t;
 }
 
 function resetFilters() {
-    filters.value = { q: '', category: '', tag: '', minPrice: null, maxPrice: null, sort: 'new' }
-    page.value = 1
+    filters.value = { q: '', category: '', tag: '', minPrice: null, maxPrice: null, sort: 'new' };
+    page.value = 1;
 }
 
 const filtered = computed(() => {
-    let list = products.value.slice()
-    const f = filters.value
+    let list = products.value.slice();
+    const f = filters.value;
     if (f.q) {
-        const q = f.q.toLowerCase()
-        list = list.filter(p => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q))
+        const q = f.q.toLowerCase();
+        list = list.filter((p) => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q));
     }
-    if (f.category) list = list.filter(p => p.category === f.category)
-    if (f.tag) list = list.filter(p => p.tags.includes(f.tag))
-    if (f.minPrice != null) list = list.filter(p => p.price >= f.minPrice)
-    if (f.maxPrice != null) list = list.filter(p => p.price <= f.maxPrice)
-    if (f.sort === 'price-asc') list.sort((a, b) => a.price - b.price)
-    else if (f.sort === 'price-desc') list.sort((a, b) => b.price - a.price)
-    else list.sort((a, b) => b.id - a.id) // newest first by id
+    if (f.category) list = list.filter((p) => p.category === f.category);
+    if (f.tag) list = list.filter((p) => p.tags.includes(f.tag));
+    if (f.minPrice != null) list = list.filter((p) => p.price >= f.minPrice);
+    if (f.maxPrice != null) list = list.filter((p) => p.price <= f.maxPrice);
+    if (f.sort === 'price-asc') list.sort((a, b) => a.price - b.price);
+    else if (f.sort === 'price-desc') list.sort((a, b) => b.price - a.price);
+    else list.sort((a, b) => b.id - a.id);
+    return list;
+});
 
-    return list
-})
-
-const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / perPage.value)))
+const totalPages = computed(() => Math.max(1, Math.ceil(filtered.value.length / perPage.value)));
 const paginated = computed(() => {
-    const start = (page.value - 1) * perPage.value
-    return filtered.value.slice(start, start + perPage.value)
-})
+    const start = (page.value - 1) * perPage.value;
+    return filtered.value.slice(start, start + perPage.value);
+});
 
-function nextPage() { if (page.value < totalPages.value) page.value++ }
-function prevPage() { if (page.value > 1) page.value-- }
-
-function addToCart(p) {
-    // placeholder: integrate with store / API
-    alert(`Added ${p.name} to cart`)
+function nextPage() {
+    if (page.value < totalPages.value) page.value++;
+}
+function prevPage() {
+    if (page.value > 1) page.value--;
 }
 
-function quickAdd(p) { addToCart(p) }
+function addToCart(p) {
+    alert('Added ' + p.name + ' to cart');
+}
 
+const promises = [
+    { icon: Truck, title: 'Free shipping', desc: 'On orders over ' + ('$') + '50' },
+    { icon: RotateCcw, title: '7-day returns', desc: 'Hassle-free refunds' },
+    { icon: ShieldCheck, title: 'Secure checkout', desc: '256-bit SSL encryption' },
+    { icon: Headphones, title: '24/7 support', desc: 'Real humans, real help' },
+];
 </script>
 
-
 <template>
-    <div class="min-h-screen bg-secondary">
-        <!-- Hero Section-->
-        <header class="relative overflow-hidden">
-            <HeroCarousel class="mb-6 mt-8" />
-            <div class="max-w-7xl mx-auto px-6 py-24 lg:py-32">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                    <div class="space-y-8">
-                        <h1
-                            class="text-5xl sm:text-6xl md:text-7xl font-elegant font-bold text-primary leading-tight tracking-tight">
-                            Timeless Apparel & Essentials
-                            <span class="block text-neutral-600 font-light mt-2">Designed for the modern lifestyle.</span>
-                        </h1>
-                        <p class="text-lg text-neutral-600 max-w-xl font-light leading-relaxed">
-                            Curated pieces, premium materials, and fast shipping. Explore our collections and discover pieces crafted to last.
-                        </p>
-                        <div class="flex items-center gap-4 mt-8">
-                            <RouterLink to="/product"
-                                class="px-8 py-4 bg-primary text-secondary font-bold rounded-full hover:bg-neutral-800 transition-all duration-300 flex items-center gap-3 group">
-                                Shop All Collections
-                                <ArrowRight class="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                            </RouterLink>
-                            <RouterLink to="/about"
-                                class="px-8 py-4 bg-neutral-100 text-primary font-bold rounded-full hover:bg-neutral-200 transition-all duration-300">
-                                Learn more →
-                            </RouterLink>
-                        </div>
-                        <div class="mt-8 flex gap-3 flex-wrap">
-                            <span
-                                class="px-4 py-2 rounded-full bg-secondary border border-neutral-300 text-sm font-medium text-neutral-700">Free
-                                shipping over $50</span>
-                            <span
-                                class="px-4 py-2 rounded-full bg-secondary border border-neutral-300 text-sm font-medium text-neutral-700">7‑day
-                                returns</span>
-                            <span
-                                class="px-4 py-2 rounded-full bg-secondary border border-neutral-300 text-sm font-medium text-neutral-700">Premium
-                                materials</span>
-                        </div>
+    <div class="min-h-screen bg-paper">
+        <!-- Hero Carousel -->
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+            <HeroCarousel />
+        </section>
+
+        <!-- Promise strip -->
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 sm:mt-12">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+                <div v-for="p in promises" :key="p.title" class="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-paper border border-neutral-200 rounded-2xl hover:border-ink transition-colors group">
+                    <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-neutral-100 group-hover:bg-accent group-hover:text-white flex items-center justify-center transition-colors shrink-0">
+                        <component :is="p.icon" class="w-4 h-4 text-ink group-hover:text-white transition-colors" />
                     </div>
-                    <!-- Hero visual / featured card -->
-                    <div class="relative">
-                        <div
-                            class="rounded-3xl bg-secondary p-8 border border-neutral-200 transform transition-transform hover:scale-102">
-                            <div class="flex items-center gap-6">
-                                <ProductCarousel :products="rawProducts" />
-                            </div>
-                        </div>
-                        <!-- floating badges -->
-                        <div class="absolute -right-6 -top-6 transform rotate-12">
-                            <div class="px-4 py-2 bg-primary text-secondary rounded-2xl text-sm font-bold">
-                                Limited</div>
-                        </div>
-                        <div class="absolute -left-8 bottom-0 rotate-6">
-                            <div
-                                class="px-4 py-2 bg-secondary border border-neutral-300 text-primary rounded-full text-sm font-medium">
-                                Bestseller</div>
-                        </div>
+                    <div class="min-w-0">
+                        <p class="text-xs sm:text-sm font-bold text-ink truncate">{{ p.title }}</p>
+                        <p class="text-[10px] sm:text-xs text-neutral-500 truncate">{{ p.desc }}</p>
                     </div>
                 </div>
             </div>
-        </header>
+        </section>
 
-        <!-- Main content: Filters + Products -->
-        <main class="max-w-7xl mx-auto px-6 py-16">
+        <!-- Featured carousel -->
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 sm:mt-16">
+            <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
+                <div>
+                    <span class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-accent mb-2">
+                        <Sparkles class="w-3.5 h-3.5" />
+                        Hand-picked
+                    </span>
+                    <h2 class="text-2xl sm:text-3xl md:text-4xl font-elegant font-bold text-ink">Featured this week</h2>
+                </div>
+                <RouterLink to="/product" class="hidden md:inline-flex items-center gap-2 text-sm font-bold text-ink hover:text-accent transition-colors">
+                    View all
+                    <ArrowRight class="w-4 h-4" />
+                </RouterLink>
+            </div>
+            <ProductCarousel :products="rawProducts.slice(0, 6)" />
+        </section>
+
+        <!-- Filters + Products -->
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 sm:mt-20">
+            <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-8 gap-4 flex-wrap">
+                <div>
+                    <span class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-accent mb-2">
+                        <Tag class="w-3.5 h-3.5" />
+                        Catalog
+                    </span>
+                    <h2 class="text-2xl sm:text-3xl md:text-4xl font-elegant font-bold text-ink">All products</h2>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button
+                        @click="showFilters = !showFilters"
+                        class="lg:hidden inline-flex items-center gap-2 px-4 py-2.5 bg-ink text-paper text-sm font-bold rounded-full"
+                    >
+                        <SlidersHorizontal class="w-4 h-4" />
+                        Filters
+                    </button>
+                    <div class="hidden sm:flex items-center bg-paper border border-neutral-200 rounded-full p-1">
+                        <button
+                            @click="view = 'grid'"
+                            :class="view === 'grid' ? 'bg-ink text-paper' : 'text-ink hover:bg-neutral-100'"
+                            class="w-9 h-9 rounded-full flex items-center justify-center transition-colors"
+                            aria-label="Grid view"
+                        >
+                            <Grid3x3 class="w-4 h-4" />
+                        </button>
+                        <button
+                            @click="view = 'list'"
+                            :class="view === 'list' ? 'bg-ink text-paper' : 'text-ink hover:bg-neutral-100'"
+                            class="w-9 h-9 rounded-full flex items-center justify-center transition-colors"
+                            aria-label="List view"
+                        >
+                            <List class="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                <!-- Filters column -->
-                <aside class="lg:col-span-1 bg-secondary border border-neutral-200 rounded-2xl p-6 h-fit">
-                    <h4 class="text-xl font-elegant font-bold text-primary mb-6">Filters</h4>
-                    <div class="space-y-6">
+                <!-- Filters -->
+                <aside
+                    class="lg:col-span-1 bg-paper border border-neutral-200 rounded-2xl p-6 h-fit lg:sticky lg:top-24"
+                    :class="showFilters ? 'block' : 'hidden lg:block'"
+                >
+                    <h4 class="text-sm font-bold uppercase tracking-[0.2em] text-ink mb-5 flex items-center gap-2">
+                        <SlidersHorizontal class="w-4 h-4" />
+                        Filters
+                    </h4>
+                    <div class="space-y-5">
                         <div>
-                            <label class="block text-sm font-semibold text-primary mb-3">Search</label>
-                            <input v-model="filters.q" placeholder="Search products"
-                                class="w-full px-4 py-3 rounded-xl border border-neutral-300 focus:border-primary focus:outline-none transition-all bg-neutral-50" />
+                            <label class="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Search</label>
+                            <div class="relative">
+                                <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                                <input
+                                    v-model="filters.q"
+                                    placeholder="Search products"
+                                    class="w-full pl-10 pr-3 py-2.5 rounded-xl bg-neutral-50 border border-neutral-200 focus:border-ink focus:bg-paper focus:outline-none transition-all text-sm"
+                                />
+                            </div>
                         </div>
                         <div>
-                            <label class="block text-sm font-semibold text-primary mb-3">Category</label>
-                            <div class="flex flex-wrap gap-2">
-                                <button v-for="c in ['All', ...categories]" :key="c"
+                            <label class="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Category</label>
+                            <div class="flex flex-wrap gap-1.5">
+                                <button
+                                    v-for="c in ['All', ...categories]"
+                                    :key="c"
                                     @click="filters.category = c === 'All' ? '' : c"
-                                    :class="['px-4 py-2 rounded-full text-sm font-medium border transition-all duration-300', filters.category === c ? 'bg-primary text-secondary border-primary' : 'bg-secondary text-neutral-700 border-neutral-300 hover:border-primary']">
+                                    :class="[
+                                        'px-3 py-1.5 rounded-full text-xs font-bold border transition-all duration-200',
+                                        filters.category === c
+                                            ? 'bg-ink text-paper border-ink'
+                                            : 'bg-paper text-neutral-700 border-neutral-200 hover:border-ink'
+                                    ]"
+                                >
                                     {{ c }}
                                 </button>
                             </div>
                         </div>
                         <div>
-                            <label class="block text-sm font-semibold text-primary mb-3">Tags</label>
-                            <div class="flex flex-wrap gap-2">
-                                <button v-for="t in tags" :key="t" @click="toggleTag(t)"
-                                    :class="['px-4 py-2 rounded-full text-sm font-medium border transition-all duration-300', filters.tag === t ? 'bg-neutral-100 text-primary border-primary' : 'bg-secondary text-neutral-700 border-neutral-300 hover:border-primary']">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Tags</label>
+                            <div class="flex flex-wrap gap-1.5">
+                                <button
+                                    v-for="t in tags"
+                                    :key="t"
+                                    @click="toggleTag(t)"
+                                    :class="[
+                                        'px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200',
+                                        filters.tag === t
+                                            ? 'bg-accent text-white border-accent'
+                                            : 'bg-paper text-neutral-700 border-neutral-200 hover:border-accent'
+                                    ]"
+                                >
                                     #{{ t }}
                                 </button>
                             </div>
                         </div>
                         <div>
-                            <label class="block text-sm font-semibold text-primary mb-3">Price Range</label>
-                            <div class="flex items-center gap-3">
-                                <input type="number" v-model.number="filters.minPrice"
-                                    class="w-1/2 px-4 py-3 rounded-xl border border-neutral-300 focus:border-primary focus:outline-none transition-all bg-neutral-50"
-                                    placeholder="Min" />
-                                <input type="number" v-model.number="filters.maxPrice"
-                                    class="w-1/2 px-4 py-3 rounded-xl border border-neutral-300 focus:border-primary focus:outline-none transition-all bg-neutral-50"
-                                    placeholder="Max" />
+                            <label class="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Price range</label>
+                            <div class="flex items-center gap-2">
+                                <input type="number" v-model.number="filters.minPrice" class="w-1/2 px-3 py-2.5 rounded-xl bg-neutral-50 border border-neutral-200 focus:border-ink focus:bg-paper focus:outline-none transition-all text-sm" placeholder="Min" />
+                                <span class="text-neutral-400">–</span>
+                                <input type="number" v-model.number="filters.maxPrice" class="w-1/2 px-3 py-2.5 rounded-xl bg-neutral-50 border border-neutral-200 focus:border-ink focus:bg-paper focus:outline-none transition-all text-sm" placeholder="Max" />
                             </div>
                         </div>
                         <div>
-                            <label class="block text-sm font-semibold text-primary mb-3">Sort By</label>
-                            <select v-model="filters.sort"
-                                class="w-full px-4 py-3 rounded-xl border border-neutral-300 focus:border-primary focus:outline-none transition-all bg-neutral-50">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Sort by</label>
+                            <select v-model="filters.sort" class="w-full px-3 py-2.5 rounded-xl bg-neutral-50 border border-neutral-200 focus:border-ink focus:bg-paper focus:outline-none transition-all text-sm">
                                 <option value="new">Newest</option>
-                                <option value="price-asc">Price: Low → High</option>
-                                <option value="price-desc">Price: High → Low</option>
+                                <option value="price-asc">Price: Low to High</option>
+                                <option value="price-desc">Price: High to Low</option>
                             </select>
                         </div>
-                        <button @click="resetFilters"
-                            class="w-full mt-4 px-4 py-3 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-primary font-semibold transition-all duration-300">Reset
-                            Filters</button>
+                        <button @click="resetFilters" class="w-full mt-2 px-4 py-2.5 rounded-xl bg-neutral-100 hover:bg-ink hover:text-paper text-ink text-sm font-bold transition-all">
+                            Reset filters
+                        </button>
                     </div>
                 </aside>
 
-                <!-- Products grid -->
+                <!-- Grid -->
                 <section class="lg:col-span-3">
-                    <div class="flex items-center justify-between mb-8">
-                        <div>
-                            <h2 class="text-3xl font-elegant font-bold text-primary">Showing <span class="text-neutral-600">{{
-                                    filtered.length }}</span> products</h2>
-                            <p class="text-sm text-neutral-500 font-medium mt-1">Hand-picked for you</p>
-                        </div>
-                        <div class="hidden sm:flex items-center gap-3">
-                            <label class="text-sm font-semibold text-neutral-700">View</label>
-                            <button @click="view = 'grid'"
-                                :class="view === 'grid' ? 'bg-primary text-secondary' : 'bg-neutral-100 text-neutral-700'"
-                                class="px-4 py-2 rounded-lg font-medium transition-all duration-300">Grid</button>
-                            <button @click="view = 'list'"
-                                :class="view === 'list' ? 'bg-primary text-secondary' : 'bg-neutral-100 text-neutral-700'"
-                                class="px-4 py-2 rounded-lg font-medium transition-all duration-300">List</button>
-                        </div>
+                    <div class="mb-5 flex items-center justify-between">
+                        <p class="text-sm text-neutral-600">
+                            Showing <span class="font-bold text-ink">{{ filtered.length }}</span> {{ filtered.length === 1 ? 'product' : 'products' }}
+                        </p>
                     </div>
-                    <transition-group name="list" tag="div"
-                        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <article v-for="p in paginated" :key="p.id"
-                            class="bg-secondary border border-neutral-200 rounded-2xl p-5 transform transition-all duration-300 hover:-translate-y-2 hover:border-neutral-400 group">
-                            <div class="relative">
-                                <img :src="p.image" alt="" class="w-full h-56 object-cover rounded-xl" />
-                                <div v-if="p.badge"
-                                    class="absolute top-3 left-3 bg-primary text-secondary px-3 py-1 rounded-full text-xs font-bold">
-                                    {{ p.badge }}</div>
-                                <div
-                                    class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button @click="quickAdd(p)"
-                                        class="bg-secondary border border-neutral-300 rounded-full p-2 hover:bg-primary hover:text-secondary transition-all duration-300">+</button>
+
+                    <transition-group
+                        name="list"
+                        tag="div"
+                        :class="view === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5' : 'flex flex-col gap-4'"
+                    >
+                        <!-- GRID CARD -->
+                        <article
+                            v-for="p in paginated"
+                            :key="p.id"
+                            v-show="view === 'grid'"
+                            class="bg-paper border border-neutral-200 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-ink hover:shadow-[0_12px_32px_-8px_rgb(0_0_0_/_0.12)] group/card"
+                        >
+                            <RouterLink :to="'/product/' + p.id" class="block">
+                                <div class="relative h-48 sm:h-56 bg-neutral-100 overflow-hidden">
+                                    <img :src="p.image" :alt="p.name" class="w-full h-full object-cover transition-transform duration-700 group-hover/card:scale-110" />
+                                    <span v-if="p.badge" class="absolute top-3 left-3 badge-ink">{{ p.badge }}</span>
+                                    <div class="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover/card:opacity-100 translate-y-1 group-hover/card:translate-y-0 transition-all duration-300">
+                                        <button class="w-9 h-9 rounded-full bg-paper text-ink flex items-center justify-center hover:bg-accent hover:text-white transition-colors shadow-md" @click.prevent>
+                                            <Heart class="w-4 h-4" />
+                                        </button>
+                                        <button class="w-9 h-9 rounded-full bg-paper text-ink flex items-center justify-center hover:bg-ink hover:text-paper transition-colors shadow-md" @click.prevent="addToCart(p)">
+                                            <Plus class="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="mt-4 space-y-3">
-                                <h3 class="font-bold text-lg text-primary">{{ p.name }}</h3>
-                                <p class="text-sm text-neutral-500 mt-1 line-clamp-2 font-medium">{{ p.description }}</p>
-                                <div class="mt-3 flex items-center justify-between">
-                                    <div class="text-2xl font-bold text-primary">${{ p.price }}</div>
-                                    <div class="text-sm text-neutral-500 font-medium">{{ p.category }}</div>
+                                <div class="p-5">
+                                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-accent">{{ p.category }}</p>
+                                    <h3 class="font-bold text-lg text-ink mt-1 group-hover/card:text-accent transition-colors">{{ p.name }}</h3>
+                                    <p class="text-sm text-neutral-500 mt-1 line-clamp-2">{{ p.description }}</p>
+                                    <div class="mt-4 flex items-center justify-between">
+                                        <span class="text-xl font-bold text-ink tabular-nums">{{ '$' }}{{ p.price }}</span>
+                                        <span class="inline-flex items-center gap-1 text-xs font-bold text-ink group-hover/card:text-accent transition-colors">
+                                            View
+                                            <ArrowRight class="w-3.5 h-3.5" />
+                                        </span>
+                                    </div>
                                 </div>
-                                <div class="mt-3 flex items-center gap-2 flex-wrap">
-                                    <span v-for="t in p.tags" :key="t"
-                                        class="text-xs px-3 py-1 bg-neutral-100 text-neutral-700 rounded-full font-medium">#{{
-                                        t }}</span>
+                            </RouterLink>
+                        </article>
+
+                        <!-- LIST CARD -->
+                        <article
+                            v-for="p in paginated"
+                            :key="'l-' + p.id"
+                            v-show="view === 'list'"
+                            class="bg-paper border border-neutral-200 rounded-2xl overflow-hidden transition-all duration-300 hover:border-ink group/list"
+                        >
+                            <RouterLink :to="'/product/' + p.id" class="flex flex-col sm:flex-row">
+                                <div class="relative h-48 sm:h-auto sm:w-48 shrink-0 bg-neutral-100 overflow-hidden">
+                                    <img :src="p.image" :alt="p.name" class="w-full h-full object-cover transition-transform duration-500 group-hover/list:scale-110" />
+                                    <span v-if="p.badge" class="absolute top-2 left-2 badge-ink text-[10px]">{{ p.badge }}</span>
                                 </div>
-                                <div class="mt-4 flex gap-3">
-                                    <RouterLink :to="`/product/${p.id}`"
-                                        class="flex-1 text-center px-4 py-3 rounded-xl bg-primary hover:bg-neutral-800 text-secondary font-semibold transition-all duration-300">
-                                        View</RouterLink>
-                                    <button @click="addToCart(p)"
-                                        class="px-4 py-3 rounded-xl border border-neutral-300 hover:border-primary hover:bg-primary hover:text-secondary font-semibold transition-all duration-300">Add</button>
+                                <div class="p-5 flex-1 flex flex-col">
+                                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-accent">{{ p.category }}</p>
+                                    <h3 class="font-bold text-lg text-ink mt-1">{{ p.name }}</h3>
+                                    <p class="text-sm text-neutral-500 mt-2 flex-1">{{ p.description }}</p>
+                                    <div class="mt-4 flex items-center justify-between">
+                                        <span class="text-xl font-bold text-ink tabular-nums">{{ '$' }}{{ p.price }}</span>
+                                        <span class="inline-flex items-center gap-1 text-xs font-bold text-ink">
+                                            View
+                                            <ArrowRight class="w-3.5 h-3.5" />
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
+                            </RouterLink>
                         </article>
                     </transition-group>
-                    <!-- pagination -->
-                    <div class="mt-10 flex items-center justify-center gap-3">
-                        <button @click="prevPage" :disabled="page === 1"
-                            class="px-6 py-3 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-primary font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300">Prev</button>
-                        <span class="px-6 py-3 font-semibold text-neutral-700">Page {{ page }} / {{ totalPages }}</span>
-                        <button @click="nextPage" :disabled="page === totalPages"
-                            class="px-6 py-3 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-primary font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300">Next</button>
+
+                    <!-- Pagination -->
+                    <div v-if="totalPages > 1" class="mt-10 flex items-center justify-center gap-2">
+                        <button
+                            @click="prevPage"
+                            :disabled="page === 1"
+                            class="w-10 h-10 rounded-full border border-neutral-200 flex items-center justify-center text-ink hover:border-ink hover:bg-ink hover:text-paper transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-paper disabled:hover:text-ink"
+                        >
+                            <ChevronLeft class="w-4 h-4" />
+                        </button>
+                        <span class="px-4 text-sm font-bold text-ink tabular-nums">{{ page }} / {{ totalPages }}</span>
+                        <button
+                            @click="nextPage"
+                            :disabled="page === totalPages"
+                            class="w-10 h-10 rounded-full border border-neutral-200 flex items-center justify-center text-ink hover:border-ink hover:bg-ink hover:text-paper transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-paper disabled:hover:text-ink"
+                        >
+                            <ChevronRight class="w-4 h-4" />
+                        </button>
                     </div>
                 </section>
             </div>
-        </main>
+        </section>
+
         <!-- CTA Banner -->
-        <section class="mt-16 bg-neutral-100 border-y border-neutral-200 py-20">
-            <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-8">
-                <div>
-                    <h3 class="text-4xl font-elegant font-bold text-primary">Exclusive 20% off your first order</h3>
-                    <p class="mt-3 text-lg text-neutral-600 font-light">Use code <span
-                            class="font-bold text-primary">WELCOME20</span> at checkout — limited time only.</p>
+        <section class="mt-16 sm:mt-24 bg-ink overflow-hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20 grid lg:grid-cols-2 gap-10 sm:gap-12 items-center">
+                <div class="space-y-6 text-paper">
+                    <span class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-accent">
+                        <Sparkles class="w-4 h-4" />
+                        Limited offer
+                    </span>
+                    <h3 class="text-3xl sm:text-4xl md:text-5xl font-elegant font-bold leading-tight">
+                        Get <span class="italic text-accent">20% off</span> your first order.
+                    </h3>
+                    <p class="text-lg text-neutral-400 font-light max-w-md">
+                        Use code <span class="font-bold text-paper px-2 py-1 bg-accent rounded-md ml-1">WELCOME20</span> at checkout — limited time only.
+                    </p>
+                    <div class="flex items-center gap-3 pt-2">
+                        <RouterLink to="/checkout" class="btn-accent shine-effect">
+                            Redeem Offer
+                            <ArrowRight class="w-4 h-4" />
+                        </RouterLink>
+                        <RouterLink to="/product" class="btn-outline border-neutral-700 text-paper hover:bg-paper hover:text-ink">
+                            Browse Shop
+                        </RouterLink>
+                    </div>
                 </div>
-                <div>
-                    <RouterLink to="/checkout"
-                        class="px-8 py-4 bg-primary hover:bg-neutral-800 text-secondary rounded-full font-bold transition-all duration-300 inline-block">
-                        Redeem Offer</RouterLink>
+                <div class="hidden lg:flex justify-end">
+                    <div class="relative">
+                        <div class="w-72 h-72 rounded-full bg-accent/20 blur-3xl absolute -top-10 -right-10"></div>
+                        <div class="relative grid grid-cols-2 gap-3">
+                            <div class="space-y-3 pt-12">
+                                <div class="bg-paper rounded-2xl p-3 shadow-2xl">
+                                    <div class="h-32 rounded-xl bg-neutral-100 overflow-hidden">
+                                        <img :src="rawProducts[0].image" class="w-full h-full object-cover" />
+                                    </div>
+                                    <p class="mt-2 text-xs font-bold text-ink truncate">{{ rawProducts[0].name }}</p>
+                                    <p class="text-xs text-accent font-bold mt-1">{{ '$' }}{{ rawProducts[0].price }}</p>
+                                </div>
+                                <div class="bg-paper rounded-2xl p-3 shadow-2xl">
+                                    <div class="h-32 rounded-xl bg-neutral-100 overflow-hidden">
+                                        <img :src="rawProducts[2].image" class="w-full h-full object-cover" />
+                                    </div>
+                                    <p class="mt-2 text-xs font-bold text-ink truncate">{{ rawProducts[2].name }}</p>
+                                    <p class="text-xs text-accent font-bold mt-1">{{ '$' }}{{ rawProducts[2].price }}</p>
+                                </div>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="bg-paper rounded-2xl p-3 shadow-2xl">
+                                    <div class="h-32 rounded-xl bg-neutral-100 overflow-hidden">
+                                        <img :src="rawProducts[1].image" class="w-full h-full object-cover" />
+                                    </div>
+                                    <p class="mt-2 text-xs font-bold text-ink truncate">{{ rawProducts[1].name }}</p>
+                                    <p class="text-xs text-accent font-bold mt-1">{{ '$' }}{{ rawProducts[1].price }}</p>
+                                </div>
+                                <div class="bg-paper rounded-2xl p-3 shadow-2xl">
+                                    <div class="h-32 rounded-xl bg-neutral-100 overflow-hidden">
+                                        <img :src="rawProducts[3].image" class="w-full h-full object-cover" />
+                                    </div>
+                                    <p class="mt-2 text-xs font-bold text-ink truncate">{{ rawProducts[3].name }}</p>
+                                    <p class="text-xs text-accent font-bold mt-1">{{ '$' }}{{ rawProducts[3].price }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>

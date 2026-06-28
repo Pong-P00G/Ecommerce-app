@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { RotateCcw, Package, CheckCircle, Clock, AlertCircle } from 'lucide-vue-next'
+import { RotateCcw, Package, CheckCircle, Clock, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-vue-next'
 
 const activeStep = ref(1)
 
@@ -20,66 +20,75 @@ const policies = [
 </script>
 
 <template>
-    <div class="min-h-screen bg-gradient-to-br from-white via-orange-50 to-red-50 py-8">
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="bg-paper min-h-screen">
+        <section class="section py-12 md:py-16">
             <!-- Header -->
-            <div class="text-center mb-12 mt-8">
-                <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl mb-4 shadow-lg">
-                    <RotateCcw class="w-8 h-8 text-white" />
-                </div>
-                <h1 class="text-5xl font-bold bg-gradient-to-r from-orange-600 via-red-600 to-pink-600 bg-clip-text text-transparent mb-3">
-                    Returns & Exchanges
+            <div class="text-center mb-14 max-w-2xl mx-auto">
+                <span class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-ink text-paper mb-5 shadow-[0_8px_24px_-6px_rgb(249_115_22_/_0.45)]">
+                    <RotateCcw class="w-7 h-7 text-accent" />
+                </span>
+                <h1 class="heading-hero text-5xl md:text-6xl text-ink mb-4">
+                    Returns &
+                    <span class="text-accent">exchanges</span>
                 </h1>
-                <p class="text-gray-600 text-lg">Hassle-free returns within 30 days</p>
+                <p class="text-neutral-600 text-lg">Hassle-free returns within 30 days. No questions asked.</p>
             </div>
 
             <!-- Return Process Steps -->
-            <div class="bg-white rounded-3xl shadow-xl p-8 mb-8 border border-gray-100">
-                <h2 class="text-2xl font-bold text-gray-900 mb-6">How Returns Work</h2>
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="card-flat p-8 mb-10">
+                <div class="flex items-center gap-3 mb-7">
+                    <span class="text-xs font-bold uppercase tracking-[0.2em] text-accent">How it works</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
                     <div v-for="step in steps" :key="step.num"
-                        class="relative p-6 rounded-2xl border-2 border-gray-100 hover:border-orange-300 transition-colors">
-                        <div class="absolute -top-4 -left-4 w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
-                            {{ step.num }}
+                        class="card-flat p-6 hover:border-ink transition-all duration-300 group">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-11 h-11 rounded-full bg-ink text-paper inline-flex items-center justify-center font-bold group-hover:bg-accent transition-colors">
+                                {{ step.num }}
+                            </div>
+                            <component :is="step.icon" class="w-6 h-6 text-neutral-500 group-hover:text-accent transition-colors" />
                         </div>
-                        <component :is="step.icon" class="w-8 h-8 text-orange-500 mb-3" />
-                        <h3 class="font-bold text-gray-900 mb-1">{{ step.title }}</h3>
-                        <p class="text-sm text-gray-600">{{ step.desc }}</p>
+                        <h3 class="font-bold text-ink mb-1.5">{{ step.title }}</h3>
+                        <p class="text-sm text-neutral-600 leading-relaxed">{{ step.desc }}</p>
                     </div>
                 </div>
             </div>
 
             <!-- Policies -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div v-for="policy in policies" :key="policy.title"
-                    class="bg-white rounded-2xl shadow-md p-6 border border-gray-100">
-                    <div class="flex items-start gap-3">
-                        <CheckCircle class="w-6 h-6 text-green-500 shrink-0 mt-1" />
-                        <div>
-                            <h3 class="font-bold text-gray-900 mb-1">{{ policy.title }}</h3>
-                            <p class="text-sm text-gray-600">{{ policy.desc }}</p>
-                        </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-10">
+                <div v-for="policy in policies" :key="policy.title" class="card-flat p-6 flex items-start gap-4">
+                    <div class="w-11 h-11 rounded-full bg-accent-50 inline-flex items-center justify-center text-accent shrink-0">
+                        <CheckCircle class="w-5 h-5" />
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-ink mb-1">{{ policy.title }}</h3>
+                        <p class="text-sm text-neutral-600">{{ policy.desc }}</p>
                     </div>
                 </div>
             </div>
 
             <!-- Important Notice -->
-            <div class="bg-amber-50 border-l-4 border-amber-500 rounded-2xl p-6 flex items-start gap-4">
-                <AlertCircle class="w-6 h-6 text-amber-600 shrink-0 mt-1" />
+            <div class="card-flat p-6 md:p-7 flex items-start gap-4 border-l-4 border-l-accent">
+                <AlertCircle class="w-6 h-6 text-accent shrink-0 mt-0.5" />
                 <div>
-                    <h3 class="font-bold text-amber-900 mb-1">Important Information</h3>
-                    <p class="text-sm text-amber-800">
+                    <h3 class="font-bold text-ink mb-1">Important information</h3>
+                    <p class="text-sm text-neutral-600 leading-relaxed">
                         Final sale items, personalized products, and intimate apparel cannot be returned. Exchanges are subject to availability. For damaged or defective items, please contact support within 48 hours of delivery.
                     </p>
                 </div>
             </div>
 
             <!-- CTA -->
-            <div class="mt-8 text-center">
-                <button class="px-8 py-4 bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-orange-500/30 transition-all duration-300">
-                    Start a Return
+            <div class="text-center mt-12">
+                <button class="btn-accent shine-effect">
+                    Start a return
+                    <ArrowRight class="w-4 h-4" />
                 </button>
+                <div class="mt-5 inline-flex items-center gap-2 text-sm text-neutral-500">
+                    <ShieldCheck class="w-4 h-4" />
+                    Protected by our 100% money-back guarantee
+                </div>
             </div>
-        </div>
+        </section>
     </div>
 </template>

@@ -1,326 +1,263 @@
 <script setup>
-import { ref, reactive } from 'vue';
-import { UserIcon, ShieldCheckIcon, CogIcon, CameraIcon, ArrowLeftCircleIcon } from '@heroicons/vue/24/outline';
-import { RouterLink, useRoute } from 'vue-router';
+import { ref, computed } from 'vue';
+import { useAuthStore } from '../stores/auth';
+import { useRouter } from 'vue-router';
+import {
+    User, Mail, Phone, MapPin, Calendar, Camera,
+    Edit3, Save, LogOut, Package, Heart, Settings as SettingsIcon,
+    ShoppingBag, ShieldCheck, Loader2, X,
+} from 'lucide-vue-next';
 
+const authStore = useAuthStore();
+const router = useRouter();
 
-const route = useRoute();
+const activeTab = ref('overview');
+const isEditing = ref(false);
+const isSaving = ref(false);
+const isSaved = ref(false);
 
-// Tab management
-const activeTab = ref('profile')
-const tabs = [
-  { id: 'profile', name: 'Profile', icon: UserIcon },
-  { id: 'security', name: 'Security', icon: ShieldCheckIcon },
-  { id: 'preferences', name: 'Preferences', icon: CogIcon },
-  { id: 'logout', name: 'Logout', icon: ArrowLeftCircleIcon },
-]
+const profile = ref({
+    name: authStore.user?.username || 'Guest User',
+    email: authStore.user?.email || 'user@aleeshop.com',
+    phone: '+1 (555) 123-4567',
+    location: 'Phnom Penh, Cambodia',
+    bio: 'Lover of design, slow fashion, and great coffee.',
+    joined: '2024',
+});
 
-// User data
-const user = reactive({
-  name: 'Alex Johnson',
-  email: 'alex.johnson@example.com',
-  avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-  bio: 'Product designer passionate about creating beautiful and functional user experiences. Love hiking and photography.',
-  location: 'San Francisco, CA',
-  phone: '+1 (555) 123-4567',
-  joinDate: '2023-01-15'
-})
+const stats = [
+    { label: 'Orders', value: 24, icon: Package },
+    { label: 'Wishlist', value: 12, icon: Heart },
+    { label: 'Reviews', value: 8, icon: Edit3 },
+];
 
-// Password form
-const password = reactive({
-  current: '',
-  new: '',
-  confirm: ''
-})
+const recentOrders = [
+    { id: 'ALIE-2024-018', date: 'Mar 12, 2024', total: 148, status: 'Delivered', items: 3 },
+    { id: 'ALIE-2024-015', date: 'Mar 02, 2024', total: 89, status: 'In transit', items: 2 },
+    { id: 'ALIE-2024-009', date: 'Feb 14, 2024', total: 219, status: 'Delivered', items: 5 },
+];
 
-// Preferences
-const preferences = reactive({
-  emailNotifications: true,
-  smsNotifications: false,
-  language: 'en',
-  timezone: 'pst'
-})
+const statusColor = (s) =>
+    s === 'Delivered' ? 'bg-accent text-white' :
+    s === 'In transit' ? 'bg-ink text-paper' :
+    'bg-neutral-200 text-ink';
 
-const logout = reactive({
-  status: '',
-})
+const save = async () => {
+    isSaving.value = true;
+    await new Promise((r) => setTimeout(r, 700));
+    isSaving.value = false;
+    isSaved.value = true;
+    isEditing.value = false;
+    setTimeout(() => (isSaved.value = false), 2500);
+};
 
-// UI states
-const editAvatar = ref(false)
+const logout = () => {
+    authStore.logout();
+    router.push('/login');
+};
 
-// Methods
-const updateProfile = () => {
-  console.log('Updating profile:', user)
-  // Add API call here
-}
-
-const changePassword = () => {
-  console.log('Changing password:', password)
-  // Add API call here
-  password.current = ''
-  password.new = ''
-  password.confirm = ''
-}
-
-const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
-}
+const initials = computed(() =>
+    profile.value.name.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
+);
 </script>
 
 <template>
-  <div class="min-h-screen bg-linear-to-br from-[#f0f8ff] to-[#e6f6ff] py-8">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <!-- Header -->
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">Profile Settings</h1>
-        <p class="text-gray-600 mt-2">Manage your account settings and preferences</p>
-      </div>
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Left Sidebar - Navigation -->
-        <div class="lg:col-span-1">
-          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <nav class="space-y-2">
-              <button
-                  v-for="tab in tabs"
-                  :key="tab.id"
-                  @click="activeTab = tab.id"
-                  :class="[
-                  'w-full text-left px-4 py-3 rounded-lg transition-all duration-200',
-                  activeTab === tab.id
-                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                ]"
-              >
-                <div class="flex items-center space-x-3">
-                  <component :is="tab.icon" class="w-5 h-5" />
-                  <span class="font-medium">{{ tab.name }}</span>
+    <div class="bg-neutral-50 min-h-screen">
+        <!-- Cover + avatar -->
+        <section class="bg-ink text-paper">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-24">
+                <div class="flex flex-col md:flex-row items-start md:items-end gap-6">
+                    <div class="relative">
+                        <div class="w-28 h-28 rounded-3xl bg-accent flex items-center justify-center text-3xl font-elegant font-bold text-white border-4 border-paper">
+                            {{ initials }}
+                        </div>
+                        <button class="absolute bottom-1 right-1 w-9 h-9 rounded-full bg-paper text-ink flex items-center justify-center shadow-lg hover:bg-accent hover:text-white transition-colors" aria-label="Change photo">
+                            <Camera class="w-4 h-4" />
+                        </button>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-accent mb-1">Member since {{ profile.joined }}</p>
+                        <h1 class="text-3xl md:text-4xl font-elegant font-bold">{{ profile.name }}</h1>
+                        <p class="text-neutral-400 mt-1 flex items-center gap-2">
+                            <Mail class="w-4 h-4" />
+                            {{ profile.email }}
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button
+                            @click="isEditing = !isEditing"
+                            class="inline-flex items-center gap-2 px-5 py-2.5 bg-paper text-ink font-bold text-sm rounded-full hover:bg-accent hover:text-white transition-all"
+                        >
+                            <Edit3 class="w-4 h-4" />
+                            {{ isEditing ? 'Cancel' : 'Edit profile' }}
+                        </button>
+                        <button
+                            @click="logout"
+                            class="inline-flex items-center gap-2 px-5 py-2.5 bg-transparent border border-neutral-700 text-paper font-bold text-sm rounded-full hover:bg-paper hover:text-ink transition-all"
+                        >
+                            <LogOut class="w-4 h-4" />
+                            Sign out
+                        </button>
+                    </div>
                 </div>
-              </button>
-            </nav>
-          </div>
-        </div>
-        <!-- Main Content -->
-        <div class="lg:col-span-2">
-          <!-- Profile Tab -->
-          <div v-if="activeTab === 'profile'" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center space-x-6 mb-8">
-              <div class="relative">
-                <img
-                    :src="user.avatar"
-                    alt="Profile"
-                    class="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
-                />
-                <button
-                    @click="editAvatar = true"
-                    class="absolute -bottom-2 -right-2 bg-blue-600 text-white p-2 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
-                >
-                  <CameraIcon class="w-4 h-4" />
-                </button>
-              </div>
-              <div>
-                <h2 class="text-xl font-semibold text-gray-900">{{ user.name }}</h2>
-                <p class="text-gray-600">{{ user.email }}</p>
-                <p class="text-sm text-gray-500 mt-1">Joined {{ formatDate(user.joinDate) }}</p>
-              </div>
             </div>
-            <form @submit.prevent="updateProfile" class="space-y-6">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-                  <input
-                      v-model="user.name"
-                      type="text"
-                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  />
+        </section>
+
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 pb-16 relative z-10">
+            <!-- Stats -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                <div v-for="s in stats" :key="s.label" class="bg-paper border border-neutral-200 rounded-2xl p-4 sm:p-5 flex items-center gap-3 sm:gap-4 hover:border-ink transition-colors">
+                    <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0">
+                        <component :is="s.icon" class="w-5 h-5 text-ink" />
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-xl sm:text-2xl font-elegant font-bold text-ink tabular-nums">{{ s.value }}</p>
+                        <p class="text-xs font-bold uppercase tracking-wider text-neutral-500 truncate">{{ s.label }}</p>
+                    </div>
                 </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                  <input
-                      v-model="user.email"
-                      type="email"
-                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  />
-                </div>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Bio</label>
-                <textarea
-                    v-model="user.bio"
-                    rows="4"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    placeholder="Tell us about yourself..."
-                ></textarea>
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
-                  <input
-                      v-model="user.location"
-                      type="text"
-                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  />
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                  <input
-                      v-model="user.phone"
-                      type="tel"
-                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  />
-                </div>
-              </div>
-              <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-                <button
-                    type="button"
-                    class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                    type="submit"
-                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                >
-                  Save Changes
-                </button>
-              </div>
-            </form>
-          </div>
-          <!-- Security Tab -->
-          <div v-if="activeTab === 'security'" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-6">Security Settings</h3>
-            <div class="space-y-6">
-              <div class="border-b border-gray-200 pb-6">
-                <h4 class="font-medium text-gray-900 mb-4">Change Password</h4>
-                <form @submit.prevent="changePassword" class="space-y-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
-                    <input
-                        v-model="password.current"
-                        type="password"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
-                    <input
-                        v-model="password.new"
-                        type="password"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
-                    <input
-                        v-model="password.confirm"
-                        type="password"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    />
-                  </div>
-                  <button
-                      type="submit"
-                      class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                  >
-                    Update Password
-                  </button>
-                </form>
-              </div>
-              <div>
-                <h4 class="font-medium text-gray-900 mb-4">Two-Factor Authentication</h4>
-                <div class="flex items-center justify-between">
-                  <div>
-                    <p class="text-gray-600">Add an extra layer of security to your account</p>
-                    <p class="text-sm text-gray-500 mt-1">Status: <span class="text-orange-500">Not enabled</span></p>
-                  </div>
-                  <button class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
-                    Enable 2FA
-                  </button>
-                </div>
-              </div>
             </div>
-          </div>
-          <!-- Preferences Tab -->
-          <div v-if="activeTab === 'preferences'" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-6">Preferences</h3>
-            <div class="space-y-6">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="font-medium text-gray-900">Email Notifications</p>
-                  <p class="text-sm text-gray-600">Receive email updates and notifications</p>
-                </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" v-model="preferences.emailNotifications" class="sr-only peer">
-                  <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-              </div>
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="font-medium text-gray-900">SMS Notifications</p>
-                  <p class="text-sm text-gray-600">Receive text message notifications</p>
-                </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" v-model="preferences.smsNotifications" class="sr-only peer">
-                  <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Language</label>
-                <select
-                    v-model="preferences.language"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+
+            <!-- Tabs -->
+            <div class="flex items-center gap-1 sm:gap-2 mb-6 border-b border-neutral-200 overflow-x-auto">
+                <button
+                    v-for="tab in [
+                        { id: 'overview', label: 'Overview', icon: User },
+                        { id: 'orders', label: 'Orders', icon: ShoppingBag },
+                        { id: 'security', label: 'Security', icon: ShieldCheck },
+                    ]"
+                    :key="tab.id"
+                    @click="activeTab = tab.id"
+                    :class="[
+                        'inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap shrink-0',
+                        activeTab === tab.id
+                            ? 'border-ink text-ink'
+                            : 'border-transparent text-neutral-500 hover:text-ink'
+                    ]"
                 >
-                  <option value="en">English</option>
-                  <option value="es">Spanish</option>
-                  <option value="fr">French</option>
-                  <option value="de">German</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Timezone</label>
-                <select
-                    v-model="preferences.timezone"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                >
-                  <option value="est">Eastern Time (ET)</option>
-                  <option value="cst">Central Time (CT)</option>
-                  <option value="pst">Pacific Time (PT)</option>
-                  <option value="gmt">Greenwich Mean Time (GMT)</option>
-                </select>
-              </div>
+                    <component :is="tab.icon" class="w-4 h-4" />
+                    {{ tab.label }}
+                </button>
             </div>
-          </div>
-          <!-- Login Tab -->
-          <div v-if="activeTab === 'logout'" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-            <RouterLink to="/login" class="bg-cyan-50 font-semibold px-8 py-4 rounded-2xl text-gray-900 mt-6 inline-block hover:scale-105">
-              Back to Login Page
-            </RouterLink>
-          </div>
-        </div>
-      </div>
+
+            <!-- Overview -->
+            <div v-if="activeTab === 'overview'" class="grid lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-paper border border-neutral-200 rounded-2xl p-6 lg:p-8 space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xl font-bold text-ink">Personal info</h2>
+                        <transition name="slide-fade">
+                            <span v-if="isSaved" class="text-xs font-bold text-accent flex items-center gap-1">
+                                <Save class="w-3 h-3" />
+                                Saved
+                            </span>
+                        </transition>
+                    </div>
+
+                    <div class="grid sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1.5 block">Full name</label>
+                            <input v-model="profile.name" :disabled="!isEditing" class="input-base disabled:bg-neutral-50 disabled:text-neutral-500" />
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1.5 block">Email</label>
+                            <input v-model="profile.email" :disabled="!isEditing" type="email" class="input-base disabled:bg-neutral-50 disabled:text-neutral-500" />
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1.5 block">Phone</label>
+                            <input v-model="profile.phone" :disabled="!isEditing" class="input-base disabled:bg-neutral-50 disabled:text-neutral-500" />
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1.5 block">Location</label>
+                            <input v-model="profile.location" :disabled="!isEditing" class="input-base disabled:bg-neutral-50 disabled:text-neutral-500" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1.5 block">Bio</label>
+                        <textarea v-model="profile.bio" :disabled="!isEditing" rows="3" class="input-base disabled:bg-neutral-50 disabled:text-neutral-500 resize-none"></textarea>
+                    </div>
+                    <div v-if="isEditing" class="flex gap-2 pt-2">
+                        <button @click="save" :disabled="isSaving" class="btn-accent">
+                            <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
+                            <Save v-else class="w-4 h-4" />
+                            {{ isSaving ? 'Saving...' : 'Save changes' }}
+                        </button>
+                        <button @click="isEditing = false" class="btn-outline">Cancel</button>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="bg-paper border border-neutral-200 rounded-2xl p-6">
+                        <h3 class="text-sm font-bold uppercase tracking-[0.2em] text-ink mb-4">Account</h3>
+                        <div class="space-y-3 text-sm">
+                            <div class="flex items-center justify-between">
+                                <span class="text-neutral-500">Plan</span>
+                                <span class="font-bold text-ink">Premium</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-neutral-500">Member since</span>
+                                <span class="font-bold text-ink">{{ profile.joined }}</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-neutral-500">Status</span>
+                                <span class="inline-flex items-center gap-1 text-xs font-bold text-accent">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-accent pulse-dot"></span>
+                                    Active
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders -->
+            <div v-else-if="activeTab === 'orders'" class="bg-paper border border-neutral-200 rounded-2xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[600px]">
+                        <thead class="bg-neutral-50">
+                            <tr class="text-left text-xs font-bold uppercase tracking-wider text-neutral-500">
+                                <th class="px-4 sm:px-6 py-4">Order</th>
+                                <th class="px-4 sm:px-6 py-4">Date</th>
+                                <th class="px-4 sm:px-6 py-4">Items</th>
+                                <th class="px-4 sm:px-6 py-4">Total</th>
+                                <th class="px-4 sm:px-6 py-4">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-neutral-200">
+                            <tr v-for="o in recentOrders" :key="o.id" class="hover:bg-neutral-50 transition-colors">
+                                <td class="px-4 sm:px-6 py-4 text-sm font-bold text-ink tabular-nums">{{ o.id }}</td>
+                                <td class="px-4 sm:px-6 py-4 text-sm text-neutral-600">{{ o.date }}</td>
+                                <td class="px-4 sm:px-6 py-4 text-sm text-neutral-600 tabular-nums">{{ o.items }}</td>
+                                <td class="px-4 sm:px-6 py-4 text-sm font-bold text-ink tabular-nums">{{ '$' }}{{ o.total }}</td>
+                                <td class="px-4 sm:px-6 py-4">
+                                    <span :class="['inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold', statusColor(o.status)]">{{ o.status }}</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Security -->
+            <div v-else-if="activeTab === 'security'" class="grid lg:grid-cols-2 gap-6">
+                <div class="bg-paper border border-neutral-200 rounded-2xl p-6 space-y-4">
+                    <h3 class="text-lg font-bold text-ink">Password</h3>
+                    <p class="text-sm text-neutral-500">Update your password to keep your account secure.</p>
+                    <input type="password" placeholder="Current password" class="input-base" />
+                    <input type="password" placeholder="New password" class="input-base" />
+                    <input type="password" placeholder="Confirm new password" class="input-base" />
+                    <button class="btn-primary">Update password</button>
+                </div>
+                <div class="bg-paper border border-neutral-200 rounded-2xl p-6 space-y-4">
+                    <h3 class="text-lg font-bold text-ink">Two-factor authentication</h3>
+                    <p class="text-sm text-neutral-500">Add an extra layer of security to your account.</p>
+                    <div class="flex items-center justify-between p-4 bg-neutral-50 rounded-xl">
+                        <div>
+                            <p class="text-sm font-bold text-ink">Authenticator app</p>
+                            <p class="text-xs text-neutral-500">Use an app like Authy or Google Authenticator.</p>
+                        </div>
+                        <button class="btn-outline">Enable</button>
+                    </div>
+                </div>
+            </div>
+        </section>
     </div>
-  </div>
 </template>
-
-
-<style scoped>
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-</style>

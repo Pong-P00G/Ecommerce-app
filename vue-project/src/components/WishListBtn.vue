@@ -1,68 +1,65 @@
 <script setup>
 import { computed } from 'vue';
 import { Heart } from 'lucide-vue-next';
-import { useWishlistStore } from '../stores/wishlist';
+import { useShopStore } from '../stores/shop';
 
 const props = defineProps({
-  item: { type: Object, required: true },
-  size: { type: String, default: 'md' }, // sm, md, lg
-  showText: { type: Boolean, default: false }
+    item: { type: Object, required: true },
+    size: { type: String, default: 'md' }, // sm, md, lg
+    showText: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['added', 'removed']);
 
-const wishlistStore = useWishlistStore();
+const shop = useShopStore();
+const isWishlisted = computed(() => shop.inWishlist(props.item.id));
 
-const isWishlisted = wishlistStore.isInWishlist(props.item.id);
+const sizeClasses = computed(() => ({
+    sm: 'w-9 h-9',
+    md: 'w-10 h-10',
+    lg: 'w-12 h-12',
+}[props.size] || 'w-10 h-10'));
 
-const sizeClasses = computed(() => {
-  return {
-    sm: 'w-8 h-8 p-1.5',
-    md: 'w-10 h-10 p-2',
-    lg: 'w-12 h-12 p-3'
-  }[props.size] || 'w-10 h-10 p-2';
-});
-
-const iconSize = computed(() => {
-  return {
+const iconSize = computed(() => ({
     sm: 'w-4 h-4',
     md: 'w-5 h-5',
-    lg: 'w-6 h-6'
-  }[props.size] || 'w-5 h-5';
-});
+    lg: 'w-6 h-6',
+}[props.size] || 'w-5 h-5'));
 
 const handleToggle = () => {
-  if (isWishlisted.value) {
-    wishlistStore.removeFromWishlist(props.item.id);
-    emit('removed', props.item);
-  } else {
-    wishlistStore.addToWishlist(props.item);
-    emit('added', props.item);
-  }
+    if (isWishlisted.value) {
+        shop.toggleWishlist(props.item.id);
+        emit('removed', props.item);
+    } else {
+        shop.toggleWishlist(props.item.id);
+        emit('added', props.item);
+    }
 };
 </script>
 
 <template>
-  <div class="inline-flex items-center">
-    <button
-      @click="handleToggle"
-      :class="[
-        'rounded-full transition-all duration-300 hover:scale-110 active:scale-95',
-        sizeClasses,
-        isWishlisted
-          ? 'bg-pink-500 hover:bg-pink-600 text-white shadow-lg'
-          : 'bg-white/10 hover:bg-white/20 text-gray-300 hover:text-pink-400 border border-white/20'
-      ]"
-      :title="isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'"
-      :aria-pressed="isWishlisted.toString()"
-      aria-label="Toggle wishlist"
-    >
-      <Heart :class="[iconSize, isWishlisted ? 'fill-current' : '']" />
-    </button>
-    <span v-if="showText" class="ml-2 text-sm font-medium">
-      <slot name="text" :inWish="isWishlisted">
-        {{ isWishlisted ? 'In Wishlist' : 'Add to Wishlist' }}
-      </slot>
-    </span>
-  </div>
+    <div class="inline-flex items-center">
+        <button
+            @click="handleToggle"
+            :class="[
+                sizeClasses,
+                'rounded-full transition-all duration-300 flex items-center justify-center',
+                'hover:scale-110 active:scale-95',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
+                isWishlisted
+                    ? 'bg-accent text-white shadow-[0_8px_24px_-6px_rgb(249_115_22_/_0.45)]'
+                    : 'bg-paper text-ink border border-neutral-300 hover:border-ink hover:bg-ink hover:text-paper'
+            ]"
+            :title="isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'"
+            :aria-pressed="isWishlisted.toString()"
+            aria-label="Toggle wishlist"
+        >
+            <Heart :class="[iconSize, isWishlisted ? 'fill-current' : '']" />
+        </button>
+        <span v-if="showText" class="ml-2 text-sm font-medium text-ink">
+            <slot name="text" :inWish="isWishlisted">
+                {{ isWishlisted ? 'In Wishlist' : 'Add to Wishlist' }}
+            </slot>
+        </span>
+    </div>
 </template>

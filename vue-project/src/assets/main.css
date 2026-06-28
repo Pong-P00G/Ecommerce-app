@@ -1,3 +1,294 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
 
 @import 'tailwindcss';
+
+/* =========================================================
+   THEME TOKENS — Black & White with Orange Accent
+   ========================================================= */
+@theme {
+  /* --- Base palette (Black & White) --- */
+  --color-primary: #0a0a0a;
+  --color-secondary: #ffffff;
+  --color-ink: #0a0a0a;
+  --color-paper: #ffffff;
+
+  --color-neutral-50:  #fafafa;
+  --color-neutral-100: #f4f4f5;
+  --color-neutral-200: #e4e4e7;
+  --color-neutral-300: #d4d4d8;
+  --color-neutral-400: #a1a1aa;
+  --color-neutral-500: #71717a;
+  --color-neutral-600: #52525b;
+  --color-neutral-700: #3f3f46;
+  --color-neutral-800: #27272a;
+  --color-neutral-900: #18181b;
+  --color-neutral-950: #09090b;
+
+  /* --- Accent palette (Orange) --- */
+  --color-accent-50:  #fff7ed;
+  --color-accent-100: #ffedd5;
+  --color-accent-200: #fed7aa;
+  --color-accent-300: #fdba74;
+  --color-accent-400: #fb923c;
+  --color-accent:     #f97316;
+  --color-accent-500: #f97316;
+  --color-accent-600: #ea580c;
+  --color-accent-700: #c2410c;
+  --color-accent-800: #9a3412;
+  --color-accent-900: #7c2d12;
+
+  /* --- Semantic shortcuts --- */
+  --color-cta:        #f97316;
+  --color-cta-hover:  #ea580c;
+  --color-success:    #16a34a;
+  --color-danger:     #dc2626;
+  --color-warning:    #f59e0b;
+  --color-info:       #0ea5e9;
+
+  /* --- Typography --- */
+  --font-elegant: 'Playfair Display', Georgia, serif;
+  --font-body:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* =========================================================
+   GLOBAL BASE STYLES
+   ========================================================= */
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background-color: var(--color-accent);
+  color: var(--color-paper);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-neutral-100);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-400);
+  border-radius: 9999px;
+  border: 2px solid var(--color-neutral-100);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-neutral-700);
+}
+
+/* =========================================================
+   COMPONENT UTILITIES
+   ========================================================= */
+@layer components {
+  /* --- Buttons --- */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3
+           bg-ink text-paper font-semibold text-sm
+           rounded-full
+           transition-all duration-200
+           hover:bg-neutral-800 hover:-translate-y-0.5
+           active:translate-y-0 active:bg-neutral-900
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0;
+  }
+
+  .btn-accent {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3
+           bg-accent text-white font-semibold text-sm
+           rounded-full
+           shadow-[0_8px_24px_-6px_rgb(249_115_22_/_0.45)]
+           transition-all duration-200
+           hover:bg-accent-600 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_-6px_rgb(249_115_22_/_0.55)]
+           active:translate-y-0 active:bg-accent-700
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3
+           bg-paper text-ink font-semibold text-sm
+           border border-neutral-300
+           rounded-full
+           transition-all duration-200
+           hover:border-ink hover:bg-ink hover:text-paper
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2
+           text-ink font-medium text-sm
+           rounded-full
+           transition-colors duration-200
+           hover:bg-neutral-100;
+  }
+
+  .btn-icon {
+    @apply inline-flex items-center justify-center
+           w-10 h-10
+           rounded-full
+           text-ink
+           transition-all duration-200
+           hover:bg-neutral-100 hover:scale-105
+           active:scale-95
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2;
+  }
+
+  /* --- Cards --- */
+  .card-base {
+    @apply bg-paper border border-neutral-200 rounded-2xl
+           transition-all duration-300
+           hover:border-neutral-400 hover:-translate-y-1 hover:shadow-[0_12px_32px_-8px_rgb(0_0_0_/_0.12)];
+  }
+
+  .card-flat {
+    @apply bg-paper border border-neutral-200 rounded-2xl;
+  }
+
+  /* --- Inputs --- */
+  .input-base {
+    @apply w-full px-4 py-3
+           bg-paper text-ink
+           border border-neutral-300
+           rounded-xl
+           transition-all duration-200
+           placeholder:text-neutral-400
+           focus:outline-none focus:border-ink focus:ring-1 focus:ring-ink;
+  }
+
+  /* --- Badges --- */
+  .badge-accent {
+    @apply inline-flex items-center gap-1 px-3 py-1
+           bg-accent text-white
+           rounded-full text-xs font-bold uppercase tracking-wider;
+  }
+
+  .badge-ink {
+    @apply inline-flex items-center gap-1 px-3 py-1
+           bg-ink text-paper
+           rounded-full text-xs font-bold uppercase tracking-wider;
+  }
+
+  .badge-ghost {
+    @apply inline-flex items-center gap-1 px-3 py-1
+           bg-neutral-100 text-ink
+           rounded-full text-xs font-medium;
+  }
+
+  /* --- Section --- */
+  .section {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* --- Heading --- */
+  .heading-hero {
+    @apply font-elegant font-bold tracking-tight leading-[1.05];
+  }
+}
+
+/* =========================================================
+   ANIMATIONS
+   ========================================================= */
+
+/* Bubble float (kept from old homeStyle) */
+.bubble {
+  animation: bubble 6s infinite;
+}
+.delay-2s { animation-delay: -2s; }
+.delay-3s { animation-delay: -3s; }
+.delay-4s { animation-delay: -4s; }
+@keyframes bubble {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-100px); }
+}
+
+/* Fade-up on scroll */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fadeUp 0.6s ease-out both;
+}
+
+/* Pulse dot */
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.5; transform: scale(1.4); }
+}
+.pulse-dot { animation: pulseDot 2s ease-in-out infinite; }
+
+/* Shine effect for CTAs */
+@keyframes shine {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.shine-effect {
+  position: relative;
+  overflow: hidden;
+}
+.shine-effect::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+  transform: translateX(-100%);
+  animation: shine 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Marquee */
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee { animation: marquee 30s linear infinite; }
+
+/* Spin slow */
+@keyframes spinSlow {
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow { animation: spinSlow 20s linear infinite; }
+
+/* =========================================================
+   PAGE TRANSITIONS
+   ========================================================= */
+.fade-enter-active,
+.fade-leave-active { transition: opacity 0.3s ease; }
+.fade-enter-from,
+.fade-leave-to     { opacity: 0; }
+
+.slide-fade-enter-active { transition: all 0.3s ease; }
+.slide-fade-leave-active { transition: all 0.3s ease; }
+.slide-fade-enter-from   { opacity: 0; transform: translateY(-10px); }
+.slide-fade-leave-to     { opacity: 0; transform: translateY(-10px); }
+
+.mobile-menu-enter-active,
+.mobile-menu-leave-active { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+.mobile-menu-enter-from,
+.mobile-menu-leave-to     { transform: translateX(100%); }
+
+/* List transitions for grids */
+.list-move,
+.list-enter-active,
+.list-leave-active { transition: all 0.4s ease; }
+.list-enter-from,
+.list-leave-to     { opacity: 0; transform: translateY(20px); }
+.list-leave-active { position: absolute; }

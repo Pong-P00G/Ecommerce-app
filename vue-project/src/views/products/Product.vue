@@ -3,6 +3,18 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useProductStore } from '../../stores/product.js';
 import { storeToRefs } from 'pinia';
+import {
+    Search,
+    SlidersHorizontal,
+    X,
+    ChevronLeft,
+    ChevronRight,
+    PackageOpen,
+    AlertTriangle,
+    Heart,
+    ArrowRight,
+    Sparkles,
+} from 'lucide-vue-next';
 
 const router = useRouter();
 const route = useRoute();
@@ -35,7 +47,6 @@ const sortOptions = [
 const filteredProducts = computed(() => {
     let result = products.value || [];
 
-    // Search filter
     if (searchQuery.value) {
         const search = searchQuery.value.toLowerCase();
         result = result.filter(p =>
@@ -44,18 +55,15 @@ const filteredProducts = computed(() => {
         );
     }
 
-    // Category filter
     if (selectedCategory.value) {
         result = result.filter(p => p.category_name === selectedCategory.value);
     }
 
-    // Price range filter
     result = result.filter(p => {
         const price = parseFloat(p.final_price || 0);
         return price >= priceRange.value[0] && price <= priceRange.value[1];
     });
 
-    // Only show active products
     result = result.filter(p => p.product_status === 'active');
 
     return result;
@@ -177,73 +185,88 @@ const getDiscountPercentage = (product) => {
 };
 
 const handleImageError = (event) => {
-    event.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"%3E%3Crect width="400" height="400" fill="%23f3f4f6"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="%239ca3af"%3ENo Image%3C/text%3E%3C/svg%3E';
+    event.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"%3E%3Crect width="400" height="400" fill="%23f4f4f5"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="%23a1a1aa"%3ENo Image%3C/text%3E%3C/svg%3E';
 };
 
-// Watch route query for category
 watch(() => route.query.category, (newCategory) => {
     if (newCategory) {
         selectedCategory.value = newCategory;
     }
 }, { immediate: true });
 
-// Lifecycle
 onMounted(async () => {
     await loadProducts();
 });
 </script>
 
 <template>
-    <div class="min-h-screen bg-white">
+    <div class="bg-paper min-h-screen">
         <!-- Hero Section -->
-        <div class="bg-gray-50 border-b border-gray-100">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-                <div class="text-center mt-8">
-                    <h1 class="text-5xl md:text-6xl font-black text-gray-900 mb-4 tracking-tight">Shop Our Collection
+        <section class="bg-ink text-paper">
+            <div class="section py-16 md:py-20">
+                <div class="max-w-3xl">
+                    <span class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-accent mb-5">
+                        <Sparkles class="w-3.5 h-3.5" />
+                        Curated for you
+                    </span>
+                    <h1 class="heading-hero text-4xl sm:text-5xl md:text-6xl lg:text-7xl mb-5">
+                        Shop our
+                        <span class="text-accent">collection</span>
                     </h1>
-                    <p class="text-xl text-gray-600 font-light max-w-2xl mx-auto">Discover premium products for your
-                        lifestyle</p>
+                    <p class="text-neutral-400 text-lg max-w-xl leading-relaxed">
+                        Discover premium products curated for the modern lifestyle. Quality you can feel, design you can see.
+                    </p>
                 </div>
             </div>
-        </div>
+        </section>
 
         <!-- Main Content -->
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="section py-10 md:py-14">
             <div class="flex flex-col lg:flex-row gap-8">
                 <!-- Sidebar Filters (Desktop) -->
                 <aside class="hidden lg:block w-64 shrink-0">
-                    <div class="bg-white rounded-2xl shadow-sm p-6 sticky top-8 space-y-6">
+                    <div class="card-flat p-5 sm:p-6 sticky top-8 space-y-6 sm:space-y-7">
                         <!-- Search -->
                         <div>
-                            <label class="block text-sm font-semibold text-gray-900 mb-2">Search</label>
+                            <label class="block text-xs font-bold uppercase tracking-[0.2em] text-ink mb-3">Search</label>
                             <div class="relative">
-                                <input v-model="searchQuery" @input="handleSearch" type="text"
+                                <Search class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+                                <input
+                                    v-model="searchQuery"
+                                    @input="handleSearch"
+                                    type="text"
                                     placeholder="Search products..."
-                                    class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm" />
-                                <svg class="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none"
-                                    stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
+                                    class="input-base pl-11 py-2.5 text-sm"
+                                />
                             </div>
                         </div>
 
                         <!-- Categories -->
                         <div>
-                            <h3 class="text-sm font-semibold text-gray-900 mb-3">Categories</h3>
-                            <div class="space-y-2">
-                                <button @click="selectCategory(null)" :class="{
-                                    'bg-gray-900 text-white': !selectedCategory,
-                                    'bg-gray-50 text-gray-700 hover:bg-gray-100': selectedCategory
-                                }" class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+                            <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-ink mb-3">Categories</h3>
+                            <div class="space-y-1.5">
+                                <button
+                                    @click="selectCategory(null)"
+                                    :class="[
+                                        'w-full text-left px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200',
+                                        !selectedCategory
+                                            ? 'bg-ink text-paper'
+                                            : 'bg-neutral-50 text-neutral-700 hover:bg-neutral-100'
+                                    ]"
+                                >
                                     All Products
                                 </button>
-                                <button v-for="category in categories" :key="category.category_id"
-                                    @click="selectCategory(category.name)" :class="{
-                                        'bg-gray-900 text-white': selectedCategory === category.name,
-                                        'bg-gray-50 text-gray-700 hover:bg-gray-100': selectedCategory !== category.name
-                                    }"
-                                    class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+                                <button
+                                    v-for="category in categories"
+                                    :key="category.category_id"
+                                    @click="selectCategory(category.name)"
+                                    :class="[
+                                        'w-full text-left px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200',
+                                        selectedCategory === category.name
+                                            ? 'bg-ink text-paper'
+                                            : 'bg-neutral-50 text-neutral-700 hover:bg-neutral-100'
+                                    ]"
+                                >
                                     {{ category.name }}
                                 </button>
                             </div>
@@ -251,199 +274,192 @@ onMounted(async () => {
 
                         <!-- Price Range -->
                         <div>
-                            <h3 class="text-sm font-semibold text-gray-900 mb-3">Price Range</h3>
+                            <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-ink mb-3">Price Range</h3>
                             <div class="space-y-3">
-                                <input v-model.number="priceRange[0]" @change="currentPage = 1" type="range" min="0"
-                                    max="1000" step="10" class="w-full" />
-                                <input v-model.number="priceRange[1]" @change="currentPage = 1" type="range" min="0"
-                                    max="1000" step="10" class="w-full" />
-                                <div class="flex justify-between text-sm text-gray-600">
-                                    <span>${{ priceRange[0] }}</span>
-                                    <span>${{ priceRange[1] }}</span>
+                                <input
+                                    v-model.number="priceRange[0]"
+                                    @change="currentPage = 1"
+                                    type="range"
+                                    min="0"
+                                    max="1000"
+                                    step="10"
+                                    class="w-full accent-accent"
+                                />
+                                <input
+                                    v-model.number="priceRange[1]"
+                                    @change="currentPage = 1"
+                                    type="range"
+                                    min="0"
+                                    max="1000"
+                                    step="10"
+                                    class="w-full accent-accent"
+                                />
+                                <div class="flex justify-between text-xs text-neutral-600 tabular-nums">
+                                    <span>{{ '$' }}{{ priceRange[0] }}</span>
+                                    <span>{{ '$' }}{{ priceRange[1] }}</span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Clear Filters -->
-                        <button v-if="hasActiveFilters" @click="clearFilters"
-                            class="w-full py-2 text-sm text-gray-600 hover:text-gray-900 font-medium">
-                            Clear All Filters
+                        <button
+                            v-if="hasActiveFilters"
+                            @click="clearFilters"
+                            class="w-full py-2 text-xs font-bold uppercase tracking-[0.15em] text-neutral-500 hover:text-accent transition-colors"
+                        >
+                            Clear all filters
                         </button>
                     </div>
                 </aside>
 
                 <!-- Main Products Area -->
-                <div class="flex-1">
+                <div class="flex-1 min-w-0">
                     <!-- Mobile Filter Button -->
-                    <div class="lg:hidden mb-6">
-                        <button @click="showFilters = !showFilters"
-                            class="w-full py-3 bg-white border border-gray-200 rounded-lg text-gray-700 font-medium flex items-center justify-center gap-2">
-                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                            </svg>
+                    <div class="lg:hidden mb-5">
+                        <button
+                            @click="showFilters = !showFilters"
+                            class="w-full py-3 card-flat text-ink font-semibold text-sm flex items-center justify-center gap-2 hover:border-ink"
+                        >
+                            <SlidersHorizontal class="h-4 w-4" />
                             Filters
                         </button>
                     </div>
 
                     <!-- Toolbar -->
-                    <div class="bg-white rounded-2xl shadow-sm p-4 mb-6">
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                            <!-- Results Count -->
-                            <div class="text-sm text-gray-600">
-                                Showing <span class="font-semibold">{{ startIndex }}-{{ endIndex }}</span> of <span
-                                    class="font-semibold">{{ totalItems }}</span> products
-                            </div>
-
-                            <!-- Sort -->
-                            <div class="flex items-center gap-2">
-                                <label class="text-sm text-gray-600">Sort by:</label>
-                                <select v-model="selectedSort"
-                                    class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white">
-                                    <option v-for="option in sortOptions" :key="option.value" :value="option.value">
-                                        {{ option.label }}
-                                    </option>
-                                </select>
-                            </div>
+                    <div class="card-flat p-3 sm:p-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                        <div class="text-sm text-neutral-600">
+                            Showing <span class="font-bold text-ink tabular-nums">{{ startIndex }}-{{ endIndex }}</span>
+                            of <span class="font-bold text-ink tabular-nums">{{ totalItems }}</span> products
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label class="text-sm text-neutral-600">Sort by:</label>
+                            <select v-model="selectedSort" class="input-base py-2 text-sm w-auto">
+                                <option v-for="option in sortOptions" :key="option.value" :value="option.value">
+                                    {{ option.label }}
+                                </option>
+                            </select>
                         </div>
                     </div>
 
                     <!-- Loading State -->
                     <div v-if="loading" class="flex items-center justify-center py-20">
                         <div class="text-center">
-                            <div
-                                class="w-16 h-16 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin mb-4 mx-auto">
-                            </div>
-                            <p class="text-gray-500">Loading products...</p>
+                            <div class="w-12 h-12 border-4 border-neutral-200 border-t-accent rounded-full animate-spin mb-4 mx-auto"></div>
+                            <p class="text-neutral-500 text-sm">Loading products...</p>
                         </div>
                     </div>
 
                     <!-- Error State -->
                     <div v-else-if="error" class="text-center py-20">
-                        <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        <p class="text-gray-500 mb-4">{{ error }}</p>
-                        <button @click="loadProducts"
-                            class="px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800">
-                            Try Again
+                        <AlertTriangle class="mx-auto h-12 w-12 text-accent mb-4" :stroke-width="1.5" />
+                        <p class="text-neutral-700 font-medium mb-4">{{ error }}</p>
+                        <button @click="loadProducts" class="btn-primary">
+                            Try again
                         </button>
                     </div>
 
                     <!-- Products Grid -->
                     <div v-else-if="hasProducts">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                            <div v-for="product in paginatedProducts" :key="product.product_id"
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
+                            <article
+                                v-for="product in paginatedProducts"
+                                :key="product.product_id"
                                 @click="viewProduct(product.product_id)"
-                                class="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer">
-                                <!-- Image -->
-                                <div class="relative aspect-square bg-gray-100 overflow-hidden">
-                                    <!-- Discount Badge -->
-                                    <div v-if="product.discount_amount > 0" class="absolute top-4 left-4 z-10">
-                                        <div
-                                            class="px-3 py-1.5 bg-red-600 text-white font-bold text-sm rounded-lg shadow-lg">
-                                            -{{ getDiscountPercentage(product) }}%
-                                        </div>
+                                class="card-base overflow-hidden cursor-pointer group"
+                            >
+                                <div class="relative aspect-square bg-neutral-100 overflow-hidden">
+                                    <div v-if="product.discount_amount > 0" class="absolute top-3 left-3 z-10">
+                                        <span class="badge-accent">-{{ getDiscountPercentage(product) }}%</span>
                                     </div>
-
-                                    <!-- Wishlist -->
-                                    <button @click.stop
-                                        class="absolute top-4 right-4 z-10 p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors">
-                                        <svg class="h-5 w-5 text-gray-600" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                        </svg>
+                                    <button
+                                        @click.stop
+                                        class="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-paper shadow-sm hover:bg-accent hover:text-white text-neutral-700 inline-flex items-center justify-center transition-all duration-200"
+                                    >
+                                        <Heart class="w-4 h-4" />
                                     </button>
-
-                                    <img :src="product.main_image || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22400%22 viewBox=%220 0 400 400%22%3E%3Crect width=%22400%22 height=%22400%22 fill=%22%23f3f4f6%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial, sans-serif%22 font-size=%2218%22 fill=%22%239ca3af%22%3ENo Image%3C/text%3E%3C/svg%3E'"
+                                    <img
+                                        :src="product.main_image"
                                         :alt="product.product_name"
-                                        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                        @error="handleImageError" />
+                                        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                        @error="handleImageError"
+                                    />
                                 </div>
-
-                                <!-- Info -->
-                                <div class="p-5">
-                                    <p class="text-xs text-gray-500 uppercase tracking-wider mb-2">
+                                <div class="p-4 sm:p-5 space-y-2 sm:space-y-2.5">
+                                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-accent">
                                         {{ product.category_name || 'Uncategorized' }}
                                     </p>
-                                    <h3
-                                        class="text-lg font-semibold text-gray-900 mb-3 line-clamp-2 group-hover:text-gray-700">
+                                    <h3 class="text-base font-bold text-ink line-clamp-2 group-hover:text-accent transition-colors">
                                         {{ product.product_name }}
                                     </h3>
-                                    <div class="flex items-center gap-2 mb-3">
-                                        <span class="text-2xl font-bold text-gray-900">
-                                            ${{ formatPrice(product.final_price) }}
+                                    <div class="flex items-baseline gap-2">
+                                        <span class="text-xl font-bold text-ink tabular-nums">
+                                            {{ '$' }}{{ formatPrice(product.final_price) }}
                                         </span>
-                                        <span v-if="product.discount_amount > 0"
-                                            class="text-sm text-gray-400 line-through">
-                                            ${{ formatPrice(product.base_price) }}
+                                        <span v-if="product.discount_amount > 0" class="text-sm text-neutral-400 line-through tabular-nums">
+                                            {{ '$' }}{{ formatPrice(product.base_price) }}
                                         </span>
                                     </div>
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex items-center gap-1.5 text-sm font-medium text-green-600">
-                                            <div class="w-2 h-2 rounded-full bg-green-600"></div>
-                                            <span>{{ product.stock_status }}</span>
-                                        </div>
-                                        <button @click.stop="viewProduct(product.product_id)"
-                                            class="text-sm text-gray-600 hover:text-gray-900 font-medium">
-                                            View Details →
-                                        </button>
+                                    <div class="flex items-center justify-between pt-2 border-t border-neutral-100">
+                                        <span class="inline-flex items-center gap-1.5 text-xs font-medium text-success">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-success pulse-dot"></span>
+                                            {{ product.stock_status }}
+                                        </span>
+                                        <span class="inline-flex items-center gap-1 text-xs font-bold text-neutral-500 group-hover:text-accent transition-colors">
+                                            View
+                                            <ArrowRight class="w-3 h-3" />
+                                        </span>
                                     </div>
                                 </div>
-                            </div>
+                            </article>
                         </div>
 
                         <!-- Pagination -->
-                        <div
-                            class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white rounded-2xl p-6 shadow-sm">
+                        <div class="card-flat p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
                             <div class="flex items-center gap-2">
-                                <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1"
-                                    class="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M15 19l-7-7 7-7" />
-                                    </svg>
+                                <button
+                                    @click="goToPage(currentPage - 1)"
+                                    :disabled="currentPage === 1"
+                                    class="btn-icon disabled:opacity-30 disabled:hover:scale-100 disabled:hover:bg-transparent"
+                                >
+                                    <ChevronLeft class="w-5 h-5" />
                                 </button>
-
-                                <div class="flex items-center gap-1">
-                                    <button v-for="page in visiblePages" :key="page" @click="goToPage(page)" :class="{
-                                        'bg-gray-900 text-white': page === currentPage,
-                                        'bg-white text-gray-700 hover:bg-gray-50': page !== currentPage
-                                    }" class="min-w-10 h-10 rounded-lg border border-gray-200 font-medium text-sm">
+                                <div class="flex items-center gap-1.5">
+                                    <button
+                                        v-for="page in visiblePages"
+                                        :key="page"
+                                        @click="goToPage(page)"
+                                        :class="[
+                                            'min-w-10 h-10 rounded-full border text-sm font-bold transition-all',
+                                            page === currentPage
+                                                ? 'bg-ink text-paper border-ink'
+                                                : 'bg-paper text-ink border-neutral-200 hover:border-ink'
+                                        ]"
+                                    >
                                         {{ page }}
                                     </button>
                                 </div>
-
-                                <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages"
-                                    class="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9 5l7 7-7 7" />
-                                    </svg>
+                                <button
+                                    @click="goToPage(currentPage + 1)"
+                                    :disabled="currentPage === totalPages"
+                                    class="btn-icon disabled:opacity-30 disabled:hover:scale-100 disabled:hover:bg-transparent"
+                                >
+                                    <ChevronRight class="w-5 h-5" />
                                 </button>
                             </div>
-
-                            <div class="text-sm text-gray-600">
-                                Page {{ currentPage }} of {{ totalPages }}
+                            <div class="text-xs text-neutral-500 tabular-nums">
+                                Page <span class="font-bold text-ink">{{ currentPage }}</span> of {{ totalPages }}
                             </div>
                         </div>
                     </div>
 
                     <!-- Empty State -->
-                    <div v-else class="text-center py-20">
-                        <svg class="mx-auto h-24 w-24 text-gray-300 mb-6" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                        </svg>
-                        <h3 class="text-xl font-semibold text-gray-900 mb-2">No products found</h3>
-                        <p class="text-gray-500 mb-8">Try adjusting your filters or search terms</p>
-                        <button @click="clearFilters"
-                            class="px-8 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-medium">
-                            Clear Filters
+                    <div v-else class="card-flat text-center py-20 px-6">
+                        <div class="w-20 h-20 rounded-full bg-neutral-100 flex items-center justify-center mx-auto mb-5">
+                            <PackageOpen class="w-10 h-10 text-neutral-400" :stroke-width="1.5" />
+                        </div>
+                        <h3 class="font-elegant font-bold text-2xl text-ink mb-2">No products found</h3>
+                        <p class="text-neutral-500 mb-6 max-w-md mx-auto">Try adjusting your filters or search terms to discover something new.</p>
+                        <button @click="clearFilters" class="btn-accent shine-effect">
+                            Clear filters
                         </button>
                     </div>
                 </div>
@@ -451,74 +467,77 @@ onMounted(async () => {
         </div>
 
         <!-- Mobile Filters Modal -->
-        <div v-if="showFilters" @click="showFilters = false"
-            class="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end sm:items-center sm:justify-center p-4">
-            <div @click.stop
-                class="bg-white rounded-t-2xl sm:rounded-2xl p-6 w-full sm:max-w-md max-h-[80vh] overflow-y-auto">
+        <div
+            v-if="showFilters"
+            @click="showFilters = false"
+            class="lg:hidden fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-end sm:items-center sm:justify-center p-0 sm:p-4"
+        >
+            <div
+                @click.stop
+                class="bg-paper rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full sm:max-w-md max-h-[85vh] overflow-y-auto"
+            >
                 <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-lg font-bold text-gray-900">Filters</h3>
-                    <button @click="showFilters = false" class="text-gray-400 hover:text-gray-600">
-                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                    <h3 class="text-lg font-bold text-ink">Filters</h3>
+                    <button @click="showFilters = false" class="btn-icon">
+                        <X class="w-5 h-5" />
                     </button>
                 </div>
 
-                <!-- Same filters as sidebar -->
-                <div class="space-y-6">
-                    <!-- Search -->
+                <div class="space-y-7">
                     <div>
-                        <label class="block text-sm font-semibold text-gray-900 mb-2">Search</label>
-                        <input v-model="searchQuery" type="text" placeholder="Search products..."
-                            class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400" />
+                        <label class="block text-xs font-bold uppercase tracking-[0.2em] text-ink mb-3">Search</label>
+                        <div class="relative">
+                            <Search class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+                            <input
+                                v-model="searchQuery"
+                                type="text"
+                                placeholder="Search products..."
+                                class="input-base pl-11"
+                            />
+                        </div>
                     </div>
 
-                    <!-- Categories -->
                     <div>
-                        <h4 class="text-sm font-semibold text-gray-900 mb-3">Categories</h4>
-                        <div class="space-y-2">
-                            <button @click="selectCategory(null)" :class="{
-                                'bg-gray-900 text-white': !selectedCategory,
-                                'bg-gray-50 text-gray-700': selectedCategory
-                            }" class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium">
+                        <h4 class="text-xs font-bold uppercase tracking-[0.2em] text-ink mb-3">Categories</h4>
+                        <div class="space-y-1.5">
+                            <button
+                                @click="selectCategory(null)"
+                                :class="[
+                                    'w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-medium',
+                                    !selectedCategory ? 'bg-ink text-paper' : 'bg-neutral-50 text-neutral-700'
+                                ]"
+                            >
                                 All Products
                             </button>
-                            <button v-for="category in categories" :key="category.category_id"
-                                @click="selectCategory(category.name)" :class="{
-                                    'bg-gray-900 text-white': selectedCategory === category.name,
-                                    'bg-gray-50 text-gray-700': selectedCategory !== category.name
-                                }" class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium">
+                            <button
+                                v-for="category in categories"
+                                :key="category.category_id"
+                                @click="selectCategory(category.name)"
+                                :class="[
+                                    'w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-medium',
+                                    selectedCategory === category.name ? 'bg-ink text-paper' : 'bg-neutral-50 text-neutral-700'
+                                ]"
+                            >
                                 {{ category.name }}
                             </button>
                         </div>
                     </div>
 
-                    <!-- Price Range -->
                     <div>
-                        <h4 class="text-sm font-semibold text-gray-900 mb-3">Price Range</h4>
+                        <h4 class="text-xs font-bold uppercase tracking-[0.2em] text-ink mb-3">Price Range</h4>
                         <div class="space-y-3">
-                            <input v-model.number="priceRange[0]" type="range" min="0" max="1000" step="10"
-                                class="w-full" />
-                            <input v-model.number="priceRange[1]" type="range" min="0" max="1000" step="10"
-                                class="w-full" />
-                            <div class="flex justify-between text-sm text-gray-600">
-                                <span>${{ priceRange[0] }}</span>
-                                <span>${{ priceRange[1] }}</span>
+                            <input v-model.number="priceRange[0]" type="range" min="0" max="1000" step="10" class="w-full accent-accent" />
+                            <input v-model.number="priceRange[1]" type="range" min="0" max="1000" step="10" class="w-full accent-accent" />
+                            <div class="flex justify-between text-sm text-neutral-600 tabular-nums">
+                                <span>{{ '$' }}{{ priceRange[0] }}</span>
+                                <span>{{ '$' }}{{ priceRange[1] }}</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Actions -->
-                    <div class="flex gap-3 pt-4">
-                        <button @click="clearFilters"
-                            class="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium">
-                            Clear All
-                        </button>
-                        <button @click="showFilters = false"
-                            class="flex-1 py-3 bg-gray-900 text-white rounded-lg font-medium">
-                            Apply Filters
-                        </button>
+                    <div class="flex gap-3 pt-2">
+                        <button @click="clearFilters" class="btn-outline flex-1">Clear all</button>
+                        <button @click="showFilters = false" class="btn-primary flex-1">Apply</button>
                     </div>
                 </div>
             </div>

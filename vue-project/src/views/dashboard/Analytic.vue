@@ -66,16 +66,16 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="min-h-screen bg-neutral-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       <!-- Header -->
-      <div class="flex items-center justify-between mb-8">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 class="text-3xl font-bold text-gray-900">Analytics</h1>
-          <p class="text-gray-600 mt-1">Track your store performance</p>
+          <h1 class="text-2xl sm:text-3xl font-bold text-ink">Analytics</h1>
+          <p class="text-neutral-600 mt-1 text-sm sm:text-base">Track your store performance</p>
         </div>
         <select v-model="timeframe" :disabled="loading"
-          class="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white disabled:opacity-50">
+          class="px-4 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 bg-paper disabled:opacity-50 text-sm">
           <option value="week">This Week</option>
           <option value="month">This Month</option>
           <option value="year">This Year</option>
@@ -87,7 +87,7 @@ onMounted(() => {
         <div class="text-center">
           <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4 mx-auto">
           </div>
-          <p class="text-gray-500">Loading analytics...</p>
+          <p class="text-neutral-500">Loading analytics...</p>
         </div>
       </div>
 
@@ -113,8 +113,8 @@ onMounted(() => {
       <div v-else>
 
         <!-- Key Metrics -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div class="bg-white rounded-2xl shadow-sm p-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+          <div class="bg-paper rounded-2xl shadow-sm p-6">
             <div class="flex items-center justify-between mb-4">
               <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                 <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -124,11 +124,11 @@ onMounted(() => {
               </div>
               <span class="text-sm text-green-600 font-semibold">+15.3%</span>
             </div>
-            <p class="text-gray-600 text-sm mb-1">Total Revenue</p>
-            <p class="text-3xl font-bold text-gray-900">${{ formatPrice(totalSales) }}</p>
+            <p class="text-neutral-600 text-sm mb-1">Total Revenue</p>
+            <p class="text-3xl font-bold text-ink">${{ formatPrice(totalSales) }}</p>
           </div>
 
-          <div class="bg-white rounded-2xl shadow-sm p-6">
+          <div class="bg-paper rounded-2xl shadow-sm p-6">
             <div class="flex items-center justify-between mb-4">
               <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                 <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -138,11 +138,11 @@ onMounted(() => {
               </div>
               <span class="text-sm text-blue-600 font-semibold">+12.5%</span>
             </div>
-            <p class="text-gray-600 text-sm mb-1">Total Orders</p>
-            <p class="text-3xl font-bold text-gray-900">{{ totalOrders }}</p>
+            <p class="text-neutral-600 text-sm mb-1">Total Orders</p>
+            <p class="text-3xl font-bold text-ink">{{ totalOrders }}</p>
           </div>
 
-          <div class="bg-white rounded-2xl shadow-sm p-6">
+          <div class="bg-paper rounded-2xl shadow-sm p-6">
             <div class="flex items-center justify-between mb-4">
               <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                 <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,11 +152,11 @@ onMounted(() => {
               </div>
               <span class="text-sm text-purple-600 font-semibold">+8.2%</span>
             </div>
-            <p class="text-gray-600 text-sm mb-1">Total Customers</p>
-            <p class="text-3xl font-bold text-gray-900">{{ totalCustomers }}</p>
+            <p class="text-neutral-600 text-sm mb-1">Total Customers</p>
+            <p class="text-3xl font-bold text-ink">{{ totalCustomers }}</p>
           </div>
 
-          <div class="bg-white rounded-2xl shadow-sm p-6">
+          <div class="bg-paper rounded-2xl shadow-sm p-6">
             <div class="flex items-center justify-between mb-4">
               <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
                 <svg class="h-6 w-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,20 +166,20 @@ onMounted(() => {
               </div>
               <span class="text-sm text-orange-600 font-semibold">+5.4%</span>
             </div>
-            <p class="text-gray-600 text-sm mb-1">Avg Order Value</p>
-            <p class="text-3xl font-bold text-gray-900">${{ formatPrice(averageOrderValue) }}</p>
+            <p class="text-neutral-600 text-sm mb-1">Avg Order Value</p>
+            <p class="text-3xl font-bold text-ink">${{ formatPrice(averageOrderValue) }}</p>
           </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <!-- Sales Trend Chart -->
-          <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm p-6">
-            <h2 class="text-lg font-bold text-gray-900 mb-6">Sales Trend</h2>
+          <div class="lg:col-span-2 bg-paper rounded-2xl shadow-sm p-6">
+            <h2 class="text-lg font-bold text-ink mb-6">Sales Trend</h2>
 
             <div class="space-y-4">
               <div v-for="data in salesData" :key="data.period" class="flex items-center gap-4">
-                <span class="text-sm font-medium text-gray-600 w-16">{{ data.period }}</span>
-                <div class="flex-1 bg-gray-100 rounded-lg h-12 relative overflow-hidden">
+                <span class="text-sm font-medium text-neutral-600 w-16">{{ data.period }}</span>
+                <div class="flex-1 bg-neutral-100 rounded-lg h-12 relative overflow-hidden">
                   <div :style="{ width: `${(data.sales / maxSales) * 100}%` }"
                     class="bg-linear-to-r from-green-500 to-green-600 h-full rounded-lg flex items-center justify-end pr-3">
                     <span class="text-white text-sm font-semibold">${{ data.sales }}</span>
@@ -190,57 +190,57 @@ onMounted(() => {
           </div>
 
           <!-- Category Breakdown -->
-          <div class="bg-white rounded-2xl shadow-sm p-6">
-            <h2 class="text-lg font-bold text-gray-900 mb-6">Sales by Category</h2>
+          <div class="bg-paper rounded-2xl shadow-sm p-5 sm:p-6">
+            <h2 class="text-lg font-bold text-ink mb-6">Sales by Category</h2>
 
             <div class="space-y-4">
               <div v-for="category in categoryData" :key="category.name">
                 <div class="flex items-center justify-between mb-2">
-                  <span class="text-sm font-medium text-gray-700">{{ category.name }}</span>
-                  <span class="text-sm font-semibold text-gray-900">{{ category.percentage }}%</span>
+                  <span class="text-sm font-medium text-neutral-700">{{ category.name }}</span>
+                  <span class="text-sm font-semibold text-ink">{{ category.percentage }}%</span>
                 </div>
-                <div class="w-full bg-gray-100 rounded-full h-2">
+                <div class="w-full bg-neutral-100 rounded-full h-2">
                   <div :style="{ width: `${category.percentage}%` }" class="bg-blue-600 h-2 rounded-full"></div>
                 </div>
-                <p class="text-xs text-gray-500 mt-1">${{ formatPrice(category.sales) }}</p>
+                <p class="text-xs text-neutral-500 mt-1">${{ formatPrice(category.sales) }}</p>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Product Performance -->
-        <div class="bg-white rounded-2xl shadow-sm p-6">
-          <h2 class="text-lg font-bold text-gray-900 mb-6">Top Performing Products</h2>
+        <div class="bg-paper rounded-2xl shadow-sm p-5 sm:p-6">
+          <h2 class="text-lg font-bold text-ink mb-6">Top Performing Products</h2>
 
           <div class="overflow-x-auto">
-            <table class="w-full">
-              <thead class="bg-gray-50 border-b border-gray-200">
+            <table class="w-full min-w-[640px]">
+              <thead class="bg-neutral-50 border-b border-neutral-200">
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Product</th>
-                  <th class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Units Sold</th>
-                  <th class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Revenue</th>
-                  <th class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Performance</th>
+                  <th class="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-neutral-600 uppercase">Product</th>
+                  <th class="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-neutral-600 uppercase">Units Sold</th>
+                  <th class="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-neutral-600 uppercase">Revenue</th>
+                  <th class="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-neutral-600 uppercase">Performance</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-200">
-                <tr v-for="product in productPerformance" :key="product.name" class="hover:bg-gray-50">
+              <tbody class="divide-y divide-neutral-200">
+                <tr v-for="product in productPerformance" :key="product.name" class="hover:bg-neutral-50">
                   <td class="px-6 py-4">
-                    <p class="font-semibold text-gray-900">{{ product.name }}</p>
+                    <p class="font-semibold text-ink">{{ product.name }}</p>
                   </td>
                   <td class="px-6 py-4 text-right">
-                    <span class="text-sm font-semibold text-gray-900">{{ product.units }}</span>
+                    <span class="text-sm font-semibold text-ink">{{ product.units }}</span>
                   </td>
                   <td class="px-6 py-4 text-right">
-                    <span class="text-sm font-bold text-gray-900">${{ formatPrice(product.revenue) }}</span>
+                    <span class="text-sm font-bold text-ink">${{ formatPrice(product.revenue) }}</span>
                   </td>
                   <td class="px-6 py-4 text-right">
                     <div class="flex items-center justify-end gap-2">
-                      <div class="w-24 bg-gray-100 rounded-full h-2">
+                      <div class="w-24 bg-neutral-100 rounded-full h-2">
                         <div :style="{ width: `${(product.sales / 1200) * 100}%` }"
                           class="bg-green-600 h-2 rounded-full">
                         </div>
                       </div>
-                      <span class="text-xs font-medium text-gray-600">{{ Math.round((product.sales / 1200) * 100)
+                      <span class="text-xs font-medium text-neutral-600">{{ Math.round((product.sales / 1200) * 100)
                       }}%</span>
                     </div>
                   </td>

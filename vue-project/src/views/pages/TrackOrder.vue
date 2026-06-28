@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { Package, Truck, CheckCircle, Clock, Search, MapPin } from 'lucide-vue-next'
+import { Package, Truck, CheckCircle, Clock, Search, MapPin, ArrowRight, MessageCircle } from 'lucide-vue-next'
 
 const orderNumber = ref('')
 const email = ref('')
@@ -32,92 +32,106 @@ const handleTrack = () => {
 </script>
 
 <template>
-    <div class="min-h-screen bg-gradient-to-br from-white via-blue-50 to-indigo-50 py-8">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="bg-paper min-h-screen">
+        <section class="section py-12 md:py-16">
             <!-- Header -->
-            <div class="text-center mb-12 mt-8">
-                <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl mb-4 shadow-lg">
-                    <Truck class="w-8 h-8 text-white" />
-                </div>
-                <h1 class="text-5xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3">
-                    Track Your Order
+            <div class="text-center mb-12 max-w-2xl mx-auto">
+                <span class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-ink text-paper mb-5 shadow-[0_8px_24px_-6px_rgb(249_115_22_/_0.45)]">
+                    <Truck class="w-7 h-7 text-accent" />
+                </span>
+                <h1 class="heading-hero text-5xl md:text-6xl text-ink mb-4">
+                    Track your
+                    <span class="text-accent">order</span>
                 </h1>
-                <p class="text-gray-600 text-lg">Real-time updates on your shipment</p>
+                <p class="text-neutral-600 text-lg">Real-time updates on your shipment, every step of the way.</p>
             </div>
 
             <!-- Search Form -->
-            <div class="bg-white rounded-3xl shadow-xl p-8 mb-8 border border-gray-100">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div class="card-flat p-8 mb-10 max-w-3xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
                     <div>
-                        <label class="block text-sm font-bold text-gray-900 mb-2">Order Number</label>
-                        <input v-model="orderNumber" type="text" placeholder="#1001"
-                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none" />
+                        <label class="block text-xs font-bold uppercase tracking-[0.2em] text-ink mb-2">Order number</label>
+                        <input v-model="orderNumber" type="text" placeholder="#1001" class="input-base" />
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-gray-900 mb-2">Email Address</label>
-                        <input v-model="email" type="email" placeholder="you@example.com"
-                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none" />
+                        <label class="block text-xs font-bold uppercase tracking-[0.2em] text-ink mb-2">Email address</label>
+                        <input v-model="email" type="email" placeholder="you@example.com" class="input-base" />
                     </div>
                 </div>
-                <button @click="handleTrack" :disabled="searching"
-                    class="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl hover:shadow-2xl hover:shadow-blue-500/30 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50">
+                <button
+                    @click="handleTrack"
+                    :disabled="searching"
+                    class="btn-accent shine-effect w-full py-4 disabled:opacity-50"
+                >
                     <Search class="w-5 h-5" />
-                    {{ searching ? 'Tracking...' : 'Track Order' }}
+                    {{ searching ? 'Tracking...' : 'Track order' }}
+                    <ArrowRight v-if="!searching" class="w-4 h-4" />
                 </button>
             </div>
 
             <!-- Tracking Result -->
-            <div v-if="trackingResult" class="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
-                <div class="flex items-center justify-between mb-8 pb-6 border-b border-gray-200">
+            <div v-if="trackingResult" class="card-flat p-8 max-w-3xl mx-auto animate-fade-up">
+                <div class="flex items-center justify-between mb-8 pb-6 border-b border-neutral-200 flex-wrap gap-4">
                     <div>
-                        <p class="text-sm text-gray-500 uppercase tracking-wider">Order Status</p>
-                        <p class="text-2xl font-bold text-blue-600">{{ trackingResult.status }}</p>
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-neutral-500">Order status</p>
+                        <p class="text-2xl font-bold text-accent mt-1">{{ trackingResult.status }}</p>
                     </div>
                     <div class="text-right">
-                        <p class="text-sm text-gray-500 uppercase tracking-wider">Estimated Delivery</p>
-                        <p class="text-2xl font-bold text-gray-900">{{ trackingResult.estimatedDelivery }}</p>
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-neutral-500">Estimated delivery</p>
+                        <p class="text-2xl font-bold text-ink mt-1 tabular-nums">{{ trackingResult.estimatedDelivery }}</p>
                     </div>
                 </div>
 
                 <!-- Progress Timeline -->
                 <div class="mb-8">
-                    <h3 class="text-lg font-bold text-gray-900 mb-6">Shipping Progress</h3>
-                    <div class="flex items-center justify-between relative">
-                        <div class="absolute top-5 left-0 right-0 h-1 bg-gray-200"></div>
-                        <div class="absolute top-5 left-0 h-1 bg-blue-500" style="width: 60%"></div>
-                        <div v-for="(stage, idx) in orderStages" :key="idx" class="relative z-10 flex flex-col items-center">
-                            <div :class="{
-                                'bg-blue-500 text-white': stage.status === 'completed' || stage.status === 'active',
-                                'bg-gray-200 text-gray-400': stage.status === 'pending'
-                            }" class="w-10 h-10 rounded-full flex items-center justify-center mb-2">
-                                <component :is="stage.icon" class="w-5 h-5" />
+                    <h3 class="font-bold text-ink mb-7">Shipping progress</h3>
+                    <div class="flex items-start justify-between relative gap-1 sm:gap-0">
+                        <div class="absolute top-4 sm:top-5 left-4 sm:left-5 right-4 sm:right-5 h-1 bg-neutral-200 rounded-full"></div>
+                        <div class="absolute top-4 sm:top-5 left-4 sm:left-5 h-1 bg-accent rounded-full" style="width: calc(60% - 16px);"></div>
+                        <div
+                            v-for="(stage, idx) in orderStages"
+                            :key="idx"
+                            class="relative z-10 flex flex-col items-center min-w-0"
+                            style="flex: 1;"
+                        >
+                            <div :class="[
+                                'w-8 h-8 sm:w-10 sm:h-10 rounded-full inline-flex items-center justify-center mb-1 sm:mb-2 transition-colors shrink-0',
+                                stage.status === 'completed' || stage.status === 'active'
+                                    ? 'bg-accent text-paper'
+                                    : 'bg-neutral-200 text-neutral-400'
+                            ]">
+                                <component :is="stage.icon" class="w-4 h-4 sm:w-5 sm:h-5" />
                             </div>
-                            <p class="text-xs font-medium text-gray-700 text-center max-w-20">{{ stage.name }}</p>
+                            <p class="text-[10px] sm:text-xs font-semibold text-ink text-center leading-tight break-words">{{ stage.name }}</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Shipment Details -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="bg-blue-50 rounded-xl p-4">
-                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Carrier</p>
-                        <p class="font-bold text-gray-900">{{ trackingResult.carrier }}</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="bg-neutral-50 rounded-xl p-4">
+                        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-1">Carrier</p>
+                        <p class="font-bold text-ink">{{ trackingResult.carrier }}</p>
                     </div>
-                    <div class="bg-blue-50 rounded-xl p-4">
-                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Tracking Number</p>
-                        <p class="font-bold text-gray-900 text-sm">{{ trackingResult.trackingNumber }}</p>
+                    <div class="bg-neutral-50 rounded-xl p-4">
+                        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-1">Tracking number</p>
+                        <p class="font-bold text-ink text-sm tabular-nums">{{ trackingResult.trackingNumber }}</p>
                     </div>
-                    <div class="bg-blue-50 rounded-xl p-4">
-                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Current Location</p>
-                        <p class="font-bold text-gray-900">{{ trackingResult.currentLocation }}</p>
+                    <div class="bg-neutral-50 rounded-xl p-4">
+                        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500 mb-1">Current location</p>
+                        <p class="font-bold text-ink">{{ trackingResult.currentLocation }}</p>
                     </div>
                 </div>
             </div>
 
             <!-- Help Section -->
-            <div class="mt-8 text-center text-sm text-gray-500">
-                Need help? <a href="/contact" class="text-blue-600 font-semibold hover:underline">Contact support</a>
+            <div class="mt-12 text-center">
+                <div class="inline-flex items-center gap-2 text-sm text-neutral-500 card-flat px-5 py-3">
+                    <MessageCircle class="w-4 h-4 text-accent" />
+                    Need help?
+                    <a href="/contact" class="text-ink font-bold hover:text-accent transition-colors">Contact support</a>
+                </div>
             </div>
-        </div>
+        </section>
     </div>
 </template>

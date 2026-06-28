@@ -1,0 +1,17 @@
+{
+  "id": "019f0ddc-5697-767d-9389-a6efdd568882",
+  "name": "Apply Responsive Across Vue Project",
+  "description": "Make every .vue file in src/ render correctly across mobile (≤640px), tablet (768–1024px), and desktop (≥1280px) breakpoints using Tailwind v4 utility classes, with the existing black/orange visual identity preserved.",
+  "status": "draft",
+  "worktree": {
+    "path": "/mnt/e/Vue_Ecommerce_Project",
+    "branch": "Master",
+    "commit": "48ef4db35b7c6002c537eae56c2eea90ea4ecc0e"
+  },
+  "scoping": {},
+  "phases": [],
+  "decisions": [],
+  "memories": [],
+  "createdAt": "2026-06-28T10:52:51.735Z",
+  "updatedAt": "2026-06-28T10:52:51.735Z"
+}
