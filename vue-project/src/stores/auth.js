@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { authAPI } from '../api/authApi';
+import { authAPI } from '../api/authApi.js';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -16,13 +16,10 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
-    /**
-     * Initialize auth state from localStorage
-     */
     init() {
       const token = authAPI.getToken();
       const user = authAPI.getCurrentUser();
-      
+
       if (token && user) {
         this.token = token;
         this.user = user;
@@ -35,19 +32,18 @@ export const useAuthStore = defineStore('auth', {
       this.error = null;
 
       try {
-        // Call authAPI login with identifier
         const response = await authAPI.login(
           credentials.identifier,
           credentials.password
         );
 
-        // Store token and user
         this.token = response.token;
         this.user = response.user;
 
         return { success: true, user: response.user };
       } catch (err) {
-        this.error = err.response?.data?.message || 'Login failed';
+        this.error = err.response?.data?.message || err.message || 'Login failed';
+        console.error('Store login error:', this.error);
         return { success: false, error: this.error };
       } finally {
         this.loading = false;
@@ -62,7 +58,6 @@ export const useAuthStore = defineStore('auth', {
       try {
         const response = await authAPI.register(userData);
 
-        // Auto-login after registration
         this.token = response.token;
         this.user = response.user;
 
@@ -75,7 +70,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    // logout
+    // Logout
     logout() {
       authAPI.logout();
       this.token = null;
@@ -83,31 +78,9 @@ export const useAuthStore = defineStore('auth', {
       this.error = null;
     },
 
-    // Clear messeges
+    // Clear errors
     clearError() {
       this.error = null;
-    },
-
-    // Update user profile
-    async updateProfile(userData) {
-      this.loading = true;
-      this.error = null;
-
-      try {
-        // Assuming you have a userAPI with updateProfile method
-        const response = await userAPI.updateProfile(userData);
-        this.user = response;
-        
-        // Update localStorage
-        localStorage.setItem('auth_user', JSON.stringify(response));
-
-        return { success: true, user: response };
-      } catch (err) {
-        this.error = err.response?.data?.message || 'Update failed';
-        return { success: false, error: this.error };
-      } finally {
-        this.loading = false;
-      }
     }
   }
 });

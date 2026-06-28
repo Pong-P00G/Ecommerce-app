@@ -21,9 +21,9 @@ export const getUserById = async (id) => {
 export const getUserByEmail = async (email) => {
     const [rows] = await db.query(`
         SELECT 
-          u.user_id, u.username, u.first_name, u.mid_name, u.last_name, 
-          u.full_name, u.email, u.password_hash, u.created_at, 
-          r.role_name, r.role_id
+            u.user_id, u.username, u.first_name, u.mid_name, u.last_name, 
+            CONCAT(u.first_name, ' ', IFNULL(u.mid_name, ''), ' ', u.last_name) AS full_name, u.email, u.password_hash, u.created_at, 
+            r.role_name, r.role_id
         FROM users u
         LEFT JOIN roles r ON u.role_id = r.role_id
         WHERE u.email = ?
@@ -36,7 +36,7 @@ export const getUserByUsername = async (username) => {
     const [rows] = await db.query(`
         SELECT 
           u.user_id, u.username, u.first_name, u.mid_name, u.last_name, 
-          u.full_name, u.email, u.password_hash, u.created_at, 
+          CONCAT(u.first_name, ' ', IFNULL(u.mid_name, ''), ' ', u.last_name) AS full_name, u.email, u.password_hash, u.created_at, 
           r.role_name, r.role_id
         FROM users u
         LEFT JOIN roles r ON u.role_id = r.role_id
@@ -50,7 +50,7 @@ export const getUserByEmailOrUsername = async (identifier) => {
     const [rows] = await db.query(`
         SELECT 
           u.user_id, u.username, u.first_name, u.mid_name, u.last_name, 
-          u.full_name, u.email, u.password_hash, u.created_at, 
+          CONCAT(u.first_name, ' ', IFNULL(u.mid_name, ''), ' ', u.last_name) AS full_name, u.email, u.password_hash, u.created_at, 
           r.role_name, r.role_id
         FROM users u
         LEFT JOIN roles r ON u.role_id = r.role_id
@@ -141,6 +141,3 @@ export const usernameExists = async(username) => {
     const [rows] = await db.query('SELECT user_id FROM users WHERE username = ?', [username]);
     return rows.length > 0;
 }
-
-// Methods verifyUserByEmail, verifyUserByUsername, and verifyUser have been removed 
-// as password verification is now handled by the service layer using bcrypt.

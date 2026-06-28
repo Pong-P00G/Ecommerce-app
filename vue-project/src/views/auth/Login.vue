@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, RouterLink } from 'vue-router';
 import { useAuthStore } from '../../stores/auth.js';
 import {
   Mail,
@@ -23,23 +23,31 @@ const password = ref('');
 const rememberMe = ref(false);
 const showPassword = ref(false);
 const loading = ref(false);
+const localError = ref('');
 
 // Computed error from auth store
-const error = computed(() => authStore.error);
+const error = computed(() => authStore.error || localError.value);
 
 const handleLogin = async () => {
+  // Reset errors
+  localError.value = '';
+  authStore.clearError();
+
   // Basic validation
-  if (!identifier.value || !password.value) {
-    authStore.error = 'Please enter both email/username and password';
+  if (!identifier.value.trim()) {
+    localError.value = 'Please enter your email or username';
+    return;
+  }
+  if (!password.value) {
+    localError.value = 'Please enter your password';
     return;
   }
 
   loading.value = true;
-  authStore.clearError();
 
   try {
     const result = await authStore.login({
-      identifier: identifier.value,
+      identifier: identifier.value.trim(),
       password: password.value
     });
 
@@ -50,7 +58,7 @@ const handleLogin = async () => {
       }
 
       // Redirect based on role_id (1 = Admin, 2 = User)
-      if (authStore.user.role_id === 1) {
+      if (authStore.user?.role_id === 1) {
         router.push('/admin/dashboard');
       } else {
         router.push('/');
@@ -58,6 +66,7 @@ const handleLogin = async () => {
     }
   } catch (err) {
     console.error('Login error:', err);
+    localError.value = err.message || 'An unexpected error occurred';
   } finally {
     loading.value = false;
   }
@@ -144,7 +153,7 @@ const handleLogin = async () => {
           </div>
 
           <!-- Button -->
-          <button type="submit" :disabled="loading || !identifier || !password"
+          <button type="submit" :disabled="loading || !identifier.trim() || !password"
             class="flex w-full items-center justify-center gap-2 rounded-xl bg-black py-3 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed">
             <Loader2 v-if="loading" class="h-5 w-5 animate-spin" />
             <span v-else class="flex items-center gap-2">

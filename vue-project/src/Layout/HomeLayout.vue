@@ -39,7 +39,7 @@ onMounted(() => {
     <div class="flex min-h-screen flex-col">
         <Navbar />
         <main class="flex-1 pt-20" role="main">
-            <div class="min-h-screen bg-linear-to-br from-white via-gray-50 to-blue-50">
+            <div class="min-h-screen bg-secondary">
                 <router-view />
             </div>
         </main>

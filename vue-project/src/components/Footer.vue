@@ -47,25 +47,25 @@ const socialLinks = [
 </script>
 
 <template>
-    <footer class="bg-linear-to-b from-gray-900 to-black text-gray-100 pt-24 pb-12 overflow-hidden">
+    <footer class="bg-primary text-secondary pt-24 pb-12 overflow-hidden">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-16 mb-24">
 
                 <!-- Brand Section -->
                 <div class="lg:col-span-4 space-y-10">
                     <RouterLink to="/" class="inline-block group">
-                        <span class="text-3xl tracking-tight text-white">
-                            <span class="font-light">Aliee</span><span class="font-black italic">Shop</span>
+                        <span class="text-3xl tracking-tight text-secondary font-elegant">
+                            <span class="font-light">ALIE</span><span class="font-bold">SHOP</span>
                         </span>
                     </RouterLink>
-                    <p class="text-gray-400 text-lg font-light leading-relaxed max-w-sm">
+                    <p class="text-neutral-400 text-lg font-light leading-relaxed max-w-sm">
                         Curating a world of exceptional products for your modern lifestyle. Quality is our signature.
                     </p>
                     <!-- Social Media Links -->
                     <div class="flex gap-4">
                         <a v-for="social in socialLinks" :key="social.label" :href="social.href" target="_blank"
                             rel="noopener noreferrer" :aria-label="social.label"
-                            class="w-12 h-12 rounded-full border border-gray-700 flex items-center justify-center text-gray-400 transition-all duration-300 hover:border-white hover:text-white hover:scale-110">
+                            class="w-12 h-12 rounded-full border border-neutral-700 flex items-center justify-center text-neutral-400 transition-all duration-300 hover:border-secondary hover:text-secondary hover:scale-110">
                             <component :is="social.icon" class="w-5 h-5" />
                         </a>
                     </div>
@@ -73,11 +73,11 @@ const socialLinks = [
 
                 <!-- Quick Links Sections -->
                 <div class="lg:col-span-2">
-                    <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-white mb-8">Shop</h3>
+                    <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-secondary mb-8">Shop</h3>
                     <ul class="space-y-4">
                         <li v-for="link in footerLinks.shop" :key="link.name">
                             <RouterLink :to="link.to"
-                                class="text-gray-400 hover:text-white transition-colors text-sm font-medium inline-block">
+                                class="text-neutral-400 hover:text-secondary transition-colors text-sm font-medium inline-block">
                                 {{ link.name }}
                             </RouterLink>
                         </li>
@@ -85,11 +85,11 @@ const socialLinks = [
                 </div>
 
                 <div class="lg:col-span-2">
-                    <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-white mb-8">Help</h3>
+                    <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-secondary mb-8">Help</h3>
                     <ul class="space-y-4">
                         <li v-for="link in footerLinks.help" :key="link.name">
                             <RouterLink :to="link.to"
-                                class="text-gray-400 hover:text-white transition-colors text-sm font-medium inline-block">
+                                class="text-neutral-400 hover:text-secondary transition-colors text-sm font-medium inline-block">
                                 {{ link.name }}
                             </RouterLink>
                         </li>
@@ -97,11 +97,11 @@ const socialLinks = [
                 </div>
 
                 <div class="lg:col-span-2">
-                    <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-white mb-8">Company</h3>
+                    <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-secondary mb-8">Company</h3>
                     <ul class="space-y-4">
                         <li v-for="link in footerLinks.company" :key="link.name">
                             <RouterLink :to="link.to"
-                                class="text-gray-400 hover:text-white transition-colors text-sm font-medium inline-block">
+                                class="text-neutral-400 hover:text-secondary transition-colors text-sm font-medium inline-block">
                                 {{ link.name }}
                             </RouterLink>
                         </li>
@@ -110,26 +110,26 @@ const socialLinks = [
 
                 <!-- Contact Section -->
                 <div class="lg:col-span-2">
-                    <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-white mb-8">Location</h3>
+                    <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-secondary mb-8">Location</h3>
                     <div class="space-y-6">
                         <div class="flex gap-3">
-                            <MapPin class="w-5 h-5 text-gray-500 shrink-0 mt-1" />
-                            <p class="text-sm text-gray-400 leading-relaxed font-medium">
+                            <MapPin class="w-5 h-5 text-neutral-500 shrink-0 mt-1" />
+                            <p class="text-sm text-neutral-400 leading-relaxed font-medium">
                                 123 Commerce St,<br />
                                 Phnom Penh, KH
                             </p>
                         </div>
                         <div class="flex gap-3">
-                            <Phone class="w-5 h-5 text-gray-500 shrink-0 mt-1" />
+                            <Phone class="w-5 h-5 text-neutral-500 shrink-0 mt-1" />
                             <a href="tel:+1234567890"
-                                class="text-sm text-gray-400 hover:text-white transition-colors font-medium">
+                                class="text-sm text-neutral-400 hover:text-secondary transition-colors font-medium">
                                 +1 (234) 567-890
                             </a>
                         </div>
                         <div class="flex gap-3">
-                            <Mail class="w-5 h-5 text-gray-500 shrink-0 mt-1" />
+                            <Mail class="w-5 h-5 text-neutral-500 shrink-0 mt-1" />
                             <a href="mailto:support@aleeshop.com"
-                                class="text-sm text-gray-400 hover:text-white transition-colors font-medium">
+                                class="text-sm text-neutral-400 hover:text-secondary transition-colors font-medium">
                                 support@aleeshop.com
                             </a>
                         </div>
@@ -138,20 +138,20 @@ const socialLinks = [
             </div>
 
             <!-- Bottom Bar -->
-            <div class="pt-12 border-t border-gray-800">
+            <div class="pt-12 border-t border-neutral-800">
                 <div class="flex flex-col md:flex-row items-center justify-between gap-6">
-                    <p class="text-xs text-gray-500 font-bold uppercase tracking-widest">
-                        © {{ currentYear }} AlieeShop. Curated with passion.
+                    <p class="text-xs text-neutral-500 font-bold uppercase tracking-widest">
+                        © {{ currentYear }} ALIESHOP. Curated with passion.
                     </p>
                     <div class="flex gap-8">
                         <a href="#"
-                            class="text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-white transition-colors">Privacy
+                            class="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-secondary transition-colors">Privacy
                             Policy</a>
                         <a href="#"
-                            class="text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-white transition-colors">Terms
+                            class="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-secondary transition-colors">Terms
                             of Service</a>
                     </div>
-                    <button @click="scrollToTop" class="p-3 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors text-gray-400 hover:text-white md:hidden">
+                    <button @click="scrollToTop" class="p-3 rounded-full bg-neutral-800 hover:bg-neutral-700 transition-colors text-neutral-400 hover:text-secondary md:hidden">
                         <ArrowUp class="w-5 h-5" />
                     </button>
                 </div>
