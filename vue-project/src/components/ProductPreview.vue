@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { ShoppingCart, Heart, Share2 } from 'lucide-vue-next';
+import LazyImage from './LazyImage.vue';
 import { Accesorie } from '../data/accesorie';
 import { Hoodie } from '../data/hoodies';
 import { Pants } from '../data/pants';
@@ -24,7 +25,7 @@ const props = defineProps({
 <template>
     <div v-if="product" class="max-w-2xl mx-auto mt-6 sm:mt-10 p-4 sm:p-6 md:p-8 bg-paper border border-neutral-200 rounded-2xl sm:rounded-3xl shadow-sm">
         <div class="relative overflow-hidden rounded-2xl bg-neutral-100">
-            <img :src="product.image" :alt="product.name" class="w-full h-64 sm:h-80 md:h-96 object-cover" />
+            <LazyImage :src="product.image" :alt="product.name" wrapper-class="w-full h-64 sm:h-80 md:h-96" />
             <div class="absolute top-4 right-4 flex flex-col gap-2">
                 <button class="w-10 h-10 rounded-full bg-paper shadow-md flex items-center justify-center text-ink hover:bg-accent hover:text-white transition-colors">
                     <Heart class="w-4 h-4" />

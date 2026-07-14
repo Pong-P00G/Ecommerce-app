@@ -104,7 +104,7 @@
                       v-model="email" 
                       type="email" 
                       placeholder="you@example.com"
-                      @keyup.enter="handleSubmit"
+                      @keyup.enter="handleSubmit" aria-label="Email address"
                       class="w-full rounded-xl border border-gray-200 bg-gray-50 px-12 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
                     />
                   </div>

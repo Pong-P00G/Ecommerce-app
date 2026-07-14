@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { ChevronLeft, ChevronRight, ArrowUpRight } from 'lucide-vue-next';
 import { RouterLink } from 'vue-router';
+import LazyImage from './LazyImage.vue';
 
 const props = defineProps({
     products: { type: Array, default: () => [] },
@@ -10,7 +11,10 @@ const props = defineProps({
 
 const carousel = ref(null);
 const currentIndex = ref(0);
+const isPaused = ref(false);
 let autoPlayTimer = null;
+let touchStartX = 0;
+let touchEndX = 0;
 
 const scrollToIndex = (i) => {
     currentIndex.value = i;
@@ -34,16 +38,49 @@ const prev = () => {
     scrollToIndex(currentIndex.value);
 };
 
+const handleTouchStart = (e) => {
+    touchStartX = e.touches[0].clientX;
+};
+
+const handleTouchEnd = (e) => {
+    touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX - touchEndX;
+    if (Math.abs(diff) > 50) {
+        diff > 0 ? next() : prev();
+    }
+};
+
+const startAutoPlay = () => {
+    stopAutoPlay();
+    if (!isPaused.value) {
+        autoPlayTimer = setInterval(next, props.interval);
+    }
+};
+
+const stopAutoPlay = () => {
+    if (autoPlayTimer) {
+        clearInterval(autoPlayTimer);
+        autoPlayTimer = null;
+    }
+};
+
+const pauseAutoPlay = () => { isPaused.value = true; stopAutoPlay(); };
+const resumeAutoPlay = () => { isPaused.value = false; startAutoPlay(); };
+
 onMounted(() => {
-    autoPlayTimer = setInterval(next, props.interval);
+    startAutoPlay();
 });
 onUnmounted(() => {
-    clearInterval(autoPlayTimer);
+    stopAutoPlay();
 });
 </script>
 
 <template>
-    <div class="relative w-full group/carousel">
+    <div class="relative w-full group/carousel"
+        @mouseenter="pauseAutoPlay"
+        @mouseleave="resumeAutoPlay"
+        @touchstart="handleTouchStart"
+        @touchend="handleTouchEnd">
         <div
             ref="carousel"
             class="flex overflow-x-hidden snap-x snap-mandatory scroll-smooth gap-6 pb-8 select-none"
@@ -55,16 +92,12 @@ onUnmounted(() => {
             >
                 <RouterLink :to="p.href" class="block">
                     <div class="relative rounded-xl overflow-hidden bg-neutral-100 h-64">
-                        <img
-                            :src="p.image"
-                            :alt="p.title"
-                            class="h-full w-full object-cover transition-transform duration-700 group-hover/card:scale-110"
-                        />
+                        <LazyImage :src="p.image" :alt="p.name" wrapper-class="h-full w-full" img-class="group-hover/card:scale-110" />
                         <span
-                            v-if="p.tag"
-                            class="absolute top-3 left-3 inline-flex items-center gap-1 px-2.5 py-1 bg-ink text-paper text-[10px] font-bold uppercase tracking-wider rounded-full"
+                            v-if="p.badge"
+                            class="absolute top-3 left-3 badge-ink"
                         >
-                            {{ p.tag }}
+                            {{ p.badge }}
                         </span>
                         <span
                             class="absolute bottom-3 right-3 inline-flex items-center gap-1 px-3 py-1.5 bg-paper text-ink text-xs font-bold rounded-full opacity-0 translate-y-2 transition-all duration-300 group-hover/card:opacity-100 group-hover/card:translate-y-0"
@@ -74,9 +107,9 @@ onUnmounted(() => {
                         </span>
                     </div>
                     <div class="mt-4 space-y-1">
-                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-accent">{{ p.tag }}</p>
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-accent">{{ p.category }}</p>
                         <h3 class="font-bold text-lg text-ink group-hover/card:text-accent transition-colors">
-                            {{ p.title }}
+                            {{ p.name }}
                         </h3>
                         <p class="text-sm text-neutral-500 line-clamp-2">{{ p.description }}</p>
                         <p class="mt-3 font-bold text-xl text-ink tabular-nums">{{ '$' }}{{ p.price }}</p>

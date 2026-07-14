@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { userAPI } from '../../api/userApi';
 import { useToast } from '../../composables/useToast.js';
+import RolePermissionManager from '../../components/RolePermissionManager.vue';
 import {
     Users,
     UserCheck,
@@ -13,12 +14,13 @@ import {
     Loader2,
     Trash2,
     Pencil,
-    X
+    X,
 } from 'lucide-vue-next';
 
 const toast = useToast();
+const activeTab = ref('users');
 
-// State
+// User State
 const users = ref([]);
 const loading = ref(false);
 const saving = ref(false);
@@ -39,9 +41,35 @@ const newUser = ref({
   last_name: '',
   email: '',
   password: '',
-  role_id: 3, // Default to customer/user (3)
+  role_id: 3,
   status: 'active'
 });
+
+// Roles (shared with RolePermissionManager)
+const roles = ref([]);
+
+const onRolesUpdated = (updatedRoles) => {
+    roles.value = updatedRoles;
+};
+
+const getRoleLevel = (role) => {
+    if (!role) return { label: 'Unknown', level: '', color: 'bg-neutral-100 text-neutral-500', icon: Shield };
+    const roleId = typeof role === 'object' ? role.role_id : role;
+    const roleLevelConfig = {
+        0: { label: 'Owner',      level: 'Level 0', color: 'bg-violet-600 text-white', icon: Shield },
+        1: { label: 'Superadmin', level: 'Level 1', color: 'bg-ink text-paper', icon: Shield },
+        2: { label: 'Admin',      level: 'Level 2', color: 'bg-info/10 text-info', icon: Shield },
+        3: { label: 'Customer',   level: 'Level 3', color: 'bg-accent/10 text-accent', icon: Shield },
+    };
+    if (typeof role === 'object' && role.level) {
+        const levelNum = Number(role.level);
+        if (roleLevelConfig[levelNum]) {
+            return { ...roleLevelConfig[levelNum], label: roleLevelConfig[levelNum].label + (roleId > 3 ? ' (' + role.role_name + ')' : '') };
+        }
+        return { label: 'Level ' + levelNum, level: 'Level ' + levelNum, color: 'bg-neutral-200 text-neutral-700', icon: Shield };
+    }
+    return roleLevelConfig[roleId] || { label: 'Custom', level: 'Custom', color: 'bg-neutral-200 text-neutral-700', icon: Shield };
+};
 
 // Fetch users from API
 const fetchUsers = async () => {
@@ -51,13 +79,10 @@ const fetchUsers = async () => {
     const response = await userAPI.getAllUsers();
     users.value = response.map(user => ({
       ...user,
-      role: user.role_id === 1 || user.role_id === 2 ? 'Admin' : 'Customer',
-      status: 'active', // Database doesn't have status field yet
-      orders: 0, // Will be populated when orders are implemented
+      status: 'active',
       created: user.created_at
     }));
   } catch (err) {
-    console.error('Error fetching users:', err);
     error.value = err.message || 'Failed to load users';
   } finally {
     loading.value = false;
@@ -79,7 +104,7 @@ const filteredUsers = computed(() => {
 
   // Role filter
   if (filterRole.value !== 'all') {
-    result = result.filter(u => u.role === filterRole.value);
+    result = result.filter(u => u.role_name === filterRole.value);
   }
 
   // Status filter
@@ -92,7 +117,7 @@ const filteredUsers = computed(() => {
 
 const totalUsers = computed(() => users.value.length);
 const activeUsers = computed(() => users.value.filter(u => u.status === 'active').length);
-const adminCount = computed(() => users.value.filter(u => u.role === 'Admin').length);
+const adminCount = computed(() => users.value.filter(u => u.role_id <= 2).length);
 
 const savingLabel = computed(() => isEditMode.value ? 'Updating...' : 'Creating...');
 
@@ -217,13 +242,26 @@ onMounted(() => {
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
           <h1 class="text-2xl sm:text-3xl font-bold text-ink">User Management</h1>
-          <p class="text-neutral-600 mt-1 text-sm sm:text-base">Manage customer and admin accounts</p>
+          <p class="text-neutral-600 mt-1 text-sm">Manage accounts, roles, and permissions</p>
         </div>
-        <button @click="openCreateModal" class="btn-accent text-sm gap-2">
-          <Plus class="w-4 h-4" />
-          Add User
+        <div class="flex items-center gap-3">
+          <button v-if="activeTab === 'users'" @click="openCreateModal" class="btn-accent text-sm gap-2">
+            <Plus class="w-4 h-4" /> Add User
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex items-center gap-1 border-b border-neutral-200 mb-6">
+        <button v-for="tab in [{ id: 'users', label: 'Users', icon: Users }, { id: 'roles', label: 'Roles & Permissions', icon: Shield }]"
+            :key="tab.id" @click="activeTab = tab.id"
+            :class="['inline-flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-colors', activeTab === tab.id ? 'border-ink text-ink' : 'border-transparent text-neutral-500 hover:text-ink']">
+            <component :is="tab.icon" class="w-4 h-4" /> {{ tab.label }}
         </button>
       </div>
+
+      <!-- USERS TAB -->
+      <div v-if="activeTab === 'users'">
 
       <!-- Stats -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8">
@@ -264,21 +302,22 @@ onMounted(() => {
           <!-- Search -->
           <div class="md:col-span-1">
             <div class="relative">
-              <input v-model="searchQuery" type="text" placeholder="Search users..." :disabled="loading"
+              <input v-model="searchQuery" type="text" placeholder="Search users..." :disabled="loading" aria-label="Search users"
                 class="input-base pl-10 disabled:opacity-50" />
               <Search class="absolute left-3 top-3.5 w-5 h-5 text-neutral-400" />
             </div>
           </div>
 
           <!-- Role Filter -->
-          <select v-model="filterRole" :disabled="loading" class="input-base disabled:opacity-50">
+          <select v-model="filterRole" :disabled="loading" class="input-base disabled:opacity-50" aria-label="Filter by role">
             <option value="all">All Roles</option>
-            <option value="Admin">Admin</option>
-            <option value="Customer">Customer</option>
+            <option value="superadmin">Superadmin</option>
+            <option value="admin">Admin</option>
+            <option value="user">Customer</option>
           </select>
 
           <!-- Status Filter -->
-          <select v-model="filterStatus" :disabled="loading" class="input-base disabled:opacity-50">
+          <select v-model="filterStatus" :disabled="loading" class="input-base disabled:opacity-50" aria-label="Filter by status">
             <option value="all">All Status</option>
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
@@ -315,14 +354,14 @@ onMounted(() => {
               <tr>
                 <th class="px-6 py-4 text-left text-[10px] font-bold text-neutral-500 uppercase tracking-[0.15em]">User</th>
                 <th class="px-6 py-4 text-left text-[10px] font-bold text-neutral-500 uppercase tracking-[0.15em]">Role</th>
+                <th class="px-6 py-4 text-left text-[10px] font-bold text-neutral-500 uppercase tracking-[0.15em]">Level</th>
                 <th class="px-6 py-4 text-left text-[10px] font-bold text-neutral-500 uppercase tracking-[0.15em]">Status</th>
-                <th class="px-6 py-4 text-left text-[10px] font-bold text-neutral-500 uppercase tracking-[0.15em]">Orders</th>
                 <th class="px-6 py-4 text-left text-[10px] font-bold text-neutral-500 uppercase tracking-[0.15em]">Joined</th>
                 <th class="px-6 py-4 text-right text-[10px] font-bold text-neutral-500 uppercase tracking-[0.15em]">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-neutral-200">
-              <tr v-for="user in filteredUsers" :key="user.id" class="hover:bg-neutral-50 transition-colors">
+              <tr v-for="user in filteredUsers" :key="user.user_id" class="hover:bg-neutral-50 transition-colors">
                 <!-- User -->
                 <td class="px-6 py-4">
                   <div>
@@ -332,26 +371,24 @@ onMounted(() => {
                 </td>
 
                 <!-- Role -->
-                <td class="px-6 py-4">
-                  <span :class="user.role === 'Admin' ? 'bg-ink/10 text-ink' : 'bg-info/10 text-info'"
+                <td class="px-6 py-4">                    <span :class="user.role_id <= 2 ? 'bg-ink/10 text-ink' : 'bg-info/10 text-info'"
                     class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-                    <Shield v-if="user.role === 'Admin'" class="w-3 h-3" />
-                    {{ user.role }}
+                    <component :is="getRoleLevel(user).icon" class="w-3 h-3" />
+                    {{ getRoleLevel(user).label }}
                   </span>
+                </td>
+
+                <!-- Level -->
+                <td class="px-6 py-4">
+                  <span class="text-xs font-semibold text-neutral-500">{{ getRoleLevel(user).level }}</span>
                 </td>
 
                 <!-- Status -->
                 <td class="px-6 py-4">
-                  <span :class="user.status === 'active' ? 'bg-accent/10 text-accent' : 'bg-warning/10 text-warning'"
-                    class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold">
-                    <span :class="user.status === 'active' ? 'bg-accent' : 'bg-warning'" class="w-1.5 h-1.5 rounded-full"></span>
-                    {{ user.status }}
+                  <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-accent/10 text-accent">
+                    <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
+                    Active
                   </span>
-                </td>
-
-                <!-- Orders -->
-                <td class="px-6 py-4">
-                  <span class="text-sm font-semibold text-ink">{{ user.orders }}</span>
                 </td>
 
                 <!-- Joined -->
@@ -385,6 +422,12 @@ onMounted(() => {
         </div>
       </div>
     </div>
+    </div><!-- end users tab -->
+
+      <!-- ROLES & PERMISSIONS TAB -->
+      <div v-if="activeTab === 'roles'">
+        <RolePermissionManager @roles-updated="onRolesUpdated" />
+      </div>
 
     <!-- User Modal (Create/Edit) -->
     <div v-if="showUserModal" @click="closeModal"
@@ -434,10 +477,11 @@ onMounted(() => {
           <div>
             <label class="block text-xs font-bold uppercase tracking-[0.15em] text-ink mb-2">Role</label>
             <select v-model="newUser.role_id" class="input-base">
-              <option :value="3">Customer</option>
-              <option :value="2">Admin</option>
-              <option :value="1">Superadmin</option>
+              <option v-for="r in roles" :key="r.role_id" :value="r.role_id">
+                {{ r.role_name }} — {{ getRoleLevel(r).label }} ({{ getRoleLevel(r).level }})
+              </option>
             </select>
+            <p class="text-[10px] text-neutral-400 mt-1">Assign a role to determine the user's permissions and level.</p>
           </div>
 
           <!-- Status -->
@@ -483,5 +527,7 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+
   </div>
 </template>

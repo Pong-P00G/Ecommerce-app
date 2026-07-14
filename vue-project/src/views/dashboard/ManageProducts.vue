@@ -6,6 +6,7 @@ import { variantAPI } from '../../api/products/variantApi';
 import { discountAPI } from '../../api/products/discountApi.js';
 import { useRouter } from 'vue-router';
 import { useToast } from '../../composables/useToast.js';
+import LazyImage from '../../components/LazyImage.vue';
 import {
     Plus,
     Search,
@@ -859,6 +860,7 @@ onMounted(() => {
                             type="text"
                             placeholder="Search products..."
                             class="input-base pl-10 py-2.5 text-sm"
+                            aria-label="Search products"
                         />
                         <button
                             v-if="searchQuery"
@@ -876,6 +878,7 @@ onMounted(() => {
                             v-model="filterCategory"
                             @change="handleFilter"
                             class="input-base pl-10 py-2.5 text-sm min-w-40 appearance-none"
+                            aria-label="Filter by category"
                         >
                             <option value="all">All Categories</option>
                             <option v-for="category in categories" :key="category.category_id" :value="category.name">
@@ -891,6 +894,7 @@ onMounted(() => {
                             v-model="filterStatus"
                             @change="handleFilter"
                             class="input-base pl-10 py-2.5 text-sm min-w-35 appearance-none"
+                            aria-label="Filter by status"
                         >
                             <option value="all">All Status</option>
                             <option value="active">Active</option>
@@ -907,6 +911,7 @@ onMounted(() => {
                             v-model="filterStock"
                             @change="handleFilter"
                             class="input-base pl-10 py-2.5 text-sm min-w-35 appearance-none"
+                            aria-label="Filter by stock status"
                         >
                             <option value="all">All Stock</option>
                             <option value="in_stock">In Stock</option>
@@ -967,6 +972,7 @@ onMounted(() => {
                         <select
                             v-model="bulkNewStatus"
                             class="bg-paper/10 text-paper border border-paper/20 rounded-lg px-3 py-1.5 text-xs font-semibold"
+                            aria-label="Bulk status change"
                         >
                             <option value="active">Active</option>
                             <option value="draft">Draft</option>
@@ -998,6 +1004,7 @@ onMounted(() => {
                                 v-model="pageSize"
                                 @change="changePageSize"
                                 class="bg-paper border border-neutral-200 rounded-lg px-2 py-1.5 text-xs font-semibold text-ink"
+                                aria-label="Products per page"
                             >
                                 <option v-for="opt in pageSizeOptions" :key="opt" :value="opt">{{ opt }}</option>
                             </select>
@@ -1093,10 +1100,9 @@ onMounted(() => {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-neutral-200">
+                            <template v-for="product in products" :key="product.product_id">
                             <!-- Product Row -->
                             <tr
-                                v-for="product in products"
-                                :key="product.product_id"
                                 class="hover:bg-neutral-50/80 transition-colors group cursor-pointer"
                                 :class="{
                                     'bg-accent/5': selectedIds.has(product.product_id),
@@ -1127,12 +1133,12 @@ onMounted(() => {
                                             @click="openImagePreview(product.image_url)"
                                             class="group w-10 h-10 sm:w-12 sm:h-12 bg-neutral-100 rounded-xl overflow-hidden shrink-0 border border-neutral-200 hover:border-accent transition-colors relative"
                                         >
-                                            <img
+                                            <LazyImage
                                                 v-if="product.image_url"
                                                 :src="product.image_url"
                                                 :alt="product.product_name"
-                                                class="w-full h-full object-cover"
-                                                @error="handleImageError"
+                                                wrapper-class="w-full h-full"
+                                                img-class="w-full h-full object-cover"
                                             />
                                             <div
                                                 v-else
@@ -1321,6 +1327,7 @@ onMounted(() => {
                                     </div>
                                 </td>
                             </tr>
+                            </template>
                         </tbody>
                     </table>
                 </div>
@@ -1629,7 +1636,7 @@ onMounted(() => {
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-[0.15em] text-ink mb-2">Product</label>
-                            <select v-model="discountForm.product_id" class="input-base text-sm" :disabled="!!editingDiscount">
+                            <select v-model="discountForm.product_id" class="input-base text-sm" :disabled="!!editingDiscount" aria-label="Select product for discount">
                                 <option :value="null">Select product...</option>
                                 <option v-for="p in products" :key="p.product_id" :value="p.product_id">
                                     {{ p.product_name }}
@@ -1638,15 +1645,15 @@ onMounted(() => {
                         </div>
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-[0.15em] text-ink mb-2">Amount ($)</label>
-                            <input v-model="discountForm.discount_amount" type="number" step="0.01" min="0.01" class="input-base text-sm" placeholder="9.99" />
+                            <input v-model="discountForm.discount_amount" type="number" step="0.01" min="0.01" class="input-base text-sm" placeholder="9.99" aria-label="Discount amount" />
                         </div>
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-[0.15em] text-ink mb-2">Start Date</label>
-                            <input v-model="discountForm.start_date" type="date" class="input-base text-sm" />
+                            <input v-model="discountForm.start_date" type="date" class="input-base text-sm" aria-label="Discount start date" />
                         </div>
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-[0.15em] text-ink mb-2">End Date</label>
-                            <input v-model="discountForm.end_date" type="date" class="input-base text-sm" />
+                            <input v-model="discountForm.end_date" type="date" class="input-base text-sm" aria-label="Discount end date" />
                         </div>
                     </div>
                     <div class="flex gap-3 justify-end">

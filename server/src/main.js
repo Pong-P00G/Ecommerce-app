@@ -3,12 +3,6 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-
-dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 import userRoutes from './routes/userRoutes.js'
 import authRoutes from './routes/authRoutes.js'
 import productRoutes from './routes/productRoutes.js'
@@ -19,6 +13,15 @@ import orderRoutes from './routes/orderRoutes.js'
 import paymentRoutes from './routes/paymentRoutes.js'
 import newsletterRoutes from './routes/newsletterRoutes.js'
 import reviewRoutes from './routes/reviewRoutes.js'
+import roleRoutes from './routes/roleRoutes.js'
+
+
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+
 
 
 const app = express()
@@ -47,6 +50,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/roles', roleRoutes);
 
 // Serve static files from CDN
 app.use('/cdn', express.static(path.join(__dirname, '../../cdn')));
@@ -74,7 +78,6 @@ app.get('/health', (req, res) => {
     });
 });
 
-// ── SEO: robots.txt ───────────────────────────────────────────────────────────
 
 app.get('/robots.txt', (req, res) => {
     res.type('text/plain');
@@ -94,7 +97,6 @@ app.get('/robots.txt', (req, res) => {
     ].join('\n'));
 });
 
-// ── SEO: Sitemap ──────────────────────────────────────────────────────────────
 
 app.get('/sitemap.xml', async (req, res) => {
     try {
@@ -170,60 +172,94 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5001;
 
-// ── Startup bootstrap ────────────────────────────────────────────────────────
 
-let lowStockInterval = null;
-
+// ── Startup bootstrap: ensure permissions & role_permissions tables exist ──
 (async () => {
-    // Auto-create notifications table on startup
     try {
-        const { ensureTable } = await import('./model/notificationModel.js');
-        await ensureTable();
-        console.log('✅ Notifications table ready');
-    } catch (err) {
-        console.warn('⚠️ Could not init notifications table:', err.message);
-    }
+        const db = (await import('./database/dbpool.js')).default;
+        const { tableExists } = await import('./model/roleModel.js');
 
-    // Start hourly low-stock check (after table is ready)
-    try {
-        const { checkAndNotifyLowStock } = await import('./services/dashboardService.js');
-        // Run once on startup
-        checkAndNotifyLowStock().catch(() => {});
-        // Then every hour
-        lowStockInterval = setInterval(() => {
-            checkAndNotifyLowStock().catch(() => {});
-        }, 60 * 60 * 1000); // 1 hour
-        console.log('⏰ Low-stock checker scheduled (every hour)');
-    } catch (err) {
-        console.warn('⚠️ Could not start low-stock checker:', err.message);
-    }
+        // Create permissions table if it doesn't exist
+        const permExists = await tableExists('permissions');
+        if (!permExists) {
+            await db.query(`
+                CREATE TABLE permissions (
+                    permission_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                    permission_key VARCHAR(100) NOT NULL UNIQUE,
+                    permission_name VARCHAR(100) NOT NULL,
+                    module VARCHAR(50) NOT NULL,
+                    description VARCHAR(300)
+                )
+            `);
+            console.log('✅ Permissions table created');
+        }
 
-    // Auto-create newsletter subscribers table on startup
-    try {
-        const { ensureTable } = await import('./model/newsletterModel.js');
-        await ensureTable();
-        console.log('✅ Newsletter subscribers table ready');
-    } catch (err) {
-        console.warn('⚠️ Could not init newsletter table:', err.message);
-    }
+        // Create role_permissions junction table if it doesn't exist
+        const rpExists = await tableExists('role_permissions');
+        if (!rpExists) {
+            await db.query(`
+                CREATE TABLE role_permissions (
+                    role_id INTEGER NOT NULL REFERENCES roles(rolesId) ON DELETE CASCADE,
+                    permission_id INTEGER NOT NULL REFERENCES permissions(permission_id) ON DELETE CASCADE,
+                    PRIMARY KEY (role_id, permission_id)
+                )
+            `);
+            console.log('✅ role_permissions table created');
+        }
 
-    // Auto-create notification preferences & push subscriptions tables
-    try {
-        const { ensurePrefsTable, ensurePushTable } = await import('./model/notificationModel.js');
-        await ensurePrefsTable();
-        await ensurePushTable();
-        console.log('✅ Notification preferences & push subscriptions tables ready');
+        // Seed default permissions
+        const { seedDefaultPermissions } = await import('./services/roleService.js');
+        const seedResult = await seedDefaultPermissions();
+        if (seedResult.created) {
+            console.log(`✅ Default permissions seeded (${seedResult.count} permissions)`);
+        } else if (seedResult.reason === 'permissions already seeded') {
+            console.log('✅ Permissions already seeded');
+        }
     } catch (err) {
-        console.warn('⚠️ Could not init notification prefs tables:', err.message);
+        console.warn('⚠️ Could not init permissions:', err.message);
     }
+})();
 
-    // Auto-create reviews table on startup
+// ── Startup bootstrap: ensure audit_log table exists ──
+(async () => {
     try {
-        const { ensureTable } = await import('./model/reviewModel.js');
-        await ensureTable();
-        console.log('✅ Reviews table ready');
+        const { ensureAuditTable } = await import('./model/notificationModel.js');
+        await ensureAuditTable();
+        console.log('✅ Audit log table ready');
     } catch (err) {
-        console.warn('⚠️ Could not init reviews table:', err.message);
+        console.warn('⚠️ Could not init audit log table:', err.message);
+    }
+})();
+
+// ── Migrate: add level column to roles table ──
+(async () => {
+    try {
+        const db = (await import('./database/dbpool.js')).default;
+        await db.query(`ALTER TABLE roles ADD COLUMN IF NOT EXISTS level INTEGER DEFAULT 3`);
+        // Set default levels for system roles
+        await db.query(`UPDATE roles SET level = 1 WHERE rolesid = 1 AND level IS DISTINCT FROM 1`);
+        await db.query(`UPDATE roles SET level = 2 WHERE rolesid = 2 AND level IS DISTINCT FROM 2`);
+        await db.query(`UPDATE roles SET level = 3 WHERE rolesid = 3 AND level IS DISTINCT FROM 3`);
+        console.log('✅ Roles level column ready');
+    } catch (err) {
+        console.warn('⚠️ Could not migrate roles level:', err.message);
+    }
+})();
+
+// ── Migrate: add type column to permissions table ──
+(async () => {
+    try {
+        const db = (await import('./database/dbpool.js')).default;
+        const { tableExists } = await import('./model/roleModel.js');
+        const permExists = await tableExists('permissions');
+        if (permExists) {
+            await db.query(`ALTER TABLE permissions ADD COLUMN IF NOT EXISTS type VARCHAR(20) NOT NULL DEFAULT 'backend'`);
+            // Update existing permissions with correct type based on module
+            await db.query(`UPDATE permissions SET type = 'frontend' WHERE module IN ('dashboard', 'settings')`);
+            console.log('✅ Permissions type column ready');
+        }
+    } catch (err) {
+        console.warn('⚠️ Could not migrate permissions type:', err.message);
     }
 })();
 
@@ -236,13 +272,11 @@ app.listen(PORT, () => {
     console.log('='.repeat(50));
 });
 
-// Graceful shutdown — clear the interval
+// Graceful shutdown
 process.on('SIGTERM', () => {
-    if (lowStockInterval) clearInterval(lowStockInterval);
     process.exit(0);
 });
 process.on('SIGINT', () => {
-    if (lowStockInterval) clearInterval(lowStockInterval);
     process.exit(0);
 });
 

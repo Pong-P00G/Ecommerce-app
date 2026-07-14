@@ -701,10 +701,12 @@ onMounted(() => { fetchData(); });
                 </div>
 
                 <!-- ── Empty state (no data at all) ───────────────── -->
-                <div v-if="!dataAvailable && !loading && analyticsData"
-                    class="bg-white rounded-2xl p-10 sm:p-16 border border-zinc-100 text-center">
+                <div v-if="!dataAvailable && !loading && analyticsData" class="bg-white rounded-2xl p-10 sm:p-16 border border-zinc-100 text-center">
                     <Sparkles class="w-16 h-16 text-zinc-200 mx-auto mb-4" />
-                    <h3 class="text-xl font-bold text-zinc-900 mb-2">No data available yet</h3>
+                    <div class="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <BarChart3 class="w-8 h-8 text-neutral-400" />
+            </div>
+            <h3 class="text-xl font-bold text-ink mb-2">No data available yet</h3>
                     <p class="text-zinc-500 max-w-md mx-auto">
                         Analytics data will appear as customers interact with your store.
                         Try switching the timeframe or add some products to get started.

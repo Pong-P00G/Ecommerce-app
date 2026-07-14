@@ -8,6 +8,9 @@ head.push({
     titleTemplate: "%s | AlieeShop",
 });
 
+// Export the raw head instance so it can be used directly (e.g., in router)
+export const headInstance = head;
+
 // createUnhead returns a head instance without an install() method.
 // We wrap it in a proper Vue plugin so app.use() works.
 export const seoHead = {

@@ -7,7 +7,6 @@ import {
     Bell,
     Search,
     RefreshCw,
-    Loader2,
     AlertCircle,
     ShoppingBag,
     AlertTriangle,
@@ -262,10 +261,42 @@ onMounted(() => {
             </div>
 
             <!-- Loading -->
-            <div v-if="loading && notifications.length === 0" class="card-flat p-16">
-                <div class="flex flex-col items-center justify-center gap-4">
-                    <Loader2 class="w-10 h-10 text-accent animate-spin" />
-                    <p class="text-sm text-neutral-500 font-semibold">Loading notifications...</p>
+            <div v-if="loading && notifications.length === 0" class="space-y-6 animate-pulse">
+                <div class="card-flat p-4">
+                    <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                        <div class="flex-1 w-full sm:max-w-xs">
+                            <div class="h-11 bg-neutral-200 rounded-xl"></div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div v-for="i in 6" :key="i" class="h-8 w-16 bg-neutral-200 rounded-lg"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="h-4 w-16 bg-neutral-200 rounded"></div>
+                    <div class="flex-1 h-px bg-neutral-200"></div>
+                </div>
+                <div class="card-flat divide-y divide-neutral-100">
+                    <div v-for="item in 5" :key="item" class="px-5 sm:px-6 py-4">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 bg-neutral-200 rounded-full shrink-0"></div>
+                            <div class="flex-1 space-y-2 min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <div class="h-5 bg-neutral-200 rounded w-16"></div>
+                                    <div class="w-1.5 h-1.5 bg-neutral-200 rounded-full"></div>
+                                </div>
+                                <div class="space-y-1.5">
+                                    <div class="h-3.5 bg-neutral-200 rounded w-3/4"></div>
+                                    <div class="h-3 bg-neutral-200 rounded w-1/2"></div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <div class="h-3 bg-neutral-200 rounded w-20"></div>
+                                    <div class="h-3 bg-neutral-200 rounded w-24"></div>
+                                </div>
+                            </div>
+                            <div class="w-8 h-8 bg-neutral-200 rounded-lg shrink-0"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

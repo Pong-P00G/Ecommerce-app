@@ -192,19 +192,30 @@ onUnmounted(() => {
 });
 
 const navigation = [
-    { label: 'Dashboard', to: '/admin/dashboard', icon: LayoutDashboard },
-    { label: 'Products', to: '/admin/manage-products', icon: Package },
-    { label: 'Orders', to: '/admin/orders', icon: ShoppingBag },
-    { label: 'Inventory', to: '/admin/manage-stock', icon: Boxes },
-    { label: 'Users', to: '/admin/manage-user', icon: Users },
-    { label: 'Analytics', to: '/admin/analytics', icon: BarChart3 },
-    { label: 'Notifications', to: '/admin/notifications', icon: Bell },
-    { label: 'Activity', to: '/admin/activity-log', icon: Activity },
-    { label: 'Reviews', to: '/admin/reviews', icon: MessageSquare },
-    { label: 'Reports', to: '/admin/report', icon: FileText }
+    { label: 'Dashboard', to: '/admin/dashboard', icon: LayoutDashboard, permission: 'dashboard.view' },
+    { label: 'Products', to: '/admin/manage-products', icon: Package, permission: ['products.read', 'products.create', 'products.update'] },
+    { label: 'Orders', to: '/admin/orders', icon: ShoppingBag, permission: ['orders.read', 'orders.create', 'orders.update'] },
+    { label: 'Inventory', to: '/admin/manage-stock', icon: Boxes, permission: 'stock.view' },
+    { label: 'Users', to: '/admin/manage-user', icon: Users, permission: ['users.read', 'users.create', 'users.update'] },
+    { label: 'Analytics', to: '/admin/analytics', icon: BarChart3, permission: 'reports.view' },
+    { label: 'Notifications', to: '/admin/notifications', icon: Bell, permission: 'dashboard.view' },
+    { label: 'Activity', to: '/admin/activity-log', icon: Activity, permission: 'dashboard.view' },
+    { label: 'Reviews', to: '/admin/reviews', icon: MessageSquare, permission: 'reviews.moderate' },
+    { label: 'Reports', to: '/admin/report', icon: FileText, permission: 'reports.view' }
 ];
 
 const isActive = (path) => route.path === path;
+
+const visibleNavigation = computed(() => {
+    if (!authStore.permissions || authStore.permissions.length === 0) {
+        return navigation;
+    }
+    return navigation.filter(item => {
+        if (!item.permission) return true;
+        const perms = Array.isArray(item.permission) ? item.permission : [item.permission];
+        return perms.some(p => authStore.hasPermission(p));
+    });
+});
 
 const logout = () => {
     authStore.logout();
@@ -246,7 +257,7 @@ const toggleSidebar = () => {
                 <nav class="flex-1 px-3 py-6 bg-paper overflow-y-auto">
                     <div class="space-y-1">
                         <router-link
-                            v-for="item in navigation"
+                            v-for="item in visibleNavigation"
                             :key="item.to"
                             :to="item.to"
                             :class="[
@@ -322,7 +333,7 @@ const toggleSidebar = () => {
             <nav class="flex-1 px-3 py-4 overflow-y-auto">
                 <div class="space-y-1">
                     <router-link
-                        v-for="item in navigation"
+                        v-for="item in visibleNavigation"
                         :key="item.to"
                         :to="item.to"
                         @click="sidebarOpen = false"

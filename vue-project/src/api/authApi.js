@@ -77,5 +77,32 @@ export const authAPI = {
   // Check if user is authenticated
   isAuthenticated() {
     return !!this.getToken();
+  },
+
+  // Fetch current user's permissions from the server
+  async getUserPermissions() {
+    try {
+      const { data } = await api.get('/auth/permissions');
+      return data.data ?? [];
+    } catch (err) {
+      console.error('Failed to fetch permissions:', err);
+      return [];
+    }
+  },
+
+  // Get stored permissions from localStorage
+  getStoredPermissions() {
+    const perms = localStorage.getItem('auth_permissions');
+    return perms ? JSON.parse(perms) : [];
+  },
+
+  // Store permissions in localStorage
+  storePermissions(permissions) {
+    localStorage.setItem('auth_permissions', JSON.stringify(permissions));
+  },
+
+  // Clear permissions from storage
+  clearPermissions() {
+    localStorage.removeItem('auth_permissions');
   }
 };

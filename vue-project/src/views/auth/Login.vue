@@ -107,7 +107,7 @@ const handleLogin = async () => {
             </p>
             <div class="relative">
               <User class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input v-model="identifier" type="text" required placeholder="Email or Username" :disabled="loading"
+              <input v-model="identifier" type="text" required placeholder="Email or Username" :disabled="loading" aria-label="Email or username"
                 class="w-full rounded-xl border border-gray-200 bg-gray-50 px-12 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed" />
             </div>
           </div>
@@ -121,7 +121,7 @@ const handleLogin = async () => {
             </div>
             <div class="relative">
               <Lock class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input v-model="password" :type="showPassword ? 'text' : 'password'" required placeholder="Password"
+              <input v-model="password" :type="showPassword ? 'text' : 'password'" required placeholder="Password" aria-label="Password"
                 :disabled="loading"
                 class="w-full rounded-xl border border-gray-200 bg-gray-50 px-12 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed" />
               <button type="button" @click="showPassword = !showPassword" :disabled="loading"

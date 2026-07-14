@@ -209,7 +209,7 @@ onMounted(fetchDiscounts);
                 <div class="flex gap-4">
                     <div class="flex-1 relative">
                         <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-                        <input v-model="searchQuery" type="text" placeholder="Search discounts by product name..." class="input-base pl-11" />
+                        <input v-model="searchQuery" type="text" placeholder="Search discounts by product name..." class="input-base pl-11" aria-label="Search discounts" />
                     </div>
                 </div>
             </div>
@@ -228,9 +228,33 @@ onMounted(fetchDiscounts);
                 </div>
             </div>
 
-            <div v-if="loading && discounts.length === 0" class="card-flat p-12 text-center">
-                <Loader2 class="w-10 h-10 text-accent animate-spin mx-auto mb-4" />
-                <p class="text-neutral-500 text-sm">Loading discounts...</p>
+            <div v-if="loading && discounts.length === 0" class="card-flat overflow-hidden animate-pulse">
+                <div class="p-4 sm:p-6">
+                    <div class="h-12 bg-neutral-200 rounded-xl"></div>
+                </div>
+                <div class="divide-y divide-neutral-100">
+                    <div class="px-6 py-3.5 bg-neutral-50">
+                        <div class="grid grid-cols-6 gap-4">
+                            <div v-for="i in 6" :key="i" class="h-3 bg-neutral-200 rounded w-3/4"></div>
+                        </div>
+                    </div>
+                    <div v-for="row in 4" :key="row" class="px-6 py-5">
+                        <div class="grid grid-cols-6 gap-4 items-center">
+                            <div class="space-y-2">
+                                <div class="h-3.5 bg-neutral-200 rounded w-36"></div>
+                                <div class="h-3 bg-neutral-200 rounded w-20"></div>
+                            </div>
+                            <div><div class="h-4 bg-neutral-200 rounded w-14"></div></div>
+                            <div><div class="h-3.5 bg-neutral-200 rounded w-24"></div></div>
+                            <div><div class="h-3.5 bg-neutral-200 rounded w-24"></div></div>
+                            <div><div class="h-6 bg-neutral-200 rounded-full w-20"></div></div>
+                            <div class="flex justify-end gap-2">
+                                <div class="h-8 bg-neutral-200 rounded-lg w-16"></div>
+                                <div class="h-8 bg-neutral-200 rounded-lg w-16"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div v-else class="card-flat overflow-hidden">
@@ -324,7 +348,7 @@ onMounted(fetchDiscounts);
                 <div class="space-y-4">
                     <div>
                         <label class="block text-xs font-bold uppercase tracking-[0.15em] text-ink mb-2">Product</label>
-                        <select v-model="form.product_id" class="input-base" :disabled="!!editingDiscount">
+                        <select v-model="form.product_id" class="input-base" :disabled="!!editingDiscount" aria-label="Select product">
                             <option :value="null">Select a product...</option>
                             <option v-for="p in products" :key="p.product_id" :value="p.product_id">
                                 {{ p.product_name }}
@@ -333,16 +357,16 @@ onMounted(fetchDiscounts);
                     </div>
                     <div>
                         <label class="block text-xs font-bold uppercase tracking-[0.15em] text-ink mb-2">Discount Amount ($)</label>
-                        <input v-model="form.discount_amount" type="number" step="0.01" min="0.01" class="input-base" placeholder="9.99" />
+                        <input v-model="form.discount_amount" type="number" step="0.01" min="0.01" class="input-base" placeholder="9.99" aria-label="Discount amount" />
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-[0.15em] text-ink mb-2">Start Date</label>
-                            <input v-model="form.start_date" type="date" class="input-base" />
+                            <input v-model="form.start_date" type="date" class="input-base" aria-label="Discount start date" />
                         </div>
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-[0.15em] text-ink mb-2">End Date</label>
-                            <input v-model="form.end_date" type="date" class="input-base" />
+                            <input v-model="form.end_date" type="date" class="input-base" aria-label="Discount end date" />
                         </div>
                     </div>
                 </div>

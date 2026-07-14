@@ -6,7 +6,6 @@ import {
     ShoppingBag,
     Search,
     RefreshCw,
-    Loader2,
     Eye,
     X,
     ChevronDown,
@@ -162,7 +161,7 @@ onMounted(fetchOrders);
                 <div class="flex flex-col sm:flex-row gap-4">
                     <div class="flex-1 relative">
                         <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-                        <input v-model="searchQuery" type="text" placeholder="Search by customer, email, or order ID..." class="input-base pl-11" />
+                        <input v-model="searchQuery" type="text" placeholder="Search by customer, email, or order ID..." class="input-base pl-11" aria-label="Search orders" />
                     </div>
                     <div class="flex items-center gap-3 shrink-0">
                         <span class="text-sm text-neutral-500 font-medium">{{ filteredOrders.length }} of {{ orders.length }} orders</span>
@@ -185,9 +184,34 @@ onMounted(fetchOrders);
                 </div>
             </div>
 
-            <div v-if="loading && orders.length === 0" class="card-flat p-12 text-center">
-                <Loader2 class="w-10 h-10 text-accent animate-spin mx-auto mb-4" />
-                <p class="text-neutral-500 text-sm">Loading orders...</p>
+            <div v-if="loading && orders.length === 0" class="card-flat overflow-hidden animate-pulse">
+                <div class="flex flex-wrap gap-2 px-6 pt-6 pb-2">
+                    <div v-for="i in 6" :key="i" class="h-9 w-24 bg-neutral-200 rounded-lg"></div>
+                </div>
+                <div class="px-6 pt-6 pb-4">
+                    <div class="h-12 bg-neutral-200 rounded-xl"></div>
+                </div>
+                <div class="divide-y divide-neutral-100">
+                    <div class="px-6 py-3.5">
+                        <div class="grid grid-cols-7 gap-4">
+                            <div v-for="i in 7" :key="i" class="h-3 bg-neutral-200 rounded w-3/4"></div>
+                        </div>
+                    </div>
+                    <div v-for="row in 5" :key="row" class="px-6 py-5">
+                        <div class="grid grid-cols-7 gap-4 items-center">
+                            <div><div class="h-4 bg-neutral-200 rounded w-16"></div></div>
+                            <div class="space-y-2">
+                                <div class="h-3.5 bg-neutral-200 rounded w-28"></div>
+                                <div class="h-3 bg-neutral-200 rounded w-36"></div>
+                            </div>
+                            <div><div class="h-4 bg-neutral-200 rounded w-14"></div></div>
+                            <div><div class="h-4 bg-neutral-200 rounded w-10"></div></div>
+                            <div><div class="h-6 bg-neutral-200 rounded-full w-24"></div></div>
+                            <div><div class="h-3.5 bg-neutral-200 rounded w-20"></div></div>
+                            <div class="flex justify-end"><div class="h-8 bg-neutral-200 rounded-lg w-16"></div></div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div v-else class="card-flat overflow-hidden">
@@ -215,7 +239,7 @@ onMounted(fetchOrders);
                                 <td class="px-6 py-4"><span class="text-sm text-neutral-700 tabular-nums">{{ order.itemCount }}</span></td>
                                 <td class="px-6 py-4">
                                     <div class="relative inline-block">
-                                        <select :value="order.status" @change="updateStatus(order.orderId, $event.target.value)" :disabled="updatingId === order.orderId" :class="['px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border appearance-none cursor-pointer pr-8 disabled:opacity-50', statusStyles[order.status] || 'bg-neutral-100 text-neutral-700']">
+                                        <select :value="order.status" @change="updateStatus(order.orderId, $event.target.value)" :disabled="updatingId === order.orderId" :aria-label="'Order status for #' + order.orderId" :class="['px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border appearance-none cursor-pointer pr-8 disabled:opacity-50', statusStyles[order.status] || 'bg-neutral-100 text-neutral-700']">
                                             <option v-for="s in statuses" :key="s" :value="s">{{ s }}</option>
                                         </select>
                                         <ChevronDown class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none opacity-60" />

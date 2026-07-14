@@ -5,6 +5,7 @@ import { useProductStore } from '../../stores/product.js';
 import { useAuthStore } from '../../stores/auth.js';
 import { storeToRefs } from 'pinia';
 import { useHead } from '@unhead/vue';
+import LazyImage from '../../components/LazyImage.vue';
 import {
     Heart,
     Share2,
@@ -24,6 +25,7 @@ import {
     Star,
     MessageSquare,
     ThumbsUp,
+    Truck,
 } from 'lucide-vue-next';
 import { reviewAPI } from '../../api/reviewApi.js';
 import { useToast } from '../../composables/useToast.js';
@@ -401,16 +403,17 @@ onMounted(async () => {
         <div v-else-if="product" class="section py-8 md:py-12">
             <!-- Breadcrumbs -->
             <nav class="flex items-center flex-wrap gap-y-1 text-sm mb-8">
-                <template v-for="(crumb, index) in breadcrumbs" :key="index">
+                <template v-for="(crumb, index) in breadcrumbs">
                     <RouterLink
                         v-if="crumb.path"
+                        :key="`crumb-${index}`"
                         :to="crumb.path"
                         class="text-neutral-500 hover:text-accent transition-colors"
                     >
                         {{ crumb.name }}
                     </RouterLink>
-                    <span v-else class="text-ink font-semibold">{{ crumb.name }}</span>
-                    <ChevronRight v-if="index < breadcrumbs.length - 1" class="w-4 h-4 mx-1.5 text-neutral-400" />
+                    <span v-else :key="`crumb-text-${index}`" class="text-ink font-semibold">{{ crumb.name }}</span>
+                    <ChevronRight v-if="index < breadcrumbs.length - 1" :key="`chevron-${index}`" class="w-4 h-4 mx-1.5 text-neutral-400" />
                 </template>
             </nav>
 
@@ -419,12 +422,12 @@ onMounted(async () => {
                 <!-- Left: Images -->
                 <div class="space-y-4">
                     <div class="relative aspect-square card-flat overflow-hidden bg-neutral-50">
-                        <img
+                        <LazyImage
                             :src="currentImage"
                             :alt="product.product_name"
-                            class="w-full h-full object-cover cursor-zoom-in"
+                            wrapper-class="w-full h-full cursor-zoom-in"
+                            img-class="w-full h-full object-cover"
                             @click="showImageModal = true"
-                            @error="handleImageError"
                         />
                         <div v-if="hasDiscount" class="absolute top-4 left-4">
                             <span class="badge-accent">-{{ discountPercentage }}% OFF</span>
@@ -474,11 +477,11 @@ onMounted(async () => {
                                 selectedImage === index ? 'border-accent' : 'border-neutral-200 hover:border-ink'
                             ]"
                         >
-                            <img
+                            <LazyImage
                                 :src="image"
                                 :alt="`${product.product_name} ${index + 1}`"
-                                class="w-full h-full object-cover"
-                                @error="handleImageError"
+                                wrapper-class="w-full h-full"
+                                img-class="w-full h-full object-cover"
                             />
                         </button>
                     </div>
@@ -547,6 +550,7 @@ onMounted(async () => {
                                     @click="decrementQuantity"
                                     :disabled="quantity <= 1"
                                     class="w-10 h-10 sm:w-11 sm:h-11 hover:bg-neutral-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed inline-flex items-center justify-center"
+                                    aria-label="Decrease quantity"
                                 >
                                     <Minus class="w-4 h-4" />
                                 </button>
@@ -557,6 +561,7 @@ onMounted(async () => {
                                     @click="incrementQuantity"
                                     :disabled="quantity >= parseInt(product.total_stock)"
                                     class="w-10 h-10 sm:w-11 sm:h-11 hover:bg-neutral-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed inline-flex items-center justify-center"
+                                    aria-label="Increase quantity"
                                 >
                                     <Plus class="w-4 h-4" />
                                 </button>
@@ -588,7 +593,7 @@ onMounted(async () => {
                     <!-- Admin Actions -->
                     <div v-if="isAdmin" class="flex gap-3 pt-4 border-t border-neutral-200">
                         <button @click="editProduct" class="btn-outline flex-1">Edit product</button>
-                        <button @click="deleteProduct" class="btn-outline flex-1 !border-danger !text-danger hover:!bg-danger hover:!text-paper">
+                        <button @click="deleteProduct" class="btn-outline flex-1 border-danger! text-danger! hover:bg-danger! hover:text-paper!">
                             Delete
                         </button>
                     </div>
@@ -640,11 +645,11 @@ onMounted(async () => {
                         class="card-base overflow-hidden cursor-pointer group"
                     >
                         <div class="aspect-square bg-neutral-100 overflow-hidden">
-                            <img
-                                :src="relatedProduct.main_image"
+                            <LazyImage
+                                :src="relatedProduct.main_image || 'https://via.placeholder.com/400'"
                                 :alt="relatedProduct.product_name"
-                                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                                @error="handleImageError"
+                                wrapper-class="w-full h-full transition-transform duration-700 group-hover:scale-110"
+                                img-class="w-full h-full object-cover"
                             />
                         </div>
                         <div class="p-4 space-y-1.5">
@@ -769,6 +774,7 @@ onMounted(async () => {
                                     type="text"
                                     placeholder="Summary of your review"
                                     class="input-base text-sm"
+                                    aria-label="Review title"
                                 />
                             </div>
 
@@ -780,6 +786,7 @@ onMounted(async () => {
                                     placeholder="Share your experience with this product..."
                                     class="input-base text-sm min-h-24"
                                     rows="4"
+                                    aria-label="Review comment"
                                 ></textarea>
                             </div>
 

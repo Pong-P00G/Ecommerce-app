@@ -270,7 +270,7 @@ const handleSubmit = async () => {
                 </p>
                 <div class="relative">
                   <User class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input type="text" v-model="formData.first_name" required placeholder="John"
+                  <input type="text" v-model="formData.first_name" required placeholder="John" aria-label="First name"
                     class="w-full rounded-xl border border-gray-200 bg-gray-50 px-12 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" />
                 </div>
               </div>
@@ -281,7 +281,7 @@ const handleSubmit = async () => {
                 </p>
                 <div class="relative">
                   <User class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input type="text" v-model="formData.last_name" required placeholder="Doe"
+                  <input type="text" v-model="formData.last_name" required placeholder="Doe" aria-label="Last name"
                     class="w-full rounded-xl border border-gray-200 bg-gray-50 px-12 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" />
                 </div>
               </div>
@@ -294,7 +294,7 @@ const handleSubmit = async () => {
               </p>
               <div class="relative">
                 <User class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input type="text" v-model="formData.mid_name" placeholder="Middle name"
+                <input type="text" v-model="formData.mid_name" placeholder="Middle name" aria-label="Middle name"
                   class="w-full rounded-xl border border-gray-200 bg-gray-50 px-12 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" />
               </div>
             </div>
@@ -306,7 +306,7 @@ const handleSubmit = async () => {
               </p>
               <div class="relative">
                 <User class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input type="text" v-model="formData.username" required minlength="4"
+                <input type="text" v-model="formData.username" required minlength="4" aria-label="Username"
                   placeholder="johndoe (minimum 4 characters)" @input="checkUsernameAvailability"
                   class="w-full rounded-xl border border-gray-200 bg-gray-50 px-12 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" />
               </div>
@@ -341,7 +341,7 @@ const handleSubmit = async () => {
               </p>
               <div class="relative">
                 <Mail class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input type="email" v-model="formData.email" required placeholder="you@example.com"
+                <input type="email" v-model="formData.email" required placeholder="you@example.com" aria-label="Email address"
                   @blur="checkEmailAvailability"
                   class="w-full rounded-xl border border-gray-200 bg-gray-50 px-12 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" />
               </div>
@@ -366,7 +366,7 @@ const handleSubmit = async () => {
               </p>
               <div class="relative">
                 <Lock class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input :type="showPassword ? 'text' : 'password'" v-model="formData.password" required
+                <input :type="showPassword ? 'text' : 'password'" v-model="formData.password" required aria-label="Password"
                   minlength="8" placeholder="Minimum 8 characters" @input="calculatePasswordStrength"
                   class="w-full rounded-xl border border-gray-200 bg-gray-50 px-12 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" />
                 <button type="button" @click="showPassword = !showPassword"
@@ -420,7 +420,7 @@ const handleSubmit = async () => {
               </p>
               <div class="relative">
                 <Lock class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input :type="showConfirmPassword ? 'text' : 'password'" v-model="confirmPassword"
+                <input :type="showConfirmPassword ? 'text' : 'password'" v-model="confirmPassword" aria-label="Confirm password"
                   required placeholder="Re-enter your password"
                   class="w-full rounded-xl border border-gray-200 bg-gray-50 px-12 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" />
                 <button type="button" @click="showConfirmPassword = !showConfirmPassword"

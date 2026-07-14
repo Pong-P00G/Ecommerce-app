@@ -218,16 +218,48 @@ onMounted(() => {
             </div>
 
             <!-- Loading -->
-            <div v-if="loading && reviews.length === 0" class="card-flat p-12 sm:p-16 text-center">
-                <Loader2 class="w-10 h-10 text-accent animate-spin mx-auto mb-4" />
-                <p class="text-neutral-500 text-sm font-medium">Loading reviews...</p>
+            <div v-if="loading && reviews.length === 0" class="space-y-4 animate-pulse">
+                <div class="flex items-center gap-2 mb-6">
+                    <div v-for="i in 4" :key="i" class="h-10 w-28 bg-neutral-200 rounded-xl"></div>
+                </div>
+                <div v-for="card in 3" :key="card" class="card-flat p-5 sm:p-6">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 bg-neutral-200 rounded-full shrink-0"></div>
+                        <div class="flex-1 space-y-3">
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="space-y-2 flex-1">
+                                    <div class="flex items-center gap-2">
+                                        <div class="h-4 bg-neutral-200 rounded w-24"></div>
+                                        <div class="h-3 bg-neutral-200 rounded w-32"></div>
+                                    </div>
+                                    <div class="h-3 bg-neutral-200 rounded w-40"></div>
+                                </div>
+                                <div class="h-6 bg-neutral-200 rounded-full w-20"></div>
+                            </div>
+                            <div class="flex gap-1">
+                                <div v-for="i in 5" :key="i" class="w-4 h-4 bg-neutral-200 rounded"></div>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="h-3.5 bg-neutral-200 rounded w-3/4"></div>
+                                <div class="h-3.5 bg-neutral-200 rounded w-1/2"></div>
+                            </div>
+                            <div class="flex gap-2 pt-1">
+                                <div class="h-9 bg-neutral-200 rounded-xl w-24"></div>
+                                <div class="h-9 bg-neutral-200 rounded-xl w-20"></div>
+                                <div class="h-9 bg-neutral-200 rounded-xl w-20"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Reviews List -->
             <div v-else class="space-y-4">
                 <!-- Empty State -->
                 <div v-if="reviews.length === 0 && !loading" class="card-flat p-12 text-center">
-                    <MessageSquare class="w-14 h-14 text-neutral-200 mx-auto mb-4" />
+                  <div class="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <MessageSquare class="w-8 h-8 text-neutral-400" />
+                  </div>
                     <p class="text-neutral-500 text-sm font-semibold">
                         {{ statusFilter === 'pending' ? 'No pending reviews' : 'No reviews found' }}
                     </p>
@@ -336,6 +368,7 @@ onMounted(() => {
                                     placeholder="Reason for rejection (optional)..."
                                     class="input-base text-sm w-full"
                                     rows="2"
+                                    aria-label="Moderation note"
                                 ></textarea>
                                 <div class="flex gap-2">
                                     <button

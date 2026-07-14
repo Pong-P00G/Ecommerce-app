@@ -755,6 +755,41 @@ export const getAllActivities = async (page = 1, pageSize = 20, typeFilter = nul
         });
     });
 
+    // Audit log entries (role/permission changes)
+    try {
+        const { rows: auditEntries } = await db.query(`
+            SELECT auditid AS id, action, entity_type, entity_id, entity_name,
+                   performed_by, details, createdat AS created_at
+            FROM audit_log
+            ORDER BY createdat DESC
+            LIMIT $1 OFFSET $2
+        `, [pageSize, offset]);
+        auditEntries.forEach(a => {
+            const actionLabels = {
+                create: 'Created',
+                update: 'Updated',
+                delete: 'Deleted',
+                update_permissions: 'Permissions Updated'
+            };
+            const typeLabels = {
+                role: 'Role Management',
+                permission: 'Permission Management'
+            };
+            activities.push({
+                id: 'audit-' + a.id,
+                type: a.entity_type === 'role' ? 'role_managed' : 'permission_managed',
+                type_label: typeLabels[a.entity_type] || 'Audit',
+                message: a.details || `${actionLabels[a.action] || a.action} ${a.entity_type}: ${a.entity_name}`,
+                user: a.performed_by,
+                created_at: a.created_at,
+                timestamp: new Date(a.created_at).getTime(),
+            });
+        });
+    } catch (err) {
+        // audit_log table might not exist yet
+        console.warn('Could not fetch audit logs:', err.message);
+    }
+
     // Filter by type if specified
     let filtered = activities;
     if (typeFilter && typeFilter !== 'all') {

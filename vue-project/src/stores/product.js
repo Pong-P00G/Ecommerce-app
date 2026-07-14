@@ -68,6 +68,8 @@ export const useProductStore = defineStore('product', {
             this.error = null;
             
             try {
+                const response = await productAPI.getAllProducts();
+                
                 // Handle different response formats
                 if (response.success && response.data) {
                     this.products = response.data;
@@ -97,7 +99,7 @@ export const useProductStore = defineStore('product', {
             this.error = null;
             
             try {
-                console.log('Fetching paginated products...', { page, pageSize, filters: this.filters });
+                
                 
                 const params = {
                     page,
@@ -122,8 +124,8 @@ export const useProductStore = defineStore('product', {
                     };
                 }
                 
-                console.log('Paginated products loaded:', this.paginatedProducts.items.length);
-                console.log('Total items:', this.paginatedProducts.totalItems);
+                
+                
                 
                 return { success: true, data: this.paginatedProducts };
             } catch (error) {
@@ -145,9 +147,9 @@ export const useProductStore = defineStore('product', {
             this.error = null;
             
             try {
-                console.log('Searching products...', filters);
+                
                 const response = await productAPI.searchProducts(filters);
-                console.log('Search response:', response);
+                
                 
                 // Handle response
                 if (response.success && response.data) {
@@ -179,9 +181,9 @@ export const useProductStore = defineStore('product', {
             this.error = null;
             
             try {
-                console.log('Fetching product by ID:', productId);
+                
                 const response = await productAPI.getProductById(productId);
-                console.log('Product detail response:', response);
+                
                 
                 // Handle response
                 if (response.success && response.data) {

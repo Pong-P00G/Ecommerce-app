@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useProductStore } from '../../stores/product.js';
 import { storeToRefs } from 'pinia';
+import LazyImage from '../../components/LazyImage.vue';
 import {
     Search,
     SlidersHorizontal,
@@ -184,10 +185,6 @@ const getDiscountPercentage = (product) => {
     return Math.round((discount / basePrice) * 100);
 };
 
-const handleImageError = (event) => {
-    event.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"%3E%3Crect width="400" height="400" fill="%23f4f4f5"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="%23a1a1aa"%3ENo Image%3C/text%3E%3C/svg%3E';
-};
-
 watch(() => route.query.category, (newCategory) => {
     if (newCategory) {
         selectedCategory.value = newCategory;
@@ -237,6 +234,7 @@ onMounted(async () => {
                                     type="text"
                                     placeholder="Search products..."
                                     class="input-base pl-11 py-2.5 text-sm"
+                                    aria-label="Search products"
                                 />
                             </div>
                         </div>
@@ -284,6 +282,7 @@ onMounted(async () => {
                                     max="1000"
                                     step="10"
                                     class="w-full accent-accent"
+                                    aria-label="Minimum price"
                                 />
                                 <input
                                     v-model.number="priceRange[1]"
@@ -293,6 +292,7 @@ onMounted(async () => {
                                     max="1000"
                                     step="10"
                                     class="w-full accent-accent"
+                                    aria-label="Maximum price"
                                 />
                                 <div class="flex justify-between text-xs text-neutral-600 tabular-nums">
                                     <span>{{ '$' }}{{ priceRange[0] }}</span>
@@ -332,7 +332,7 @@ onMounted(async () => {
                         </div>
                         <div class="flex items-center gap-2">
                             <label class="text-sm text-neutral-600">Sort by:</label>
-                            <select v-model="selectedSort" class="input-base py-2 text-sm w-auto">
+                            <select v-model="selectedSort" class="input-base py-2 text-sm w-auto" name="sort" aria-label="Sort products by">
                                 <option v-for="option in sortOptions" :key="option.value" :value="option.value">
                                     {{ option.label }}
                                 </option>
@@ -376,11 +376,11 @@ onMounted(async () => {
                                     >
                                         <Heart class="w-4 h-4" />
                                     </button>
-                                    <img
-                                        :src="product.main_image"
+                                    <LazyImage
+                                        :src="product.main_image || 'https://via.placeholder.com/400'"
                                         :alt="product.product_name"
-                                        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                                        @error="handleImageError"
+                                        wrapper-class="w-full h-full transition-transform duration-700 group-hover:scale-110"
+                                        img-class="w-full h-full object-cover"
                                     />
                                 </div>
                                 <div class="p-4 sm:p-5 space-y-2 sm:space-y-2.5">
@@ -493,6 +493,7 @@ onMounted(async () => {
                                 type="text"
                                 placeholder="Search products..."
                                 class="input-base pl-11"
+                                aria-label="Search products"
                             />
                         </div>
                     </div>
@@ -526,8 +527,8 @@ onMounted(async () => {
                     <div>
                         <h4 class="text-xs font-bold uppercase tracking-[0.2em] text-ink mb-3">Price Range</h4>
                         <div class="space-y-3">
-                            <input v-model.number="priceRange[0]" type="range" min="0" max="1000" step="10" class="w-full accent-accent" />
-                            <input v-model.number="priceRange[1]" type="range" min="0" max="1000" step="10" class="w-full accent-accent" />
+                            <input v-model.number="priceRange[0]" type="range" min="0" max="1000" step="10" class="w-full accent-accent" aria-label="Minimum price" />
+                            <input v-model.number="priceRange[1]" type="range" min="0" max="1000" step="10" class="w-full accent-accent" aria-label="Maximum price" />
                             <div class="flex justify-between text-sm text-neutral-600 tabular-nums">
                                 <span>{{ '$' }}{{ priceRange[0] }}</span>
                                 <span>{{ '$' }}{{ priceRange[1] }}</span>

@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "../stores/auth";
-import { seoHead } from "../head.js";
+import { headInstance } from "../head.js";
 import DashboardLayout from "../Layout/DashboardLayout.vue";
 import HomeLayout from "../Layout/HomeLayout.vue";
 
@@ -350,8 +350,8 @@ router.afterEach((to) => {
     const pageMeta = PAGE_META[pageKey];
 
     // Dispose previous route's head entries to prevent accumulation
-    if (seoDisposer) {
-        seoDisposer();
+    if (seoDisposer && typeof seoDisposer.dispose === 'function') {
+        seoDisposer.dispose();
         seoDisposer = null;
     }
 
@@ -367,7 +367,7 @@ router.afterEach((to) => {
         if (pageMeta.keywords) {
             meta.push({ name: 'keywords', content: pageMeta.keywords });
         }
-        seoDisposer = seoHead.push({
+        seoDisposer = headInstance.push({
             title: pageMeta.title,
             meta,
             link: [

@@ -3,247 +3,816 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useProductStore } from '../../stores/product.js';
 import { storeToRefs } from 'pinia';
-import { ArrowLeft, X, Plus, Image as ImageIcon, Package, Sparkles } from 'lucide-vue-next';
+import { categoryAPI } from '../../api/products/categoryApi.js';
+
+import api from '../../api/api.js';
+import {
+    ArrowLeft, X, Plus, Image as ImageIcon, Sparkles,
+    Upload, Check, CheckCircle2, Trash2, Loader2, Eye, EyeOff,
+    Settings2, Link2, Box,
+    Layers,
+} from 'lucide-vue-next';
 import { useToast } from '../../composables/useToast.js';
 
 const toast = useToast();
 const router = useRouter();
 const productStore = useProductStore();
-const { categories, loading } = storeToRefs(productStore);
+const { categories } = storeToRefs(productStore);
 
+// ── Form State ───────────────────────────────────────────────────────────────
 const form = ref({
-  product_name: '',
-  product_description: '',
-  category_id: null,
-  base_price: '',
-  product_status: 'active',
-  main_image: '',
-  images: [],
-  variants: [],
-  stock: []
+    product_name: '',
+    product_description: '',
+    category_id: null,
+    base_price: '',
+    product_status: 'active',
+    main_image: '',
+    selected_images: [],    // { url, filename } for additional images
+    variants: [],
 });
-
-const newVariant = ref({ size: '', color: '', variant_price: '' });
-const newStock = ref({ size: '', color: '', quantity: '' });
 
 const errors = ref({});
 const submitting = ref(false);
 
 const validateForm = () => {
-  errors.value = {};
-  if (!form.value.product_name.trim()) errors.value.product_name = 'Product name is required';
-  if (!form.value.category_id) errors.value.category_id = 'Category is required';
-  if (!form.value.base_price || parseFloat(form.value.base_price) <= 0) errors.value.base_price = 'Valid price is required';
-  return Object.keys(errors.value).length === 0;
+    errors.value = {};
+    if (!form.value.product_name.trim()) errors.value.product_name = 'Product name is required';
+    if (!form.value.category_id) errors.value.category_id = 'Category is required';
+    if (!form.value.base_price || parseFloat(form.value.base_price) <= 0) errors.value.base_price = 'Valid price is required';
+    return Object.keys(errors.value).length === 0;
 };
 
-const addVariant = () => {
-  if (newVariant.value.size || newVariant.value.color) {
-    form.value.variants.push({ ...newVariant.value });
-    newVariant.value = { size: '', color: '', variant_price: '' };
-  }
-};
+// ── Image Browser ────────────────────────────────────────────────────────────
+const uploadedImages = ref([]);
+const loadImages = ref(false);
+const showImageBrowser = ref(false);
+const selectedMainImage = ref(null);
+const selectedExtraImages = ref(new Set());
 
-const removeVariant = (index) => form.value.variants.splice(index, 1);
-
-const addStock = () => {
-  if (newStock.value.quantity > 0) {
-    form.value.stock.push({ ...newStock.value });
-    newStock.value = { size: '', color: '', quantity: '' };
-  }
-};
-
-const removeStock = (index) => form.value.stock.splice(index, 1);
-
-const handleSubmit = async () => {
-  if (!validateForm()) return;
-  submitting.value = true;
-  try {
-    const result = await productStore.createCompleteProduct(form.value);
-    if (result.success) {
-      toast.success('Product created successfully!');
-      router.push('/admin/dashboard');
-    } else {
-      toast.error(result.error || 'Failed to create product');
+const fetchUploadedImages = async () => {
+    loadImages.value = true;
+    try {
+        const response = await api.get('/images');
+        if (response.data.success) {
+            uploadedImages.value = response.data.data || [];
+        }
+    } catch (err) {
+        console.error('Failed to load images:', err);
+    } finally {
+        loadImages.value = false;
     }
-  } catch (error) {
-    console.error('Error creating product:', error);
-    toast.error(error.response?.data?.message || 'Error creating product');
-  } finally {
-    submitting.value = false;
-  }
+};
+
+const selectMainImage = (image) => {
+    selectedMainImage.value = image;
+    form.value.main_image = image.url;
+};
+
+const toggleExtraImage = (image) => {
+    const set = new Set(selectedExtraImages.value);
+    if (set.has(image.filename)) {
+        set.delete(image.filename);
+    } else {
+        set.add(image.filename);
+    }
+    selectedExtraImages.value = set;
+    form.value.selected_images = Array.from(set).map(f =>
+        uploadedImages.value.find(i => i.filename === f)
+    ).filter(Boolean);
+};
+
+const removeMainImage = () => {
+    selectedMainImage.value = null;
+    form.value.main_image = '';
+};
+
+// ── Image Upload ─────────────────────────────────────────────────────────────
+const fileInput = ref(null);
+const isDragOver = ref(false);
+const uploading = ref(false);
+const uploadPreviewUrls = ref([]);
+
+const triggerFileInput = () => fileInput.value?.click();
+
+const handleFileSelect = (event) => {
+    const files = Array.from(event.target.files);
+    processUploadFiles(files);
+};
+
+const handleDrop = (event) => {
+    isDragOver.value = false;
+    const files = Array.from(event.dataTransfer.files);
+    processUploadFiles(files);
+};
+
+const processUploadFiles = (files) => {
+    const imageFiles = files.filter(f => f.type.startsWith('image/'));
+    if (imageFiles.length === 0) return;
+    imageFiles.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            uploadPreviewUrls.value.push({ url: e.target.result, name: file.name, file });
+        };
+        reader.readAsDataURL(file);
+    });
+};
+
+const removeUploadPreview = (index) => {
+    uploadPreviewUrls.value.splice(index, 1);
+};
+
+const executeUpload = async () => {
+    const files = uploadPreviewUrls.value.map(p => p.file);
+    if (files.length === 0) return;
+    uploading.value = true;
+    try {
+        const formData = new FormData();
+        files.forEach(f => formData.append('images', f));
+        const response = await api.post('/images/upload-multiple', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        if (response.data.success) {
+            const newImages = response.data.data;
+            uploadedImages.value.push(...newImages);
+            // If no main image selected yet, auto-select the first uploaded
+            if (!selectedMainImage.value && newImages.length > 0) {
+                selectMainImage(newImages[0]);
+            }
+            uploadPreviewUrls.value = [];
+            toast.success(`${newImages.length} image(s) uploaded`);
+        }
+    } catch (err) {
+        console.error('Upload error:', err);
+        toast.error(err.response?.data?.message || 'Upload failed');
+    } finally {
+        uploading.value = false;
+    }
+};
+
+const deleteImage = async (filename) => {
+    try {
+        await api.delete(`/images/${filename}`);
+        uploadedImages.value = uploadedImages.value.filter(i => i.filename !== filename);
+        if (selectedMainImage.value?.filename === filename) removeMainImage();
+        const set = new Set(selectedExtraImages.value);
+        set.delete(filename);
+        selectedExtraImages.value = set;
+    } catch (err) {
+        toast.error('Failed to delete image');
+    }
+};
+
+// ── Inline Category Creation ─────────────────────────────────────────────────
+const showNewCategory = ref(false);
+const newCategoryName = ref('');
+const creatingCategory = ref(false);
+
+const toggleNewCategory = () => {
+    showNewCategory.value = !showNewCategory.value;
+    if (showNewCategory.value) newCategoryName.value = '';
+};
+
+const createNewCategory = async () => {
+    if (!newCategoryName.value.trim()) {
+        toast.warning('Category name is required');
+        return;
+    }
+    creatingCategory.value = true;
+    try {
+        const response = await categoryAPI.createCategory(newCategoryName.value.trim());
+        if (response.success) {
+            // Refresh categories from store
+            await productStore.fetchCategories();
+            // Auto-select the newly created category
+            const newCat = categories.value.find(c =>
+                c.name?.toLowerCase() === newCategoryName.value.trim().toLowerCase()
+            );
+            if (newCat) form.value.category_id = newCat.category_id;
+            toast.success('Category created');
+            showNewCategory.value = false;
+            newCategoryName.value = '';
+        }
+    } catch (err) {
+        toast.error(err.response?.data?.message || 'Failed to create category');
+    } finally {
+        creatingCategory.value = false;
+    }
+};
+
+// ── Attribute-Based Variant Builder ──────────────────────────────────────────
+const attributeDefinitions = ref([]); // [{ id, name, values: [string] }]
+let attrIdCounter = 0;
+
+const addAttribute = () => {
+    attrIdCounter++;
+    attributeDefinitions.value.push({ id: attrIdCounter, name: '', values: [''] });
+};
+
+const removeAttribute = (index) => {
+    attributeDefinitions.value.splice(index, 1);
+    regenerateVariants();
+};
+
+const addAttributeValue = (attrIndex) => {
+    attributeDefinitions.value[attrIndex].values.push('');
+};
+
+const removeAttributeValue = (attrIndex, valIndex) => {
+    attributeDefinitions.value[attrIndex].values.splice(valIndex, 1);
+    regenerateVariants();
+};
+
+// ── Variant Combination Generator ────────────────────────────────────────────
+const generatedVariants = ref([]);
+
+const cartesianProduct = (arrays) => {
+    if (arrays.length === 0) return [];
+    return arrays.reduce((acc, curr) => {
+        const result = [];
+        acc.forEach(a => {
+            curr.forEach(c => {
+                result.push([...a, c]);
+            });
+        });
+        return result;
+    }, [[]]);
+};
+
+const regenerateVariants = () => {
+    // Only generate from attributes that have a name and at least one non-empty value
+    const validAttributes = attributeDefinitions.value.filter(
+        attr => attr.name.trim() && attr.values.some(v => v.trim() !== '')
+    );
+
+    if (validAttributes.length === 0) {
+        generatedVariants.value = [];
+        return;
+    }
+
+    // Get all non-empty values for each attribute
+    const valueArrays = validAttributes.map(attr =>
+        attr.values.filter(v => v.trim() !== '')
+    );
+
+    // Filter out attributes with no values
+    const validAttrsWithValues = validAttributes.filter((_, i) => valueArrays[i].length > 0);
+    const validValueArrays = valueArrays.filter(arr => arr.length > 0);
+
+    if (validAttrsWithValues.length === 0) {
+        generatedVariants.value = [];
+        return;
+    }
+
+    const combinations = cartesianProduct(validValueArrays);
+    // Merge with existing variant data (SKU, price, stock)
+    const existingMap = {};
+    generatedVariants.value.forEach(gv => {
+        const key = gv.options.map(o => `${o.attribute_name}:${o.value}`).sort().join('|');
+        existingMap[key] = gv;
+    });
+
+    generatedVariants.value = combinations.map(combo => {
+        const options = combo.map((val, i) => ({
+            attribute_name: validAttrsWithValues[i].name,
+            value: val,
+        }));
+        const key = options.map(o => `${o.attribute_name}:${o.value}`).sort().join('|');
+        const existing = existingMap[key];
+        return {
+            options,
+            sku: existing?.sku || '',
+            variant_price: existing?.variant_price || '',
+            stock_quantity: existing?.stock_quantity || 0,
+        };
+    });
+};
+
+// ── Manual variant (non-attribute based) ─────────────────────────────────────
+const showManualVariant = ref(false);
+const manualVariant = ref({ name: '', value: '', price: '', stock: 0 });
+
+const addManualVariant = () => {
+    if (!manualVariant.value.name.trim() || !manualVariant.value.value.trim()) {
+        toast.warning('Variant name and value are required');
+        return;
+    }
+    const newVar = {
+        options: [{
+            attribute_name: manualVariant.value.name.trim(),
+            value: manualVariant.value.value.trim(),
+        }],
+        sku: '',
+        variant_price: manualVariant.value.price || '',
+        stock_quantity: manualVariant.value.stock || 0,
+    };
+    if (!generatedVariants.value) generatedVariants.value = [];
+    generatedVariants.value.push(newVar);
+    manualVariant.value = { name: '', value: '', price: '', stock: 0 };
+};
+
+const removeGeneratedVariant = (index) => {
+    generatedVariants.value.splice(index, 1);
+};
+
+const variantPreviewLabel = (variant) => {
+    return variant.options.map(o => `${o.attribute_name}: ${o.value}`).join(' / ');
+};
+
+// ── Submit ───────────────────────────────────────────────────────────────────
+const handleSubmit = async () => {
+    if (!validateForm()) return;
+    submitting.value = true;
+    try {
+        // Build images array: main image first, then selected extras
+        const images = [];
+        if (form.value.main_image) {
+            images.push({ image_url: form.value.main_image, is_main: true, sort_order: 0 });
+        }
+        form.value.selected_images.forEach((img, i) => {
+            if (img.url !== form.value.main_image) {
+                images.push({ image_url: img.url, is_main: false, sort_order: i + 1 });
+            }
+        });
+
+        // Build variants from generated variants + any attribute definitions as options
+        const variants = generatedVariants.value.map(v => ({
+            sku: v.sku || null,
+            options: v.options || [],
+            stock_quantity: v.stock_quantity != null ? v.stock_quantity : 0,
+            reorder_level: 5,
+        }));
+
+        const productData = {
+            product_name: form.value.product_name.trim(),
+            descriptions: form.value.product_description.trim(),
+            category_id: form.value.category_id,
+            base_price: parseFloat(form.value.base_price),
+            product_status: form.value.product_status,
+            images,
+            variants,
+        };
+
+        const result = await productStore.createCompleteProduct(productData);
+        if (result.success) {
+            toast.success('Product created successfully!');
+            router.push('/admin/dashboard');
+        } else {
+            toast.error(result.error || 'Failed to create product');
+        }
+    } catch (error) {
+        console.error('Error creating product:', error);
+        toast.error(error.response?.data?.message || 'Error creating product');
+    } finally {
+        submitting.value = false;
+    }
 };
 
 const cancel = () => router.push('/admin/dashboard');
 
 onMounted(async () => {
-  await productStore.fetchCategories();
+    await productStore.fetchCategories();
+    fetchUploadedImages();
 });
 </script>
 
 <template>
-  <div class="bg-neutral-100 min-h-screen">
-    <div class="section py-6 sm:py-8 max-w-4xl">
-      <!-- Header -->
-      <div class="mb-8">
-        <button @click="cancel" class="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-ink mb-4 transition-colors">
-          <ArrowLeft class="h-4 w-4" />
-          Back to dashboard
-        </button>
-        <span class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-accent mb-2">
-          <Sparkles class="w-3.5 h-3.5" />
-          New inventory
-        </span>
-        <h1 class="heading-hero text-4xl text-ink">Add new product</h1>
-        <p class="text-neutral-500 mt-2">Create a new product in your catalog.</p>
-      </div>
-
-      <form @submit.prevent="handleSubmit" class="space-y-5">
-        <!-- Basic Information -->
-        <div class="card-flat p-6 md:p-8">
-          <h2 class="text-base font-bold text-ink mb-6">Basic information</h2>
-          <div class="space-y-6">
-            <div>
-              <label class="block text-xs font-bold uppercase tracking-[0.2em] text-ink mb-2">
-                Product name <span class="text-accent">*</span>
-              </label>
-              <input v-model="form.product_name" type="text" class="input-base" placeholder="Enter product name" />
-              <p v-if="errors.product_name" class="mt-1.5 text-xs text-danger font-semibold">{{ errors.product_name }}</p>
+    <div class="bg-neutral-100 min-h-screen pb-16">
+        <div class="section py-6 sm:py-8 max-w-5xl">
+            <!-- Header -->
+            <div class="mb-8">
+                <button @click="cancel"
+                    class="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-ink mb-4 transition-colors">
+                    <ArrowLeft class="h-4 w-4" />
+                    Back to dashboard
+                </button>
+                <span class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-accent mb-2">
+                    <Sparkles class="w-3.5 h-3.5" />
+                    New inventory
+                </span>
+                <h1 class="heading-hero text-4xl text-ink">Add new product</h1>
+                <p class="text-neutral-500 mt-2">Create a new product with images, attributes, and variants.</p>
             </div>
 
-            <div>
-              <label class="block text-xs font-bold uppercase tracking-[0.2em] text-ink mb-2">Description</label>
-              <textarea v-model="form.product_description" rows="4" class="input-base resize-none" placeholder="Describe your product..."></textarea>
-            </div>
+            <form @submit.prevent="handleSubmit" class="space-y-5">
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <label class="block text-xs font-bold uppercase tracking-[0.2em] text-ink mb-2">
-                  Category <span class="text-accent">*</span>
-                </label>
-                <select v-model="form.category_id" class="input-base">
-                  <option :value="null">Select category</option>
-                  <option v-for="category in categories" :key="category.category_id" :value="category.category_id">
-                    {{ category.name }}
-                  </option>
-                </select>
-                <p v-if="errors.category_id" class="mt-1.5 text-xs text-danger font-semibold">{{ errors.category_id }}</p>
-              </div>
+                <!-- ── Basic Information ────────────────────────────────────── -->
+                <div class="card-flat p-6 md:p-8">
+                    <h2 class="text-base font-bold text-ink mb-6">Basic information</h2>
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-[0.2em] text-ink mb-2">
+                                Product name <span class="text-accent">*</span>
+                            </label>
+                            <input v-model="form.product_name" type="text" class="input-base"
+                                placeholder="Enter product name" aria-label="Product name" />
+                            <p v-if="errors.product_name" class="mt-1.5 text-xs text-danger font-semibold">
+                                {{ errors.product_name }}
+                            </p>
+                        </div>
 
-              <div>
-                <label class="block text-xs font-bold uppercase tracking-[0.2em] text-ink mb-2">
-                  Base price <span class="text-accent">*</span>
-                </label>
-                <div class="relative">
-                  <span class="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 font-semibold">{{ '$' }}</span>
-                  <input v-model="form.base_price" type="number" step="0.01" class="input-base pl-9" placeholder="0.00" />
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-[0.2em] text-ink mb-2">
+                                Description
+                            </label>
+                            <textarea v-model="form.product_description" rows="4"
+                                class="input-base resize-none" placeholder="Describe your product..."
+                                aria-label="Product description"></textarea>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <!-- Category -->
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-[0.2em] text-ink mb-2">
+                                    Category <span class="text-accent">*</span>
+                                </label>
+                                <div class="flex gap-2">
+                                    <div class="flex-1 relative">
+                                        <select v-model="form.category_id" class="input-base w-full"
+                                            aria-label="Product category">
+                                            <option :value="null">Select category</option>
+                                            <option v-for="category in categories" :key="category.category_id"
+                                                :value="category.category_id">
+                                                {{ category.name }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <button type="button" @click="toggleNewCategory"
+                                        class="btn-outline text-sm gap-1.5 px-3 shrink-0"
+                                        :title="showNewCategory ? 'Cancel' : 'Add new category'">
+                                        <Plus class="w-4 h-4" />
+                                    </button>
+                                </div>
+                                <!-- Inline New Category -->
+                                <div v-if="showNewCategory"
+                                    class="mt-3 p-3 bg-neutral-50 rounded-xl border border-neutral-200 animate-fade-in">
+                                    <div class="flex gap-2">
+                                        <input v-model="newCategoryName" type="text"
+                                            class="input-base text-sm flex-1" placeholder="Category name"
+                                            @keyup.enter="createNewCategory" aria-label="New category name" />
+                                        <button type="button" @click="createNewCategory" :disabled="creatingCategory"
+                                            class="btn-accent text-sm gap-1.5 px-3">
+                                            <Loader2 v-if="creatingCategory" class="w-3.5 h-3.5 animate-spin" />
+                                            <Plus v-else class="w-3.5 h-3.5" />
+                                            Add
+                                        </button>
+                                    </div>
+                                </div>
+                                <p v-if="errors.category_id" class="mt-1.5 text-xs text-danger font-semibold">
+                                    {{ errors.category_id }}
+                                </p>
+                            </div>
+
+                            <!-- Base Price -->
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-[0.2em] text-ink mb-2">
+                                    Base price <span class="text-accent">*</span>
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 font-semibold">
+                                        {{ '$' }}
+                                    </span>
+                                    <input v-model="form.base_price" type="number" step="0.01"
+                                        class="input-base pl-9" placeholder="0.00" aria-label="Base price" />
+                                </div>
+                                <p v-if="errors.base_price" class="mt-1.5 text-xs text-danger font-semibold">
+                                    {{ errors.base_price }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Status -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-[0.2em] text-ink mb-3">Status</label>
+                            <div class="flex gap-3">
+                                <label class="flex items-center gap-2.5 cursor-pointer px-4 py-2.5 rounded-xl border border-neutral-200 hover:border-ink transition-colors"
+                                    :class="{ 'border-ink bg-ink text-paper': form.product_status === 'active' }">
+                                    <input v-model="form.product_status" type="radio" value="active" class="hidden" />
+                                    <span class="text-sm font-semibold">Active</span>
+                                </label>
+                                <label class="flex items-center gap-2.5 cursor-pointer px-4 py-2.5 rounded-xl border border-neutral-200 hover:border-ink transition-colors"
+                                    :class="{ 'border-ink bg-ink text-paper': form.product_status === 'inactive' }">
+                                    <input v-model="form.product_status" type="radio" value="inactive" class="hidden" />
+                                    <span class="text-sm font-semibold">Inactive</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <p v-if="errors.base_price" class="mt-1.5 text-xs text-danger font-semibold">{{ errors.base_price }}</p>
-              </div>
-            </div>
 
-            <div>
-              <label class="block text-xs font-bold uppercase tracking-[0.2em] text-ink mb-3">Status</label>
-              <div class="flex gap-3">
-                <label class="flex items-center gap-2.5 cursor-pointer px-4 py-2.5 rounded-xl border border-neutral-200 hover:border-ink transition-colors"
-                       :class="{ 'border-ink bg-ink text-paper': form.product_status === 'active' }">
-                  <input v-model="form.product_status" type="radio" value="active" class="hidden" />
-                  <span class="text-sm font-semibold">Active</span>
-                </label>
-                <label class="flex items-center gap-2.5 cursor-pointer px-4 py-2.5 rounded-xl border border-neutral-200 hover:border-ink transition-colors"
-                       :class="{ 'border-ink bg-ink text-paper': form.product_status === 'inactive' }">
-                  <input v-model="form.product_status" type="radio" value="inactive" class="hidden" />
-                  <span class="text-sm font-semibold">Inactive</span>
-                </label>
-              </div>
-            </div>
-          </div>
+                <!-- ── Product Images ────────────────────────────────────────── -->
+                <div class="card-flat p-6 md:p-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-base font-bold text-ink flex items-center gap-2">
+                            <ImageIcon class="w-4 h-4 text-accent" />
+                            Product images
+                        </h2>
+                        <button type="button" @click="showImageBrowser = !showImageBrowser"
+                            class="btn-ghost text-xs gap-1.5">
+                            <Eye v-if="!showImageBrowser" class="w-3.5 h-3.5" />
+                            <EyeOff v-else class="w-3.5 h-3.5" />
+                            {{ showImageBrowser ? 'Hide browser' : 'Browse images' }}
+                        </button>
+                    </div>
+
+                    <!-- Selected Main Image Preview -->
+                    <div v-if="selectedMainImage" class="mb-4">
+                        <label class="block text-xs font-bold uppercase tracking-[0.2em] text-accent mb-2 flex items-center gap-1.5">
+                            <CheckCircle2 class="w-3.5 h-3.5" />
+                            Main image
+                        </label>
+                        <div class="relative group w-48 h-48 rounded-xl overflow-hidden border-2 border-accent bg-neutral-100">
+                            <img :src="selectedMainImage.url" alt="Main product image"
+                                class="w-full h-full object-cover" />
+                            <button type="button" @click="removeMainImage"
+                                class="absolute top-2 right-2 w-7 h-7 bg-ink/60 hover:bg-danger text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                                <X class="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Selected Extra Images -->
+                    <div v-if="selectedExtraImages.size > 0" class="mb-4">
+                        <label class="block text-xs font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">
+                            Additional images ({{ selectedExtraImages.size }})
+                        </label>
+                        <div class="flex gap-2 flex-wrap">
+                            <div v-for="img in form.selected_images" :key="img.filename"
+                                class="w-16 h-16 rounded-lg overflow-hidden border border-neutral-200 bg-neutral-100">
+                                <img :src="img.url" :alt="img.filename"
+                                    class="w-full h-full object-cover" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Image Browser Grid -->
+                    <div v-if="showImageBrowser">
+                        <!-- Upload Area -->
+                        <div class="mb-4">
+                            <div @drop.prevent="handleDrop" @dragover.prevent="isDragOver = true"
+                                @dragleave.prevent="isDragOver = false" @click="triggerFileInput"
+                                class="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all"
+                                :class="isDragOver ? 'border-accent bg-accent/5' : 'border-neutral-300 hover:border-neutral-400 bg-neutral-50'">
+                                <input ref="fileInput" type="file" accept="image/*" multiple
+                                    class="hidden" @change="handleFileSelect" />
+                                <Upload class="w-6 h-6 text-neutral-400 mx-auto mb-2" />
+                                <p class="text-xs text-neutral-500 font-medium">Click or drag to upload new images</p>
+                            </div>
+                            <!-- Upload Preview -->
+                            <div v-if="uploadPreviewUrls.length > 0" class="mt-3 space-y-3">
+                                <div class="flex gap-2 flex-wrap">
+                                    <div v-for="(preview, i) in uploadPreviewUrls" :key="i"
+                                        class="relative w-16 h-16 rounded-lg overflow-hidden border border-neutral-200">
+                                        <img :src="preview.url" :alt="preview.name" class="w-full h-full object-cover" />
+                                        <button type="button" @click="removeUploadPreview(i)"
+                                            class="absolute top-0.5 right-0.5 w-4 h-4 bg-ink/60 text-white rounded-full flex items-center justify-center">
+                                            <X class="w-2.5 h-2.5" />
+                                        </button>
+                                    </div>
+                                </div>
+                                <button type="button" @click="executeUpload" :disabled="uploading"
+                                    class="btn-accent text-xs gap-1.5">
+                                    <Loader2 v-if="uploading" class="w-3.5 h-3.5 animate-spin" />
+                                    <Upload v-else class="w-3.5 h-3.5" />
+                                    {{ uploading ? 'Uploading...' : `Upload ${uploadPreviewUrls.length} image(s)` }}
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Existing Images Grid -->
+                        <div v-if="loadImages" class="flex justify-center py-8">
+                            <Loader2 class="w-6 h-6 text-accent animate-spin" />
+                        </div>
+                        <div v-else-if="uploadedImages.length === 0"
+                            class="text-center py-8 text-neutral-400 text-sm">
+                            <ImageIcon class="w-8 h-8 mx-auto mb-2 opacity-50" />
+                            No images uploaded yet. Upload images above.
+                        </div>
+                        <div v-else>
+                            <label class="block text-xs font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2">
+                                Existing images
+                            </label>
+                            <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                                <div v-for="image in uploadedImages" :key="image.filename"
+                                    class="relative group cursor-pointer rounded-lg overflow-hidden border-2 transition-all"
+                                    :class="{
+                                        'border-accent ring-2 ring-accent/30': selectedMainImage?.filename === image.filename,
+                                        'border-neutral-200 hover:border-neutral-400': selectedMainImage?.filename !== image.filename
+                                    }"
+                                    @click="selectMainImage(image)">
+                                    <div class="aspect-square bg-neutral-100">
+                                        <img :src="image.url" :alt="image.filename"
+                                            class="w-full h-full object-cover" />
+                                    </div>
+                                    <!-- Main badge -->
+                                    <div v-if="selectedMainImage?.filename === image.filename"
+                                        class="absolute top-1 left-1 w-4 h-4 bg-accent rounded-full flex items-center justify-center">
+                                        <Check class="w-3 h-3 text-white" />
+                                    </div>
+                                    <!-- Extra image toggle -->
+                                    <button type="button" @click.stop="toggleExtraImage(image)"
+                                        class="absolute top-1 right-1 w-4 h-4 rounded-full border border-white flex items-center justify-center text-[8px] font-bold transition-all"
+                                        :class="selectedExtraImages.has(image.filename) ? 'bg-accent text-white' : 'bg-ink/50 text-white hover:bg-ink/70'">
+                                        <template v-if="selectedExtraImages.has(image.filename)">✓</template>
+                                        <template v-else>+</template>
+                                    </button>
+                                    <!-- Delete -->
+                                    <button type="button" @click.stop="deleteImage(image.filename)"
+                                        class="absolute bottom-1 right-1 w-5 h-5 bg-danger/80 text-white rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all text-[10px]"
+                                        title="Delete image">
+                                        <Trash2 class="w-3 h-3" />
+                                    </button>
+                                    <!-- Extra images count badge -->
+                                    <div v-if="selectedExtraImages.has(image.filename) && selectedMainImage?.filename !== image.filename"
+                                        class="absolute inset-0 bg-accent/10 border-2 border-accent rounded-lg pointer-events-none">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- URL fallback (always visible) -->
+                    <div class="mt-4 pt-4 border-t border-neutral-200">
+                        <label class="block text-xs font-bold uppercase tracking-[0.2em] text-neutral-500 mb-2 flex items-center gap-1.5">
+                            <Link2 class="w-3 h-3" />
+                            Or paste image URL
+                        </label>
+                        <input v-model="form.main_image" type="url" class="input-base"
+                            placeholder="https://example.com/image.jpg" aria-label="Main image URL" />
+                    </div>
+                </div>
+
+                <!-- ── Variant Attributes Builder ────────────────────────────── -->
+                <div class="card-flat p-6 md:p-8">
+                    <h2 class="text-base font-bold text-ink mb-6 flex items-center gap-2">
+                        <Settings2 class="w-4 h-4 text-accent" />
+                        Variant attributes
+                        <span class="text-xs font-normal text-neutral-500">(optional)</span>
+                    </h2>
+
+                    <!-- Attribute Definitions -->
+                    <div class="space-y-4">
+                        <div v-for="(attr, aIdx) in attributeDefinitions" :key="attr.id"
+                            class="bg-neutral-50 rounded-xl p-4 border border-neutral-200">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="flex-1">
+                                    <input v-model="attr.name" type="text" @input="regenerateVariants()"
+                                        class="input-base text-sm font-semibold"
+                                        :placeholder="'e.g. Color, Size, Material'"
+                                        aria-label="Attribute name" />
+                                </div>
+                                <button type="button" @click="removeAttribute(aIdx)"
+                                    class="text-neutral-400 hover:text-danger transition-colors p-1">
+                                    <X class="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <!-- Values for this attribute -->
+                            <div class="flex gap-2 flex-wrap">
+                                <div v-for="(val, vIdx) in attr.values" :key="vIdx"
+                                    class="flex items-center gap-1">
+                                    <input v-model="attr.values[vIdx]" type="text"
+                                        @input="regenerateVariants()"
+                                        class="w-24 sm:w-28 px-2.5 py-1.5 bg-white border border-neutral-200 rounded-lg text-xs text-center focus:border-accent focus:ring-1 focus:ring-accent/20 outline-none transition-all"
+                                        :placeholder="'Value ' + (vIdx + 1)"
+                                        aria-label="Attribute value" />
+                                    <button v-if="attr.values.length > 1" type="button"
+                                        @click="removeAttributeValue(aIdx, vIdx)"
+                                        class="text-neutral-300 hover:text-danger transition-colors p-0.5">
+                                        <X class="w-3 h-3" />
+                                    </button>
+                                </div>
+                                <button type="button" @click="addAttributeValue(aIdx)"
+                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-dashed border-neutral-300 text-xs text-neutral-500 hover:border-accent hover:text-accent transition-all">
+                                    <Plus class="w-3 h-3" />
+                                    Add value
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Add Attribute Button -->
+                        <button type="button" @click="addAttribute"
+                            class="btn-outline text-sm gap-1.5 w-full py-2.5">
+                            <Plus class="w-4 h-4" />
+                            Add attribute
+                        </button>
+
+                        <!-- No attributes state -->
+                        <div v-if="attributeDefinitions.length === 0"
+                            class="text-center py-6 text-neutral-400 text-sm">
+                            <Layers class="w-8 h-8 mx-auto mb-2 opacity-50" />
+                            <p>Add attributes like <strong>Color</strong>, <strong>Size</strong>, or <strong>Material</strong>
+                                to generate variant combinations automatically.</p>
+                        </div>
+                    </div>
+
+                    <!-- ── Generated Variants ────────────────────────────────── -->
+                    <div v-if="generatedVariants.length > 0" class="mt-6 pt-6 border-t border-neutral-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-sm font-bold text-ink flex items-center gap-2">
+                                <Box class="w-4 h-4 text-accent" />
+                                Generated variants
+                                <span class="text-xs font-normal text-neutral-500">({{ generatedVariants.length }})</span>
+                            </h3>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full min-w-150">
+                                <thead>
+                                    <tr class="text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-500 border-b border-neutral-200">
+                                        <th class="px-3 py-2 text-left">Variant</th>
+                                        <th class="px-3 py-2 text-left">SKU</th>
+                                        <th class="px-3 py-2 text-right">Price</th>
+                                        <th class="px-3 py-2 text-right">Stock</th>
+                                        <th class="px-3 py-2 w-10"></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-neutral-100">
+                                    <tr v-for="(variant, vIdx) in generatedVariants" :key="vIdx"
+                                        class="hover:bg-neutral-50/50 transition-colors">
+                                        <td class="px-3 py-2.5">
+                                            <span class="text-sm font-semibold text-ink">
+                                                {{ variantPreviewLabel(variant) }}
+                                            </span>
+                                        </td>
+                                        <td class="px-3 py-2.5">
+                                            <input v-model="variant.sku" type="text"
+                                                class="w-full px-2 py-1 bg-white border border-neutral-200 rounded-lg text-xs font-mono focus:border-accent focus:ring-1 focus:ring-accent/20 outline-none transition-all"
+                                                placeholder="Optional" aria-label="SKU" />
+                                        </td>
+                                        <td class="px-3 py-2.5">
+                                            <div class="relative">
+                                                <span class="absolute left-2 top-1/2 -translate-y-1/2 text-neutral-400 text-xs">$</span>
+                                                <input v-model="variant.variant_price" type="number" step="0.01"
+                                                    class="w-full pl-5 pr-2 py-1 bg-white border border-neutral-200 rounded-lg text-xs text-right font-semibold tabular-nums focus:border-accent focus:ring-1 focus:ring-accent/20 outline-none transition-all"
+                                                    placeholder="0.00" aria-label="Variant price" />
+                                            </div>
+                                        </td>
+                                        <td class="px-3 py-2.5">
+                                            <input v-model.number="variant.stock_quantity" type="number" min="0"
+                                                class="w-20 px-2 py-1 bg-white border border-neutral-200 rounded-lg text-xs text-right font-semibold tabular-nums focus:border-accent focus:ring-1 focus:ring-accent/20 outline-none transition-all"
+                                                placeholder="0" aria-label="Stock quantity" />
+                                        </td>
+                                        <td class="px-3 py-2.5 text-center">
+                                            <button type="button" @click="removeGeneratedVariant(vIdx)"
+                                                class="text-neutral-300 hover:text-danger transition-colors p-0.5">
+                                                <X class="w-3.5 h-3.5" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ── Manual Variant ────────────────────────────────────── -->
+                    <div class="mt-4 pt-4 border-t border-neutral-200">
+                        <button type="button" @click="showManualVariant = !showManualVariant"
+                            class="btn-ghost text-xs gap-1.5">
+                            <Plus class="w-3.5 h-3.5" />
+                            {{ showManualVariant ? 'Cancel' : 'Add single variant manually' }}
+                        </button>
+
+                        <div v-if="showManualVariant"
+                            class="mt-3 grid grid-cols-1 sm:grid-cols-5 gap-2 animate-fade-in">
+                            <input v-model="manualVariant.name" type="text" placeholder="Name (e.g. Color)"
+                                class="input-base text-sm" aria-label="Variant attribute name" />
+                            <input v-model="manualVariant.value" type="text" placeholder="Value (e.g. Red)"
+                                class="input-base text-sm" aria-label="Variant attribute value" />
+                            <input v-model="manualVariant.price" type="number" step="0.01" placeholder="Price"
+                                class="input-base text-sm" aria-label="Variant price" />
+                            <input v-model.number="manualVariant.stock" type="number" min="0" placeholder="Stock"
+                                class="input-base text-sm" aria-label="Variant stock" />
+                            <button type="button" @click="addManualVariant"
+                                class="btn-primary text-sm py-2.5">
+                                <Plus class="w-4 h-4" />
+                                Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Action Buttons ────────────────────────────────────────── -->
+                <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                    <button type="button" @click="cancel" class="btn-outline flex-1 py-3.5">
+                        Cancel
+                    </button>
+                    <button type="submit" :disabled="submitting"
+                        class="btn-accent shine-effect flex-1 py-3.5 disabled:opacity-50">
+                        <Loader2 v-if="submitting" class="w-4 h-4 animate-spin inline mr-2" />
+                        {{ submitting ? 'Creating product...' : 'Create product' }}
+                    </button>
+                </div>
+            </form>
         </div>
-
-        <!-- Images -->
-        <div class="card-flat p-6 md:p-8">
-          <h2 class="text-base font-bold text-ink mb-6 flex items-center gap-2">
-            <ImageIcon class="w-4 h-4 text-accent" />
-            Product images
-          </h2>
-          <div>
-            <label class="block text-xs font-bold uppercase tracking-[0.2em] text-ink mb-2">Main image URL</label>
-            <input v-model="form.main_image" type="url" class="input-base" placeholder="https://example.com/image.jpg" />
-            <p class="mt-1.5 text-xs text-neutral-500">Enter the URL of your product's main image.</p>
-          </div>
-        </div>
-
-        <!-- Variants -->
-        <div class="card-flat p-6 md:p-8">
-          <h2 class="text-base font-bold text-ink mb-6">Product variants <span class="text-xs font-normal text-neutral-500">(optional)</span></h2>
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-            <input v-model="newVariant.size" type="text" placeholder="Size (M, L, XL)" class="input-base text-sm" />
-            <input v-model="newVariant.color" type="text" placeholder="Color (Red, Blue)" class="input-base text-sm" />
-            <input v-model="newVariant.variant_price" type="number" step="0.01" placeholder="Price (optional)" class="input-base text-sm" />
-            <button @click="addVariant" type="button" class="btn-primary text-sm py-2.5">
-              <Plus class="w-4 h-4" />
-              Add variant
-            </button>
-          </div>
-
-          <div v-if="form.variants.length > 0" class="space-y-2">
-            <div v-for="(variant, index) in form.variants" :key="index"
-              class="flex items-center gap-4 p-3 bg-neutral-50 rounded-xl">
-              <div class="flex-1 text-sm">
-                <span v-if="variant.size" class="font-semibold text-ink">Size: {{ variant.size }}</span>
-                <span v-if="variant.size && variant.color" class="mx-2 text-neutral-400">·</span>
-                <span v-if="variant.color" class="font-semibold text-ink">Color: {{ variant.color }}</span>
-                <span v-if="variant.variant_price" class="ml-2 text-accent font-bold">{{ '$' }}{{ variant.variant_price }}</span>
-              </div>
-              <button @click="removeVariant(index)" type="button" class="text-neutral-400 hover:text-danger transition-colors">
-                <X class="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Stock -->
-        <div class="card-flat p-6 md:p-8">
-          <h2 class="text-base font-bold text-ink mb-6 flex items-center gap-2">
-            <Package class="w-4 h-4 text-accent" />
-            Stock management <span class="text-xs font-normal text-neutral-500">(optional)</span>
-          </h2>
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-            <input v-model="newStock.size" type="text" placeholder="Size" class="input-base text-sm" />
-            <input v-model="newStock.color" type="text" placeholder="Color" class="input-base text-sm" />
-            <input v-model.number="newStock.quantity" type="number" placeholder="Quantity" class="input-base text-sm" />
-            <button @click="addStock" type="button" class="btn-primary text-sm py-2.5">
-              <Plus class="w-4 h-4" />
-              Add stock
-            </button>
-          </div>
-
-          <div v-if="form.stock.length > 0" class="space-y-2">
-            <div v-for="(stock, index) in form.stock" :key="index"
-              class="flex items-center gap-4 p-3 bg-neutral-50 rounded-xl">
-              <div class="flex-1 text-sm">
-                <span v-if="stock.size" class="font-semibold text-ink">Size: {{ stock.size }}</span>
-                <span v-if="stock.size && stock.color" class="mx-2 text-neutral-400">·</span>
-                <span v-if="stock.color" class="font-semibold text-ink">Color: {{ stock.color }}</span>
-                <span class="ml-2 text-neutral-600">Qty: <span class="font-bold text-ink tabular-nums">{{ stock.quantity }}</span></span>
-              </div>
-              <button @click="removeStock(index)" type="button" class="text-neutral-400 hover:text-danger transition-colors">
-                <X class="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="flex flex-col sm:flex-row gap-3 pt-2">
-          <button type="button" @click="cancel" class="btn-outline flex-1 py-3.5">
-            Cancel
-          </button>
-          <button type="submit" :disabled="submitting" class="btn-accent shine-effect flex-1 py-3.5 disabled:opacity-50">
-            {{ submitting ? 'Creating product...' : 'Create product' }}
-          </button>
-        </div>
-      </form>
     </div>
-  </div>
 </template>
+
+<style scoped>
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+    animation: fadeIn 0.25s ease-out;
+}
+</style>

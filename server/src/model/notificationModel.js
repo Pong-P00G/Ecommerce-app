@@ -115,6 +115,59 @@ export const pruneOldNotifications = async (keepCount = 100) => {
 };
 
 // ============================================================
+// AUDIT LOG
+// ============================================================
+
+export const ensureAuditTable = async () => {
+    await db.query(`
+        CREATE TABLE IF NOT EXISTS audit_log (
+            auditid     INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            action      VARCHAR(50)  NOT NULL,
+            entity_type VARCHAR(50)  NOT NULL,
+            entity_id   INTEGER,
+            entity_name VARCHAR(255),
+            performed_by VARCHAR(100),
+            details     TEXT,
+            createdat   TIMESTAMPTZ  DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_audit_log_created ON audit_log(createdat DESC);
+    `);
+};
+
+export const createAuditLog = async ({ action, entity_type, entity_id, entity_name, performed_by, details }) => {
+    const { rows } = await db.query(
+        `INSERT INTO audit_log (action, entity_type, entity_id, entity_name, performed_by, details)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING auditid AS id, action, entity_type, entity_id, entity_name, performed_by, details, createdat AS created_at`,
+        [action, entity_type, entity_id, entity_name, performed_by, details]
+    );
+    return rows[0];
+};
+
+export const getAuditLogs = async (limit = 50, offset = 0) => {
+    const { rows } = await db.query(
+        `SELECT auditid AS id, action, entity_type, entity_id, entity_name, performed_by, details, createdat AS created_at
+         FROM audit_log
+         ORDER BY createdat DESC
+         LIMIT $1 OFFSET $2`,
+        [limit, offset]
+    );
+    return rows;
+};
+
+export const getAuditLogsByType = async (entityType, limit = 50, offset = 0) => {
+    const { rows } = await db.query(
+        `SELECT auditid AS id, action, entity_type, entity_id, entity_name, performed_by, details, createdat AS created_at
+         FROM audit_log
+         WHERE entity_type = $1
+         ORDER BY createdat DESC
+         LIMIT $2 OFFSET $3`,
+        [entityType, limit, offset]
+    );
+    return rows;
+};
+
+// ============================================================
 // NOTIFICATION PREFERENCES
 // ============================================================
 

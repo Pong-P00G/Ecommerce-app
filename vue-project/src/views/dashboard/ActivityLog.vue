@@ -38,6 +38,7 @@ const typeOptions = [
     { value: 'product_added', label: 'Products Added' },
     { value: 'stock', label: 'Stock Changes' },
     { value: 'order_created', label: 'New Orders' },
+    { value: 'role_managed', label: 'Role & Permission Changes' },
 ];
 
 const typeIcons = {
@@ -60,6 +61,8 @@ const typeStyles = {
     stock_return: 'bg-info/10 text-info border-info/20',
     stock_damaged: 'bg-danger/10 text-danger border-danger/20',
     order_created: 'bg-accent/10 text-accent border-accent/20',
+    role_managed: 'bg-purple-100 text-purple-700 border-purple-200',
+    permission_managed: 'bg-purple-100 text-purple-700 border-purple-200',
 };
 
 const filteredActivities = computed(() => {
@@ -177,7 +180,7 @@ onMounted(() => {
                             :key="opt.value"
                             @click="changeTypeFilter(opt.value)"
                             :class="[
-                                'px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-[0.1em] whitespace-nowrap transition-all',
+                                'px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all',
                                 typeFilter === opt.value
                                     ? 'bg-ink text-paper'
                                     : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
@@ -244,7 +247,7 @@ onMounted(() => {
                         <!-- Content -->
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2 mb-1">
-                                <span :class="['px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-[0.1em] border', typeStyles[activity.type] || 'bg-neutral-100 text-neutral-500 border-neutral-200']">
+                                <span :class="['px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest border', typeStyles[activity.type] || 'bg-neutral-100 text-neutral-500 border-neutral-200']">
                                     {{ activity.type_label || activity.type }}
                                 </span>
                             </div>

@@ -1,5 +1,6 @@
 <script setup>
 import { RouterLink } from 'vue-router';
+import LazyImage from '../components/LazyImage.vue';
 import {
     Sparkles,
     Heart,
@@ -64,10 +65,10 @@ const team = [
                     <div class="relative hidden lg:block">
                         <div class="absolute -top-12 -right-12 w-64 h-64 rounded-full bg-accent/30 blur-3xl"></div>
                         <div class="relative grid grid-cols-2 gap-4">
-                            <img src="https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=600&h=800&fit=crop" alt="" class="rounded-2xl h-72 w-full object-cover mt-12" />
-                            <img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600&h=800&fit=crop" alt="" class="rounded-2xl h-72 w-full object-cover" />
-                            <img src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=600&h=800&fit=crop" alt="" class="rounded-2xl h-72 w-full object-cover" />
-                            <img src="https://images.unsplash.com/photo-1485518882345-15568b007407?w=600&h=800&fit=crop" alt="" class="rounded-2xl h-72 w-full object-cover -mt-12" />
+                            <LazyImage src="https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=600&h=800&fit=crop" alt="" wrapper-class="rounded-2xl h-72 w-full mt-12" img-class="object-cover" />
+                            <LazyImage src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600&h=800&fit=crop" alt="" wrapper-class="rounded-2xl h-72 w-full" img-class="object-cover" />
+                            <LazyImage src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=600&h=800&fit=crop" alt="" wrapper-class="rounded-2xl h-72 w-full" img-class="object-cover" />
+                            <LazyImage src="https://images.unsplash.com/photo-1485518882345-15568b007407?w=600&h=800&fit=crop" alt="" wrapper-class="rounded-2xl h-72 w-full -mt-12" img-class="object-cover" />
                         </div>
                     </div>
                 </div>
@@ -133,7 +134,7 @@ const team = [
             <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div v-for="m in team" :key="m.name" class="group">
                     <div class="aspect-3/4 rounded-2xl overflow-hidden bg-neutral-100 mb-4">
-                        <img :src="m.img" :alt="m.name" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
+                        <LazyImage :src="m.img" :alt="m.name" wrapper-class="w-full h-full" img-class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
                     </div>
                     <h3 class="text-lg font-bold text-ink">{{ m.name }}</h3>
                     <p class="text-sm text-neutral-500">{{ m.role }}</p>

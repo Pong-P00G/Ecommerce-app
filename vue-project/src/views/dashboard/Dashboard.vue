@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth.js';
 import { dashboardAPI } from '../../api/dashboardApi.js';
 import draggable from 'vuedraggable';
+import LazyImage from '../../components/LazyImage.vue';
 import {
     Plus,
     Boxes,
@@ -105,7 +106,7 @@ const showWidgetCatalog = ref(false);
 const dragOptions = {
     animation: 200,
     ghostClass: 'opacity-40',
-    dragClass: 'z-50 shadow-2xl scale-[1.02] rotate-[1deg]',
+    dragClass: 'drag-active',
     handle: '.drag-handle',
 };
 
@@ -634,9 +635,9 @@ onUnmounted(() => {
                                             {{ index + 1 }}
                                         </div>
                                         <div class="aspect-square bg-zinc-100 rounded-xl overflow-hidden mb-4">
-                                            <img :src="product.main_image" :alt="product.product_name"
-                                                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                                                @error="handleImageError" />
+                                            <LazyImage :src="product.main_image" :alt="product.product_name"
+                                                wrapper-class="w-full h-full"
+                                                img-class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                         </div>
                                         <p class="text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-bold mb-1">{{ product.category_name }}</p>
                                         <h3 class="font-bold text-zinc-900 mb-2 line-clamp-2">{{ product.product_name }}</h3>
@@ -654,3 +655,12 @@ onUnmounted(() => {
         </div>
     </div>
 </template>
+
+<style scoped>
+.drag-active {
+    z-index: 50;
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    transform: scale(1.02) rotate(1deg);
+    transition: transform 0.2s ease;
+}
+</style>

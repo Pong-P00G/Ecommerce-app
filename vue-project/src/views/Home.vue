@@ -17,9 +17,19 @@ import {
     Tag,
     ChevronLeft,
     ChevronRight,
+    ShoppingCart,
+    X,
+    Check,
+    RefreshCw,
 } from 'lucide-vue-next';
+import { useToast } from '../composables/useToast.js';
+import LazyImage from '../components/LazyImage.vue';
 import ProductCarousel from '../components/ProductCarousel.vue';
 import HeroCarousel from '../components/HeroCarousel.vue';
+
+const toast = useToast();
+
+const loadingProducts = ref(false);
 
 const rawProducts = [
     { id: 1, name: 'Aurora Tee', price: 29, category: 'Tops', tags: ['casual', 'cotton'], description: 'Soft breathable cotton tee', image: '/p1.jpg', badge: 'New', href: '/product/1' },
@@ -83,7 +93,7 @@ function prevPage() {
 }
 
 function addToCart(p) {
-    alert('Added ' + p.name + ' to cart');
+    toast.success('"' + p.name + '" added to cart!');
 }
 
 const promises = [
@@ -192,6 +202,7 @@ const promises = [
                                     v-model="filters.q"
                                     placeholder="Search products"
                                     class="w-full pl-10 pr-3 py-2.5 rounded-xl bg-neutral-50 border border-neutral-200 focus:border-ink focus:bg-paper focus:outline-none transition-all text-sm"
+                                    aria-label="Search products"
                                 />
                             </div>
                         </div>
@@ -234,14 +245,14 @@ const promises = [
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Price range</label>
                             <div class="flex items-center gap-2">
-                                <input type="number" v-model.number="filters.minPrice" class="w-1/2 px-3 py-2.5 rounded-xl bg-neutral-50 border border-neutral-200 focus:border-ink focus:bg-paper focus:outline-none transition-all text-sm" placeholder="Min" />
+                                <input type="number" v-model.number="filters.minPrice" class="w-1/2 px-3 py-2.5 rounded-xl bg-neutral-50 border border-neutral-200 focus:border-ink focus:bg-paper focus:outline-none transition-all text-sm" placeholder="Min" aria-label="Minimum price" />
                                 <span class="text-neutral-400">–</span>
-                                <input type="number" v-model.number="filters.maxPrice" class="w-1/2 px-3 py-2.5 rounded-xl bg-neutral-50 border border-neutral-200 focus:border-ink focus:bg-paper focus:outline-none transition-all text-sm" placeholder="Max" />
+                                <input type="number" v-model.number="filters.maxPrice" class="w-1/2 px-3 py-2.5 rounded-xl bg-neutral-50 border border-neutral-200 focus:border-ink focus:bg-paper focus:outline-none transition-all text-sm" placeholder="Max" aria-label="Maximum price" />
                             </div>
                         </div>
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Sort by</label>
-                            <select v-model="filters.sort" class="w-full px-3 py-2.5 rounded-xl bg-neutral-50 border border-neutral-200 focus:border-ink focus:bg-paper focus:outline-none transition-all text-sm">
+                            <select v-model="filters.sort" class="w-full px-3 py-2.5 rounded-xl bg-neutral-50 border border-neutral-200 focus:border-ink focus:bg-paper focus:outline-none transition-all text-sm" aria-label="Sort products by">
                                 <option value="new">Newest</option>
                                 <option value="price-asc">Price: Low to High</option>
                                 <option value="price-desc">Price: High to Low</option>
@@ -255,13 +266,74 @@ const promises = [
 
                 <!-- Grid -->
                 <section class="lg:col-span-3">
-                    <div class="mb-5 flex items-center justify-between">
-                        <p class="text-sm text-neutral-600">
-                            Showing <span class="font-bold text-ink">{{ filtered.length }}</span> {{ filtered.length === 1 ? 'product' : 'products' }}
+                    <div class="mb-5 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <p class="text-sm text-neutral-600">
+                                Showing <span class="font-bold text-ink">{{ filtered.length }}</span> {{ filtered.length === 1 ? 'product' : 'products' }}
+                            </p>
+                            <button v-if="page < totalPages" @click="nextPage"
+                                class="sm:hidden inline-flex items-center gap-1 text-xs font-bold text-accent hover:text-accent-600 transition-colors">
+                                Next
+                                <ChevronRight class="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                        <!-- Active filter badges -->
+                        <div v-if="filters.category || filters.tag || filters.minPrice != null || filters.maxPrice != null || filters.q" class="flex flex-wrap items-center gap-1.5">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mr-0.5">Active:</span>
+                            <span v-if="filters.q" class="inline-flex items-center gap-1 px-2 py-1 bg-neutral-100 rounded-full text-[10px] font-bold text-ink">
+                                "{{ filters.q }}"
+                                <button @click="filters.q = ''; page = 1" class="hover:text-accent transition-colors"><X class="w-3 h-3" /></button>
+                            </span>
+                            <span v-if="filters.category" class="inline-flex items-center gap-1 px-2 py-1 bg-neutral-100 rounded-full text-[10px] font-bold text-ink">
+                                {{ filters.category }}
+                                <button @click="filters.category = ''; page = 1" class="hover:text-accent transition-colors"><X class="w-3 h-3" /></button>
+                            </span>
+                            <span v-if="filters.tag" class="inline-flex items-center gap-1 px-2 py-1 bg-accent/10 rounded-full text-[10px] font-bold text-accent">
+                                #{{ filters.tag }}
+                                <button @click="filters.tag = ''; page = 1" class="hover:text-accent-600 transition-colors"><X class="w-3 h-3" /></button>
+                            </span>
+                            <span v-if="filters.minPrice != null || filters.maxPrice != null" class="inline-flex items-center gap-1 px-2 py-1 bg-neutral-100 rounded-full text-[10px] font-bold text-ink">
+                                ${{ filters.minPrice ?? '0' }}–${{ filters.maxPrice ?? '∞' }}
+                                <button @click="filters.minPrice = null; filters.maxPrice = null; page = 1" class="hover:text-accent transition-colors"><X class="w-3 h-3" /></button>
+                            </span>
+                            <button @click="resetFilters" class="text-[10px] font-bold text-neutral-400 hover:text-accent underline underline-offset-2 transition-colors ml-1">Clear all</button>
+                        </div>
+                    </div>
+
+                    <!-- Skeleton Loading -->
+                    <div v-if="loadingProducts" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 animate-pulse">
+                        <div v-for="i in 6" :key="'s-' + i" class="bg-paper border border-neutral-200 rounded-2xl overflow-hidden">
+                            <div class="h-48 sm:h-56 bg-neutral-200"></div>
+                            <div class="p-5 space-y-3">
+                                <div class="h-3 w-16 bg-neutral-200 rounded"></div>
+                                <div class="h-5 w-32 bg-neutral-200 rounded"></div>
+                                <div class="h-3 w-48 bg-neutral-200 rounded"></div>
+                                <div class="flex items-center justify-between pt-2">
+                                    <div class="h-6 w-16 bg-neutral-200 rounded"></div>
+                                    <div class="h-4 w-12 bg-neutral-200 rounded"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div v-else-if="filtered.length === 0" class="bg-paper border border-neutral-200 rounded-2xl p-12 sm:p-16 text-center">
+                        <div class="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Search class="w-8 h-8 text-neutral-400" />
+                        </div>
+                        <h3 class="text-lg font-bold text-ink mb-1">No products match your filters</h3>
+                        <p class="text-sm text-neutral-500 max-w-sm mx-auto">
+                            Try adjusting your search, category, or price range to find what you're looking for.
                         </p>
+                        <button @click="resetFilters"
+                            class="mt-6 inline-flex items-center gap-2 px-5 py-2.5 bg-ink text-paper text-sm font-bold rounded-full hover:bg-neutral-800 transition-all duration-300">
+                            <RefreshCw class="w-4 h-4" />
+                            Reset all filters
+                        </button>
                     </div>
 
                     <transition-group
+                        v-else
                         name="list"
                         tag="div"
                         :class="view === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5' : 'flex flex-col gap-4'"
@@ -275,7 +347,7 @@ const promises = [
                         >
                             <RouterLink :to="'/product/' + p.id" class="block">
                                 <div class="relative h-48 sm:h-56 bg-neutral-100 overflow-hidden">
-                                    <img :src="p.image" :alt="p.name" class="w-full h-full object-cover transition-transform duration-700 group-hover/card:scale-110" />
+                                    <LazyImage :src="p.image" :alt="p.name" wrapper-class="w-full h-full" img-class="group-hover/card:scale-110" />
                                     <span v-if="p.badge" class="absolute top-3 left-3 badge-ink">{{ p.badge }}</span>
                                     <div class="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover/card:opacity-100 translate-y-1 group-hover/card:translate-y-0 transition-all duration-300">
                                         <button class="w-9 h-9 rounded-full bg-paper text-ink flex items-center justify-center hover:bg-accent hover:text-white transition-colors shadow-md" @click.prevent>
@@ -310,7 +382,7 @@ const promises = [
                         >
                             <RouterLink :to="'/product/' + p.id" class="flex flex-col sm:flex-row">
                                 <div class="relative h-48 sm:h-auto sm:w-48 shrink-0 bg-neutral-100 overflow-hidden">
-                                    <img :src="p.image" :alt="p.name" class="w-full h-full object-cover transition-transform duration-500 group-hover/list:scale-110" />
+                                    <LazyImage :src="p.image" :alt="p.name" wrapper-class="w-full h-full" img-class="group-hover/list:scale-110" />
                                     <span v-if="p.badge" class="absolute top-2 left-2 badge-ink text-[10px]">{{ p.badge }}</span>
                                 </div>
                                 <div class="p-5 flex-1 flex flex-col">
@@ -382,14 +454,14 @@ const promises = [
                             <div class="space-y-3 pt-12">
                                 <div class="bg-paper rounded-2xl p-3 shadow-2xl">
                                     <div class="h-32 rounded-xl bg-neutral-100 overflow-hidden">
-                                        <img :src="rawProducts[0].image" class="w-full h-full object-cover" />
+                                        <LazyImage :src="rawProducts[0].image" alt="" wrapper-class="w-full h-32" />
                                     </div>
                                     <p class="mt-2 text-xs font-bold text-ink truncate">{{ rawProducts[0].name }}</p>
                                     <p class="text-xs text-accent font-bold mt-1">{{ '$' }}{{ rawProducts[0].price }}</p>
                                 </div>
                                 <div class="bg-paper rounded-2xl p-3 shadow-2xl">
                                     <div class="h-32 rounded-xl bg-neutral-100 overflow-hidden">
-                                        <img :src="rawProducts[2].image" class="w-full h-full object-cover" />
+                                        <LazyImage :src="rawProducts[2].image" alt="" wrapper-class="w-full h-32" />
                                     </div>
                                     <p class="mt-2 text-xs font-bold text-ink truncate">{{ rawProducts[2].name }}</p>
                                     <p class="text-xs text-accent font-bold mt-1">{{ '$' }}{{ rawProducts[2].price }}</p>
@@ -398,14 +470,14 @@ const promises = [
                             <div class="space-y-3">
                                 <div class="bg-paper rounded-2xl p-3 shadow-2xl">
                                     <div class="h-32 rounded-xl bg-neutral-100 overflow-hidden">
-                                        <img :src="rawProducts[1].image" class="w-full h-full object-cover" />
+                                        <LazyImage :src="rawProducts[1].image" alt="" wrapper-class="w-full h-32" />
                                     </div>
                                     <p class="mt-2 text-xs font-bold text-ink truncate">{{ rawProducts[1].name }}</p>
                                     <p class="text-xs text-accent font-bold mt-1">{{ '$' }}{{ rawProducts[1].price }}</p>
                                 </div>
                                 <div class="bg-paper rounded-2xl p-3 shadow-2xl">
                                     <div class="h-32 rounded-xl bg-neutral-100 overflow-hidden">
-                                        <img :src="rawProducts[3].image" class="w-full h-full object-cover" />
+                                        <LazyImage :src="rawProducts[3].image" alt="" wrapper-class="w-full h-32" />
                                     </div>
                                     <p class="mt-2 text-xs font-bold text-ink truncate">{{ rawProducts[3].name }}</p>
                                     <p class="text-xs text-accent font-bold mt-1">{{ '$' }}{{ rawProducts[3].price }}</p>
@@ -418,3 +490,34 @@ const promises = [
         </section>
     </div>
 </template>
+
+<style scoped>
+/* ── Product list transitions ──────────────────────────── */
+.list-enter-active {
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.list-leave-active {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.list-enter-from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+}
+.list-leave-to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+}
+.list-move {
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Quick add button pulse animation ──────────────────── */
+@keyframes quick-add-pop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
+.quick-add-pop {
+    animation: quick-add-pop 0.35s ease-out;
+}
+</style>

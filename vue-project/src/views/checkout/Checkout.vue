@@ -1,7 +1,9 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import LazyImage from '../../components/LazyImage.vue';
+import { CreditCard, Lock, CheckCircle, Truck, MapPin, Sparkles, ArrowRight, ChevronRight } from 'lucide-vue-next';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -59,6 +61,40 @@ const paymentInfo = ref({
   cardName: ''
 });
 
+const cardBrand = computed(() => {
+    const num = paymentInfo.value.cardNumber.replace(/\D/g, '');
+    if (num.startsWith('4')) return 'Visa';
+    if (num.startsWith('5')) return 'Mastercard';
+    if (num.startsWith('3')) return 'Amex';
+    if (num.startsWith('6')) return 'Discover';
+    return '';
+});
+
+const formattedCardNumber = computed(() => {
+    const num = paymentInfo.value.cardNumber.replace(/\D/g, '');
+    const groups = [];
+    for (let i = 0; i < num.length && i < 16; i += 4) {
+        groups.push(num.slice(i, i + 4));
+    }
+    return groups.join(' ');
+});
+
+watch(() => paymentInfo.value.cardNumber, (val) => {
+    paymentInfo.value.cardNumber = val.replace(/\D/g, '').slice(0, 16);
+});
+
+watch(() => paymentInfo.value.expiry, (val) => {
+    let cleaned = val.replace(/\D/g, '').slice(0, 4);
+    if (cleaned.length > 2) {
+        cleaned = cleaned.slice(0, 2) + '/' + cleaned.slice(2);
+    }
+    paymentInfo.value.expiry = cleaned;
+});
+
+watch(() => paymentInfo.value.cvv, (val) => {
+    paymentInfo.value.cvv = val.replace(/\D/g, '').slice(0, 4);
+});
+
 // Cart Items (mock data)
 const cartItems = ref([
   { 
@@ -81,6 +117,14 @@ const cartItems = ref([
 const promoCode = ref('');
 const promoApplied = ref(false);
 const discount = ref(0);
+
+// Loading state for initial data fetch
+const pageLoading = ref(true);
+
+// Simulate initial data loading
+setTimeout(() => {
+    pageLoading.value = false;
+}, 1200);
 
 // Processing
 const processing = ref(false);
@@ -137,6 +181,65 @@ const handleSubmit = async () => {
               <h1 class="text-2xl sm:text-3xl font-bold text-ink mb-2">Checkout</h1>
               <p class="text-neutral-600 text-sm sm:text-base">Complete your purchase</p>
           </div>
+          <!-- Skeleton Loading State -->
+          <div v-if="pageLoading" class="space-y-6 animate-pulse">
+              <!-- Progress Steps Skeleton -->
+              <div class="flex items-center justify-between mb-8">
+                  <div v-for="i in 3" :key="'sk-step-' + i" class="flex items-center" :class="{ 'flex-1': i < 3 }">
+                      <div class="flex flex-col items-center">
+                          <div class="w-10 h-10 bg-neutral-200 rounded-full mb-2"></div>
+                          <div class="h-3 bg-neutral-200 rounded w-16"></div>
+                      </div>
+                      <div v-if="i < 3" class="flex-1 h-1 bg-neutral-200 mx-4"></div>
+                  </div>
+              </div>
+
+              <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+                  <!-- Form area skeleton -->
+                  <div class="lg:col-span-2">
+                      <div class="bg-paper rounded-2xl shadow-sm p-4 sm:p-6 space-y-5">
+                          <div class="h-6 bg-neutral-200 rounded w-48 mb-2"></div>
+                          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <div v-for="i in 6" :key="'sk-field-' + i" class="space-y-2">
+                                  <div class="h-4 bg-neutral-200 rounded w-24"></div>
+                                  <div class="h-11 bg-neutral-200 rounded-lg"></div>
+                              </div>
+                          </div>
+                          <div class="h-11 bg-neutral-200 rounded w-full"></div>
+                      </div>
+                  </div>
+
+                  <!-- Order summary skeleton -->
+                  <div class="lg:col-span-1">
+                      <div class="bg-paper rounded-2xl shadow-sm p-5 sm:p-6 space-y-4">
+                          <div class="h-5 bg-neutral-200 rounded w-32"></div>
+                          <div v-for="i in 2" :key="'sk-item-' + i" class="flex gap-4">
+                              <div class="w-16 h-16 sm:w-20 sm:h-20 bg-neutral-200 rounded-lg shrink-0"></div>
+                              <div class="flex-1 space-y-2">
+                                  <div class="h-4 bg-neutral-200 rounded w-3/4"></div>
+                                  <div class="h-3 bg-neutral-200 rounded w-1/2"></div>
+                                  <div class="h-4 bg-neutral-200 rounded w-1/4"></div>
+                              </div>
+                          </div>
+                          <div class="h-10 bg-neutral-200 rounded"></div>
+                          <div class="space-y-2 pt-4 border-t border-neutral-200">
+                              <div v-for="i in 4" :key="'sk-price-' + i" class="flex justify-between">
+                                  <div class="h-4 bg-neutral-200 rounded w-20"></div>
+                                  <div class="h-4 bg-neutral-200 rounded w-16"></div>
+                              </div>
+                          </div>
+                          <div class="flex justify-between pt-4 border-t-2 border-neutral-200">
+                              <div class="h-5 bg-neutral-200 rounded w-12"></div>
+                              <div class="h-7 bg-neutral-200 rounded w-20"></div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          <!-- Actual content (hidden while loading) -->
+          <div v-if="!pageLoading">
+
           <!-- Progress Steps -->
           <div class="mb-8">
               <div class="flex items-center justify-between">
@@ -150,22 +253,22 @@ const handleSubmit = async () => {
                       <div class="flex flex-col items-center">
                           <div 
                               :class="{
-                                  'bg-ink text-white': currentStep >= index + 1,
-                                  'bg-paper text-neutral-400 border-2 border-neutral-300': currentStep < index + 1
+                                  'bg-ink text-white scale-100': currentStep >= index + 1,
+                                  'bg-paper text-neutral-400 border-2 border-neutral-300 scale-90': currentStep < index + 1
                               }"
-                              class="w-10 h-10 rounded-full flex items-center justify-center font-semibold mb-2 transition-all"
+                              class="w-10 h-10 rounded-full flex items-center justify-center font-semibold mb-2 transition-all duration-500"
                           >
-                              <svg v-if="currentStep > index + 1" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                              </svg>
-                              <span v-else>{{ index + 1 }}</span>
+                              <CheckCircle v-if="currentStep > index + 1" class="w-5 h-5 animate-[scale-in_0.3s_ease-out]" />
+                              <MapPin v-else-if="index === 0" class="w-4 h-4" />
+                              <Truck v-else-if="index === 1" class="w-4 h-4" />
+                              <CreditCard v-else class="w-4 h-4" />
                           </div>
                           <span 
                               :class="{
-                                  'text-ink font-medium': currentStep >= index + 1,
+                                  'text-ink font-semibold': currentStep >= index + 1,
                                   'text-neutral-400': currentStep < index + 1
                               }"
-                              class="text-[10px] sm:text-sm"
+                              class="text-[10px] sm:text-sm transition-colors duration-300"
                           >
                               {{ step }}
                           </span>
@@ -178,7 +281,7 @@ const handleSubmit = async () => {
                               'bg-ink': currentStep > index + 1,
                               'bg-neutral-300': currentStep <= index + 1
                           }"
-                          class="flex-1 h-1 mx-2 sm:mx-4 transition-all"
+                          class="flex-1 h-1 mx-2 sm:mx-4 transition-all duration-500"
                       ></div>
                   </div>
               </div>
@@ -187,6 +290,10 @@ const handleSubmit = async () => {
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
               <!-- Left Column - Forms -->
               <div class="lg:col-span-2 space-y-6">
+                  <!-- Step content with transitions -->
+                  <transition name="step" mode="out-in">
+                  <div :key="'step-' + currentStep">
+                  
                   <!-- Step 1: Shipping Information -->
                   <div v-if="currentStep === 1" class="bg-paper rounded-2xl shadow-sm p-4 sm:p-6">
                       <div class="flex items-center justify-between mb-6">
@@ -211,6 +318,7 @@ const handleSubmit = async () => {
                                       required
                                       class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
                                       placeholder="John"
+                                      aria-label="First name"
                                   />
                               </div>
                               <div>
@@ -221,6 +329,7 @@ const handleSubmit = async () => {
                                       required
                                       class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
                                       placeholder="Doe"
+                                      aria-label="Last name"
                                   />
                               </div>
                           </div>
@@ -235,6 +344,7 @@ const handleSubmit = async () => {
                                       required
                                       class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
                                       placeholder="john@example.com"
+                                      aria-label="Email address"
                                   />
                               </div>
                               <div>
@@ -245,19 +355,20 @@ const handleSubmit = async () => {
                                       required
                                       class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
                                       placeholder="+1 (555) 000-0000"
+                                      aria-label="Phone number"
                                   />
                               </div>
                           </div>
 
                           <!-- Address -->
                           <div>
-                              <label class="block text-sm font-medium text-neutral-700 mb-2">Street Address *</label>
-                              <input 
+                              <label class="block text-sm font-medium text-neutral-700 mb-2">Street Address *</label>                                <input 
                                   v-model="shippingInfo.address"
                                   type="text" 
                                   required
                                   class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
                                   placeholder="123 Main Street"
+                                  aria-label="Street address"
                               />
                           </div>
 
@@ -271,6 +382,7 @@ const handleSubmit = async () => {
                                       required
                                       class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
                                       placeholder="New York"
+                                      aria-label="City"
                                   />
                               </div>
                               <div>
@@ -281,6 +393,7 @@ const handleSubmit = async () => {
                                       required
                                       class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
                                       placeholder="NY"
+                                      aria-label="State"
                                   />
                               </div>
                               <div>
@@ -291,6 +404,7 @@ const handleSubmit = async () => {
                                       required
                                       class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
                                       placeholder="10001"
+                                      aria-label="ZIP code"
                                   />
                               </div>
                           </div>
@@ -302,6 +416,7 @@ const handleSubmit = async () => {
                                   v-model="shippingInfo.country"
                                   required
                                   class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent bg-paper"
+                                  aria-label="Country"
                               >
                                   <option value="">Select Country</option>
                                   <option value="US">United States</option>
@@ -412,6 +527,53 @@ const handleSubmit = async () => {
                           </label>
                       </div>
 
+                      <!-- Card Preview Visualization -->
+                      <transition name="step" mode="out-in">
+                      <div v-if="selectedPayment === 'card'" class="mb-6">
+                          <div class="card-preview relative bg-gradient-to-br from-neutral-800 to-ink rounded-2xl p-5 sm:p-6 text-paper overflow-hidden">
+                              <!-- Decorative circles -->
+                              <div class="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-white/5"></div>
+                              <div class="absolute -bottom-8 -left-8 w-24 h-24 rounded-full bg-white/5"></div>
+                              
+                              <!-- Card brand chip -->
+                              <div class="flex items-center justify-between mb-8">
+                                  <div class="flex items-center gap-2">
+                                      <div class="w-10 h-7 rounded-md bg-gradient-to-r from-amber-300 to-amber-500 flex items-center justify-center text-[8px] font-bold text-ink">
+                                          <span v-if="cardBrand">{{ cardBrand }}</span>
+                                          <span v-else class="opacity-40">CRD</span>
+                                      </div>
+                                  </div>
+                                  <Lock class="w-4 h-4 text-white/40" />
+                              </div>
+                              
+                              <!-- Card number -->
+                              <p class="text-lg sm:text-xl tracking-[0.15em] font-mono mb-4">
+                                  {{ formattedCardNumber || '••••  ••••  ••••  ••••' }}
+                              </p>
+                              
+                              <!-- Card details -->
+                              <div class="flex items-end justify-between">
+                                  <div class="space-y-1">
+                                      <p class="text-[8px] uppercase tracking-[0.2em] text-white/50">Cardholder</p>
+                                      <p class="text-sm font-medium">{{ paymentInfo.cardName || 'Your Name' }}</p>
+                                  </div>
+                                  <div class="text-right space-y-1">
+                                      <p class="text-[8px] uppercase tracking-[0.2em] text-white/50">Expires</p>
+                                      <p class="text-sm font-mono">{{ paymentInfo.expiry || 'MM/YY' }}</p>
+                                  </div>
+                              </div>
+                              
+                              <!-- CVV hint (bottom right) -->
+                              <div class="absolute bottom-5 right-5 space-y-1 text-right">
+                                  <p class="text-[8px] uppercase tracking-[0.2em] text-white/50">CVV</p>
+                                  <p class="text-sm font-mono">
+                                      {{ paymentInfo.cvv ? '•'.repeat(paymentInfo.cvv.length) : '•••' }}
+                                  </p>
+                              </div>
+                          </div>
+                      </div>
+                      </transition>
+
                       <!-- Credit Card Form -->
                       <form v-if="selectedPayment === 'card'" @submit.prevent="handleSubmit" class="space-y-4">
                           <div>
@@ -420,9 +582,9 @@ const handleSubmit = async () => {
                                   v-model="paymentInfo.cardNumber"
                                   type="text" 
                                   required
-                                  maxlength="19"
+                                  maxlength="16"
                                   placeholder="1234 5678 9012 3456"
-                                  class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
+                                  class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent font-mono tracking-wider"
                               />
                           </div>
 
@@ -501,6 +663,8 @@ const handleSubmit = async () => {
                           </div>
                       </div>
                   </div>
+              </div><!-- /step-key -->
+              </transition>
               </div>
 
               <!-- Right Column - Order Summary -->
@@ -516,11 +680,7 @@ const handleSubmit = async () => {
                               class="flex gap-4"
                           >
                               <div class="w-16 h-16 sm:w-20 sm:h-20 bg-neutral-100 rounded-lg overflow-hidden shrink-0">
-                                  <img 
-                                      :src="item.image" 
-                                      :alt="item.name"
-                                      class="w-full h-full object-cover"
-                                  />
+                                  <LazyImage :src="item.image" :alt="item.name" wrapper-class="w-full h-full" />
                               </div>
                               <div class="flex-1 min-w-0">
                                   <h4 class="text-sm font-medium text-ink truncate">{{ item.name }}</h4>
@@ -538,6 +698,7 @@ const handleSubmit = async () => {
                                   type="text" 
                                   placeholder="Promo code"
                                   class="flex-1 px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
+                                  aria-label="Promo code"
                               />
                               <button 
                                   @click="applyPromo"
@@ -589,6 +750,43 @@ const handleSubmit = async () => {
                   </div>
               </div>
           </div>
+      </div><!-- /actual content -->
       </div>
   </div>
 </template>
+
+<style scoped>
+/* Step transitions */
+.step-enter-active {
+    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.step-leave-active {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.step-enter-from {
+    opacity: 0;
+    transform: translateX(24px);
+}
+.step-leave-to {
+    opacity: 0;
+    transform: translateX(-12px);
+}
+
+/* Card preview glow */
+@keyframes card-glow {
+    0%, 100% { box-shadow: 0 8px 32px -8px rgba(0,0,0,0.12); }
+    50% { box-shadow: 0 8px 32px -4px rgba(0,0,0,0.18); }
+}
+.card-preview {
+    animation: card-glow 3s ease-in-out infinite;
+}
+
+/* Scale in for checkmark */
+@keyframes scale-in {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+.animate-scale-in {
+    animation: scale-in 0.3s ease-out;
+}
+</style>

@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import LazyImage from '../components/LazyImage.vue';
 import { RouterLink } from 'vue-router';
 import { Heart, ShoppingCart, Trash2, ArrowRight, Sparkles } from 'lucide-vue-next';
 import { useShopStore } from '../stores/shop';
@@ -66,7 +67,7 @@ const clearAll = () => {
                 >
                     <RouterLink :to="'/product/' + item.id" class="block">
                         <div class="relative aspect-square bg-neutral-100 overflow-hidden">
-                            <img :src="item.image" :alt="item.name" class="w-full h-full object-cover transition-transform duration-700 group-hover/card:scale-110" />
+                            <LazyImage :src="item.image" :alt="item.name" wrapper-class="w-full h-full" img-class="group-hover/card:scale-110" />
                             <div class="absolute top-3 right-3">
                                 <WishListBtn :item="item" />
                             </div>

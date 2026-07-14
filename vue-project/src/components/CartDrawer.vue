@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useShopStore } from '../stores/shop';
 import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-vue-next';
+import LazyImage from './LazyImage.vue';
 import { RouterLink } from 'vue-router';
 
 const shop = useShopStore();
@@ -73,7 +74,7 @@ const close = () => shop.closeCart();
                                 :key="idx"
                                 class="flex gap-4 p-3 bg-neutral-50 rounded-2xl border border-neutral-100 group/item"
                             >
-                                <img :src="it.image" :alt="it.title" class="w-20 h-20 rounded-xl object-cover bg-neutral-200 shrink-0" />
+                                <LazyImage :src="it.image" :alt="it.title" wrapper-class="w-20 h-20 rounded-xl shrink-0" img-class="rounded-xl" />
                                 <div class="flex-1 min-w-0">
                                     <h4 class="text-sm font-bold text-ink truncate">{{ it.title }}</h4>
                                     <p v-if="it.variant && it.variant.size" class="text-xs text-neutral-500 mt-0.5">Size: {{ it.variant.size }}</p>

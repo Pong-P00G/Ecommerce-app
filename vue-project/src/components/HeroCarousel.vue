@@ -1,4 +1,5 @@
 <script setup>
+import LazyImage from './LazyImage.vue';
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import { ChevronLeft, ChevronRight, ArrowRight, Sparkles } from 'lucide-vue-next';
@@ -109,10 +110,10 @@ onUnmounted(() => stopAutoPlay());
         >
             <!-- Background image -->
             <div class="absolute inset-0 overflow-hidden">
-                <img
+                <LazyImage
                     :src="slide.image"
                     :alt="slide.title"
-                    class="w-full h-full object-cover transition-transform duration-[250ms] ease-out will-change-transform"
+                    wrapper-class="w-full h-full transition-transform duration-[250ms] ease-out will-change-transform"
                     :class="currentSlide === index ? 'scale-110' : 'scale-105'"
                     :style="currentSlide === index ? parallaxStyle : undefined"
                 />

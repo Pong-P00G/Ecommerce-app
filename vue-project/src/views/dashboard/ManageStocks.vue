@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia';
 import { stockAPI } from '../../api/products/stockApi.js';
 import { dashboardAPI } from '../../api/dashboardApi.js';
 import { useToast } from '../../composables/useToast.js';
+import LazyImage from '../../components/LazyImage.vue';
 import {
     Package,
     AlertTriangle,
@@ -317,7 +318,7 @@ onMounted(async () => {
         <div class="flex flex-col sm:flex-row gap-4">
           <div class="flex-1 relative">
             <Search class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-            <input v-model="searchQuery" type="text" placeholder="Search products..."
+            <input v-model="searchQuery" type="text" placeholder="Search products..." aria-label="Search products"
               class="w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-900 transition-all" />
           </div>
           <div class="flex flex-wrap gap-2">
@@ -390,8 +391,8 @@ onMounted(async () => {
                 <td class="px-4 sm:px-6 py-3">
                   <div class="flex items-center gap-3">
                     <div class="w-12 h-12 bg-zinc-100 rounded-xl overflow-hidden shrink-0">
-                      <img :src="product.main_image || 'https://via.placeholder.com/80'" :alt="product.product_name"
-                        class="w-full h-full object-cover" @error="handleImageError" />
+                      <LazyImage :src="product.main_image || 'https://via.placeholder.com/80'" :alt="product.product_name"
+                        wrapper-class="w-full h-full" img-class="w-full h-full object-cover" />
                     </div>
                     <div class="min-w-0">
                       <p class="font-semibold text-zinc-900 text-sm truncate">{{ product.product_name }}</p>
@@ -455,8 +456,8 @@ onMounted(async () => {
 
         <div class="flex items-center gap-4 mb-6 p-4 bg-zinc-50 rounded-xl">
           <div class="w-16 h-16 bg-zinc-200 rounded-xl overflow-hidden shrink-0">
-            <img :src="selectedProduct?.main_image || 'https://via.placeholder.com/80'"
-              :alt="selectedProduct?.product_name" class="w-full h-full object-cover" @error="handleImageError" />
+            <LazyImage :src="selectedProduct?.main_image || 'https://via.placeholder.com/80'"
+              :alt="selectedProduct?.product_name" wrapper-class="w-full h-full" img-class="w-full h-full object-cover" />
           </div>
           <div class="flex-1 min-w-0">
             <p class="font-semibold text-zinc-900 truncate">{{ selectedProduct?.product_name }}</p>
@@ -466,7 +467,7 @@ onMounted(async () => {
 
         <div class="mb-4">
           <label class="block text-xs font-bold uppercase tracking-[0.15em] text-zinc-900 mb-2">New Stock Quantity</label>
-          <input v-model.number="newStock" type="number" min="0"
+          <input v-model.number="newStock" type="number" min="0" aria-label="New stock quantity"
             class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-lg font-bold tabular-nums text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-900 transition-all" />
         </div>
 
@@ -475,13 +476,13 @@ onMounted(async () => {
             Alert Threshold
             <span class="text-zinc-400 font-normal normal-case ml-1">(reorder when stock falls below)</span>
           </label>
-          <input v-model.number="newReorderLevel" type="number" min="0"
+          <input v-model.number="newReorderLevel" type="number" min="0" aria-label="Alert threshold"
             class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-base font-semibold tabular-nums text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-900 transition-all" />
         </div>
 
         <div class="mb-6">
           <label class="block text-xs font-bold uppercase tracking-[0.15em] text-zinc-900 mb-2">Reason (optional)</label>
-          <input v-model="stockReason" type="text" placeholder="e.g. Restock from supplier"
+          <input v-model="stockReason" type="text" placeholder="e.g. Restock from supplier" aria-label="Stock update reason"
             class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-900 transition-all" />
         </div>
 
@@ -505,19 +506,19 @@ onMounted(async () => {
 
         <div class="mb-4">
           <label class="block text-xs font-bold uppercase tracking-[0.15em] text-zinc-900 mb-2">New Stock Quantity</label>
-          <input v-model.number="bulkNewStock" type="number" min="0"
+          <input v-model.number="bulkNewStock" type="number" min="0" aria-label="Bulk stock quantity"
             class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-lg font-bold tabular-nums text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-900 transition-all" />
         </div>
 
         <div class="mb-4">
           <label class="block text-xs font-bold uppercase tracking-[0.15em] text-zinc-900 mb-2">Alert Threshold</label>
-          <input v-model.number="bulkReorderLevel" type="number" min="0"
+          <input v-model.number="bulkReorderLevel" type="number" min="0" aria-label="Bulk alert threshold"
             class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-base font-semibold tabular-nums text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-900 transition-all" />
         </div>
 
         <div class="mb-6">
           <label class="block text-xs font-bold uppercase tracking-[0.15em] text-zinc-900 mb-2">Reason (optional)</label>
-          <input v-model="bulkReason" type="text" placeholder="e.g. End-of-month restock"
+          <input v-model="bulkReason" type="text" placeholder="e.g. End-of-month restock" aria-label="Bulk update reason"
             class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-900 transition-all" />
         </div>
 
