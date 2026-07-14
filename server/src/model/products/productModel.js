@@ -1,517 +1,584 @@
 import db from '../../database/dbpool.js';
+import { createStockLog } from './stockLogModel.js';
 
-// ==================== PRODUCT OPERATIONS ====================
+// ── helpers ──────────────────────────────────────────────────────────────────
 
-/**
- * Get all products with full details from view
- */
+const PRODUCT_COLS = `
+    productsid  AS product_id,
+    productname AS product_name,
+    baseprice   AS base_price,
+    description AS descriptions,
+    status      AS product_status,
+    categoryname AS category_name,
+    thumbnail,
+    totalstock  AS total_stock,
+    createdat   AS created_at
+`;
+
+/** Build $1, $2, ... placeholders and track current index */
+function addParam(params, val) {
+    params.push(val);
+    return `$${params.length}`;
+}
+
+/** Shared variant+options+stock query */
+const VARIANT_QUERY = `
+    SELECT
+        v.variantid   AS variant_id,
+        v.productsid  AS product_id,
+        v.sku,
+        v.createdat   AS created_at,
+        MAX(CASE WHEN va.attributename = 'Color' THEN vav.value END) AS variant_color,
+        MAX(CASE WHEN va.attributename = 'Size'  THEN vav.value END) AS variant_size,
+        COALESCE(s.quantity, 0)   AS quantity,
+        COALESCE(s.minstock,  5)  AS reorder_level
+    FROM variants v
+    LEFT JOIN variantoptionvalue    vov ON v.variantid   = vov.variantid
+    LEFT JOIN variantattributevalue vav ON vov.valueid   = vav.valueid
+    LEFT JOIN variantattribute      va  ON vav.attributeid = va.attributeid
+    LEFT JOIN stock                 s   ON v.variantid   = s.variantid
+`;
+
+// ── PRODUCTS ──────────────────────────────────────────────────────────────────
+
 export const getAllProducts = async () => {
-    const [rows] = await db.query(`
-        SELECT * FROM product_list 
-        ORDER BY created_at DESC
-    `);
+    const { rows } = await db.query(
+        `SELECT ${PRODUCT_COLS} FROM view_products ORDER BY createdat DESC`
+    );
     return rows;
 };
 
-/**
- * Get product by ID with full details including images and variants
- */
 export const getProductById = async (productId) => {
-    // Get main product info
-    const [product] = await db.query(
-        'SELECT * FROM product_list WHERE product_id = ?',
+    const { rows: product } = await db.query(
+        `SELECT ${PRODUCT_COLS} FROM view_products WHERE productsid = $1`,
         [productId]
     );
-
     if (product.length === 0) return null;
 
-    // Get all images
-    const [images] = await db.query(
-        'SELECT image_id, image_url, is_main FROM product_images WHERE product_id = ? ORDER BY is_main DESC, image_id ASC',
+    const { rows: images } = await db.query(
+        `SELECT imageid AS image_id, imageurl AS image_url, isthumbnail AS is_main
+         FROM productimages WHERE productsid = $1 ORDER BY isthumbnail DESC, imageid ASC`,
         [productId]
     );
 
-    // Get all variants with options and stock
-    const [variants] = await db.query(
-        'SELECT * FROM product_variant_list WHERE product_id = ?',
+    const { rows: variants } = await db.query(
+        `${VARIANT_QUERY} WHERE v.productsid = $1
+         GROUP BY v.variantid, v.productsid, v.sku, v.createdat, s.quantity, s.minstock`,
         [productId]
     );
 
-    return {
-        ...product[0],
-        images,
-        variants
-    };
+    return { ...product[0], images, variants };
 };
 
-/**
- * Search products with filters using view
- */
 export const searchProducts = async (searchTerm = null, category = null, minPrice = null, maxPrice = null, status = null) => {
-    let query = 'SELECT * FROM product_search_view WHERE 1=1';
+    const conditions = [];
     const params = [];
 
     if (searchTerm) {
-        query += ' AND (product_name LIKE ? OR category_name LIKE ?)';
-        const searchPattern = `%${searchTerm}%`;
-        params.push(searchPattern, searchPattern);
+        const p = addParam(params, `%${searchTerm}%`);
+        conditions.push(`(productname ILIKE ${p} OR categoryname ILIKE ${p})`);
     }
+    if (category) conditions.push(`categoryname = ${addParam(params, category)}`);
+    if (status)   conditions.push(`status = ${addParam(params, status)}`);
+    if (minPrice != null) conditions.push(`baseprice >= ${addParam(params, minPrice)}`);
+    if (maxPrice != null) conditions.push(`baseprice <= ${addParam(params, maxPrice)}`);
 
-    if (category) {
-        query += ' AND category_name = ?';
-        params.push(category);
-    }
-
-    if (status) {
-        query += ' AND product_status = ?';
-        params.push(status);
-    }
-
-    if (minPrice !== null) {
-        query += ' AND final_price >= ?';
-        params.push(minPrice);
-    }
-
-    if (maxPrice !== null) {
-        query += ' AND final_price <= ?';
-        params.push(maxPrice);
-    }
-
-    query += ' ORDER BY product_name';
-
-    const [rows] = await db.query(query, params);
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const { rows } = await db.query(
+        `SELECT ${PRODUCT_COLS} FROM view_products ${where} ORDER BY productname`,
+        params
+    );
     return rows;
 };
 
-/**
- * Get paginated products with filters
- */
+/** Whitelist of allowed sort fields to prevent SQL injection */
+const SORT_WHITELIST = {
+    'product_name':  'productname',
+    'base_price':    'baseprice',
+    'product_status':'status',
+    'created_at':    'createdat',
+    'category_name': 'categoryname',
+    'total_stock':   'totalstock',
+};
+
 export const getPaginatedProducts = async (page = 1, pageSize = 10, filters = {}) => {
-    const { search, category, minPrice, maxPrice, status } = filters;
+    const { search, category, minPrice, maxPrice, status, stockStatus, sortField, sortDirection } = filters;
     const offset = (page - 1) * pageSize;
-    
-    let query = 'SELECT * FROM product_search_view WHERE 1=1';
+
+    const conditions = [];
     const params = [];
 
     if (search) {
-        query += ' AND (product_name LIKE ? OR category_name LIKE ?)';
-        const searchPattern = `%${search}%`;
-        params.push(searchPattern, searchPattern);
+        const p = addParam(params, `%${search}%`);
+        conditions.push(`(productname ILIKE ${p} OR categoryname ILIKE ${p})`);
     }
+    if (category) conditions.push(`categoryname = ${addParam(params, category)}`);
+    if (status)   conditions.push(`status = ${addParam(params, status)}`);
+    if (minPrice != null) conditions.push(`baseprice >= ${addParam(params, minPrice)}`);
+    if (maxPrice != null) conditions.push(`baseprice <= ${addParam(params, maxPrice)}`);
+    if (stockStatus === 'in_stock')   conditions.push('totalstock >= 10');
+    if (stockStatus === 'low_stock')  conditions.push('totalstock > 0 AND totalstock < 10');
+    if (stockStatus === 'out_of_stock') conditions.push('(totalstock = 0 OR totalstock IS NULL)');
 
-    if (category) {
-        query += ' AND category_name = ?';
-        params.push(category);
-    }
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
-    if (status) {
-        query += ' AND product_status = ?';
-        params.push(status);
-    }
-
-    if (minPrice !== null && minPrice !== undefined) {
-        query += ' AND final_price >= ?';
-        params.push(minPrice);
-    }
-
-    if (maxPrice !== null && maxPrice !== undefined) {
-        query += ' AND final_price <= ?';
-        params.push(maxPrice);
-    }
-
-    // Get total count
-    const countQuery = query.replace('SELECT *', 'SELECT COUNT(*) as total');
-    const [countResult] = await db.query(countQuery, params);
-    const totalItems = countResult[0].total;
+    const countResult = await db.query(
+        `SELECT COUNT(*) AS total FROM view_products ${where}`,
+        params
+    );
+    const totalItems = parseInt(countResult.rows[0].total);
     const totalPages = Math.ceil(totalItems / pageSize);
 
-    // Get paginated results
-    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-    params.push(pageSize, offset);
+    const limitP  = addParam(params, pageSize);
+    const offsetP = addParam(params, offset);
 
-    const [items] = await db.query(query, params);
+    // Safe sort — fall back to createdat DESC if the requested field is not in the whitelist
+    const sortCol   = SORT_WHITELIST[sortField] || 'createdat';
+    const sortDir   = sortDirection === 'asc' ? 'ASC' : 'DESC';
 
-    return {
-        page: parseInt(page),
-        pageSize: parseInt(pageSize),
-        totalItems,
-        totalPages,
-        items
-    };
+    const { rows: items } = await db.query(
+        `SELECT ${PRODUCT_COLS} FROM view_products ${where}
+         ORDER BY ${sortCol} ${sortDir}, productsid DESC
+         LIMIT ${limitP} OFFSET ${offsetP}`,
+        params
+    );
+
+    return { page: parseInt(page), pageSize: parseInt(pageSize), totalItems, totalPages, items };
 };
 
-/**
- * Get products by category
- */
 export const getProductsByCategory = async (categoryName) => {
-    const [rows] = await db.query(
-        'SELECT * FROM product_list WHERE category_name = ? ORDER BY created_at DESC',
+    const { rows } = await db.query(
+        `SELECT ${PRODUCT_COLS} FROM view_products WHERE categoryname = $1 ORDER BY createdat DESC`,
         [categoryName]
     );
     return rows;
 };
 
-/**
- * Get featured products
- */
 export const getFeaturedProducts = async (limit = 10) => {
-    const [rows] = await db.query(`
-        SELECT * FROM product_list 
-        WHERE product_status = 'active' 
-        ORDER BY total_stock DESC, created_at DESC 
-        LIMIT ?
-    `, [limit]);
+    const { rows } = await db.query(
+        `SELECT ${PRODUCT_COLS} FROM view_products
+         WHERE status = 'active'
+         ORDER BY totalstock DESC, createdat DESC
+         LIMIT $1`,
+        [limit]
+    );
     return rows;
 };
 
-/**
- * Create new product
- */
 export const createProduct = async (productData) => {
     const { category_id, product_name, base_price, descriptions, product_status } = productData;
-
-    const [result] = await db.query(`
-        INSERT INTO products (category_id, product_name, base_price, descriptions, product_status)
-        VALUES (?, ?, ?, ?, ?)
-    `, [category_id, product_name, base_price, descriptions, product_status]);
-
-    return result.insertId;
+    const { rows } = await db.query(
+        `INSERT INTO products (categoriesid, productname, baseprice, description, status)
+         VALUES ($1, $2, $3, $4, $5) RETURNING productsid`,
+        [category_id, product_name, base_price, descriptions, product_status]
+    );
+    return rows[0].productsid;
 };
 
-/**
- * Update product
- */
 export const updateProduct = async (productId, productData) => {
     const { category_id, product_name, base_price, descriptions, product_status } = productData;
-
-    const [result] = await db.query(`
-        UPDATE products 
-        SET category_id = ?, product_name = ?, base_price = ?, descriptions = ?, product_status = ?
-        WHERE product_id = ?
-    `, [category_id, product_name, base_price, descriptions, product_status, productId]);
-
-    return result.affectedRows;
+    const result = await db.query(
+        `UPDATE products
+         SET categoriesid = $1, productname = $2, baseprice = $3, description = $4, status = $5
+         WHERE productsid = $6`,
+        [category_id, product_name, base_price, descriptions, product_status, productId]
+    );
+    return result.rowCount;
 };
 
-/**
- * Delete product
- */
 export const deleteProduct = async (productId) => {
-    const [result] = await db.query('DELETE FROM products WHERE product_id = ?', [productId]);
-    return result.affectedRows > 0;
+    const result = await db.query('DELETE FROM products WHERE productsid = $1', [productId]);
+    return result.rowCount > 0;
 };
 
-/**
- * Check if product exists
- */
 export const productExists = async (productId) => {
-    const [rows] = await db.query('SELECT product_id FROM products WHERE product_id = ?', [productId]);
+    const { rows } = await db.query('SELECT productsid FROM products WHERE productsid = $1', [productId]);
     return rows.length > 0;
 };
 
-// ==================== IMAGE OPERATIONS ====================
+// ── IMAGES ────────────────────────────────────────────────────────────────────
 
-/**
- * Add product image
- */
-export const addProductImage = async (productId, imageUrl, isMain = 0) => {
-    // If this is set as main image, unset other main images for this product
+export const addProductImage = async (productId, imageUrl, isMain = 0, altText = null, sortOrder = 0) => {
     if (isMain) {
-        await db.query(
-            'UPDATE product_images SET is_main = 0 WHERE product_id = ?',
-            [productId]
-        );
+        await db.query('UPDATE productimages SET isthumbnail = FALSE WHERE productsid = $1', [productId]);
     }
-
-    const [result] = await db.query(`
-        INSERT INTO product_images (product_id, image_url, is_main)
-        VALUES (?, ?, ?)
-    `, [productId, imageUrl, isMain]);
-
-    return result.insertId;
+    const { rows } = await db.query(
+        `INSERT INTO productimages (productsid, imageurl, alttext, isthumbnail, sortorder)
+         VALUES ($1, $2, $3, $4, $5) RETURNING imageid`,
+        [productId, imageUrl, altText, Boolean(isMain), sortOrder]
+    );
+    return rows[0].imageid;
 };
 
-/**
- * Get product images
- */
 export const getProductImages = async (productId) => {
-    const [rows] = await db.query(
-        'SELECT * FROM product_images WHERE product_id = ? ORDER BY is_main DESC, image_id ASC',
+    const { rows } = await db.query(
+        `SELECT imageid AS image_id,
+                imageurl AS image_url,
+                alttext  AS alt_text,
+                isthumbnail AS is_main,
+                sortorder AS sort_order
+         FROM productimages WHERE productsid = $1 ORDER BY sortorder ASC, imageid ASC`,
         [productId]
     );
     return rows;
 };
 
-/**
- * Delete product image
- */
 export const deleteProductImage = async (imageId) => {
-    const [result] = await db.query('DELETE FROM product_images WHERE image_id = ?', [imageId]);
-    return result.affectedRows > 0;
+    const result = await db.query('DELETE FROM productimages WHERE imageid = $1', [imageId]);
+    return result.rowCount > 0;
 };
 
-/**
- * Set main image
- */
 export const setMainImage = async (imageId, productId) => {
-    // Unset all main images for this product
-    await db.query('UPDATE product_images SET is_main = 0 WHERE product_id = ?', [productId]);
-    
-    // Set new main image
-    const [result] = await db.query(
-        'UPDATE product_images SET is_main = 1 WHERE image_id = ?',
+    await db.query('UPDATE productimages SET isthumbnail = FALSE WHERE productsid = $1', [productId]);
+    const result = await db.query(
+        'UPDATE productimages SET isthumbnail = TRUE WHERE imageid = $1',
         [imageId]
     );
-    return result.affectedRows > 0;
+    return result.rowCount > 0;
 };
 
-// ==================== VARIANT OPERATIONS ====================
+// ── VARIANTS ─────────────────────────────────────────────────────────────────
 
-/**
- * Get product variants
- */
 export const getProductVariants = async (productId) => {
-    const [rows] = await db.query(
-        'SELECT * FROM product_variant_list WHERE product_id = ?',
+    const { rows } = await db.query(
+        `${VARIANT_QUERY} WHERE v.productsid = $1
+         GROUP BY v.variantid, v.productsid, v.sku, v.createdat, s.quantity, s.minstock`,
         [productId]
     );
     return rows;
 };
 
-/**
- * Get variant by ID
- */
 export const getVariantById = async (variantId) => {
-    const [rows] = await db.query(
-        'SELECT * FROM product_variant_list WHERE variant_id = ?',
+    const { rows } = await db.query(
+        `${VARIANT_QUERY} WHERE v.variantid = $1
+         GROUP BY v.variantid, v.productsid, v.sku, v.createdat, s.quantity, s.minstock`,
         [variantId]
     );
     return rows[0];
 };
 
-/**
- * Create product variant
- */
 export const createVariant = async (variantData) => {
-    const { product_id, variant_name, sku } = variantData;
-
-    const [result] = await db.query(`
-        INSERT INTO product_variants (product_id, variant_name, sku)
-        VALUES (?, ?, ?)
-    `, [product_id, variant_name, sku]);
-
-    return result.insertId;
+    const { product_id, sku } = variantData;
+    const { rows } = await db.query(
+        `INSERT INTO variants (productsid, sku) VALUES ($1, $2) RETURNING variantid`,
+        [product_id, sku]
+    );
+    return rows[0].variantid;
 };
 
-/**
- * Update variant
- */
 export const updateVariant = async (variantId, variantData) => {
-    const { variant_name, sku } = variantData;
-
-    const [result] = await db.query(`
-        UPDATE product_variants 
-        SET variant_name = ?, sku = ?
-        WHERE variant_id = ?
-    `, [variant_name, sku, variantId]);
-
-    return result.affectedRows;
+    const { sku } = variantData;
+    const result = await db.query(
+        `UPDATE variants SET sku = $1 WHERE variantid = $2`,
+        [sku, variantId]
+    );
+    return result.rowCount;
 };
 
-/**
- * Delete variant
- */
 export const deleteVariant = async (variantId) => {
-    const [result] = await db.query('DELETE FROM product_variants WHERE variant_id = ?', [variantId]);
-    return result.affectedRows > 0;
+    const result = await db.query('DELETE FROM variants WHERE variantid = $1', [variantId]);
+    return result.rowCount > 0;
 };
 
-/**
- * Check if SKU exists
- */
 export const skuExists = async (sku) => {
-    const [rows] = await db.query('SELECT variant_id FROM product_variants WHERE sku = ?', [sku]);
+    const { rows } = await db.query('SELECT variantid FROM variants WHERE sku = $1', [sku]);
     return rows.length > 0;
 };
 
-// ==================== VARIANT OPTIONS OPERATIONS ====================
+// ── VARIANT OPTIONS (Color / Size) ────────────────────────────────────────────
+
+async function getOrCreateAttribute(name) {
+    const { rows } = await db.query(
+        `INSERT INTO variantattribute (attributename) VALUES ($1)
+         ON CONFLICT (attributename) DO UPDATE SET attributename = EXCLUDED.attributename
+         RETURNING attributeid`,
+        [name]
+    );
+    return rows[0].attributeid;
+}
+
+async function getOrCreateAttributeValue(attributeId, value) {
+    const { rows } = await db.query(
+        `INSERT INTO variantattributevalue (attributeid, value) VALUES ($1, $2)
+         ON CONFLICT (attributeid, value) DO UPDATE SET value = EXCLUDED.value
+         RETURNING valueid`,
+        [attributeId, value]
+    );
+    return rows[0].valueid;
+}
 
 /**
- * Add variant options (color, size)
+ * Add a list of variant attribute options for a variant.
+ * optionsArray: [{ attribute_name: 'Color', value: 'Red' }, ...]
+ * Returns the variantId on success.
  */
-export const addVariantOptions = async (variantId, color, size) => {
-    const [result] = await db.query(`
-        INSERT INTO product_variant_options (variant_id, variant_color, variant_size)
-        VALUES (?, ?, ?)
-    `, [variantId, color, size]);
+export const addVariantOptions = async (variantId, optionsArray = []) => {
+    if (!Array.isArray(optionsArray)) {
+        // Backward compat: legacy signature (variantId, color, size)
+        const [color, size] = arguments.length > 2 ? [arguments[1], arguments[2]] : [null, null];
+        optionsArray = [];
+        if (color) optionsArray.push({ attribute_name: 'Color', value: color });
+        if (size)  optionsArray.push({ attribute_name: 'Size',  value: size  });
+    }
 
-    return result.insertId;
+    for (const opt of optionsArray) {
+        if (!opt || !opt.attribute_name || !opt.value) continue;
+        const attrId  = await getOrCreateAttribute(String(opt.attribute_name));
+        const valueId = await getOrCreateAttributeValue(attrId, String(opt.value));
+        await db.query(
+            `INSERT INTO variantoptionvalue (variantid, valueid) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+            [variantId, valueId]
+        );
+    }
+    return variantId;
 };
 
 /**
- * Update variant options
- */
-export const updateVariantOptions = async (optionId, color, size) => {
-    const [result] = await db.query(`
-        UPDATE product_variant_options 
-        SET variant_color = ?, variant_size = ?
-        WHERE option_id = ?
-    `, [color, size, optionId]);
-
-    return result.affectedRows;
-};
-
-/**
- * Get variant options
+ * Get the options attached to a variant.
+ * Returns: { option_id, options: [{ attribute_name, value }, ...], variant_color, variant_size }
+ * `variant_color`/`variant_size` are kept as backward-compatible aliases for the legacy Color/Size attributes.
  */
 export const getVariantOptions = async (variantId) => {
-    const [rows] = await db.query(
-        'SELECT * FROM product_variant_options WHERE variant_id = ?',
+    const { rows } = await db.query(
+        `SELECT
+             v.variantid AS option_id,
+             va.attributename AS attribute_name,
+             vav.value AS value
+         FROM variants v
+         LEFT JOIN variantoptionvalue    vov ON v.variantid   = vov.variantid
+         LEFT JOIN variantattributevalue vav ON vov.valueid   = vav.valueid
+         LEFT JOIN variantattribute      va  ON vav.attributeid = va.attributeid
+         WHERE v.variantid = $1
+         ORDER BY va.attributename ASC`,
         [variantId]
     );
-    return rows[0];
+
+    const options = rows
+        .filter(r => r.attribute_name && r.value)
+        .map(r => ({ attribute_name: r.attribute_name, value: r.value }));
+
+    const findValue = (name) => {
+        const m = options.find(o => o.attribute_name === name);
+        return m ? m.value : null;
+    };
+
+    return {
+        option_id: variantId,
+        options,
+        variant_color: findValue('Color'),
+        variant_size: findValue('Size'),
+    };
 };
 
-// ==================== STOCK OPERATIONS ====================
-
 /**
- * Get stock for variant
+ * Replace the options attached to a variant. Deletes existing `variantOptionValue` rows
+ * for the variant, then re-inserts from `optionsArray`.
  */
+export const updateVariantOptions = async (variantId, optionsArray = []) => {
+    await db.query(
+        `DELETE FROM variantoptionvalue WHERE variantid = $1`,
+        [variantId]
+    );
+    await addVariantOptions(variantId, optionsArray);
+    return 1;
+};
+
+// ── STOCK ─────────────────────────────────────────────────────────────────────
+
 export const getStock = async (variantId) => {
-    const [rows] = await db.query(
-        'SELECT * FROM stocks WHERE variant_id = ?',
+    const { rows } = await db.query(
+        `SELECT stockid AS stock_id, productsid AS product_id, variantid AS variant_id,
+                quantity, minstock AS reorder_level
+         FROM stock WHERE variantid = $1`,
         [variantId]
     );
     return rows[0];
 };
 
 /**
- * Update stock quantity
+ * Upsert product-level stock (variantId IS NULL).
+ * Returns the stockId of the affected row.
  */
-export const updateStock = async (variantId, quantity, reorderLevel = 5) => {
-    // Check if stock record exists
-    const [existing] = await db.query(
-        'SELECT stock_id FROM stocks WHERE variant_id = ?',
-        [variantId]
+export const getProductStock = async (productId) => {
+    const { rows } = await db.query(
+        `SELECT stockid AS stock_id, productsid AS product_id, variantid AS variant_id,
+                quantity, minstock AS reorder_level
+         FROM stock WHERE productsid = $1 AND variantid IS NULL`,
+        [productId]
     );
+    return rows[0];
+};
 
-    if (existing.length > 0) {
-        // Update existing stock
-        const [result] = await db.query(`
-            UPDATE stocks 
-            SET quantity = ?, reorder_level = ?
-            WHERE variant_id = ?
-        `, [quantity, reorderLevel, variantId]);
-        return result.affectedRows;
+/**
+ * Upsert product-level stock (variantId IS NULL).
+ * Returns the stockId of the affected row.
+ */
+export const updateProductStock = async (productId, quantity, reorderLevel = 5, userId = null, reason = null) => {
+    // Try UPDATE first
+    const updateResult = await db.query(
+        `UPDATE stock SET quantity = $1, minstock = $2, updatedat = NOW()
+         WHERE productsid = $3 AND variantid IS NULL
+         RETURNING stockid`,
+        [quantity, reorderLevel, productId]
+    );
+    let stockId;
+    if (updateResult.rows.length > 0) {
+        stockId = updateResult.rows[0].stockid;
     } else {
-        // Insert new stock record
-        const [result] = await db.query(`
-            INSERT INTO stocks (variant_id, quantity, reorder_level)
-            VALUES (?, ?, ?)
-        `, [variantId, quantity, reorderLevel]);
-        return result.insertId;
+        // No row exists yet — INSERT
+        const insertResult = await db.query(
+            `INSERT INTO stock (productsid, variantid, quantity, minstock)
+             VALUES ($1, NULL, $2, $3) RETURNING stockid`,
+            [productId, quantity, reorderLevel]
+        );
+        stockId = insertResult.rows[0].stockid;
     }
+    if (stockId != null) {
+        await createStockLog({
+            stock_id: stockId,
+            user_id: userId,
+            change_type: 'ADJUST',
+            quantity,
+            reason: reason || 'Product stock update',
+        });
+    }
+    return stockId;
 };
 
-/**
- * Increment stock
- */
-export const incrementStock = async (variantId, amount) => {
-    const [result] = await db.query(`
-        UPDATE stocks 
-        SET quantity = quantity + ?
-        WHERE variant_id = ?
-    `, [amount, variantId]);
-    return result.affectedRows;
+// Upserts stock for a variant, auto-resolving the product ID from the variants table.
+// Returns the stockId of the affected row.
+export const updateStock = async (variantId, quantity, reorderLevel = 5, userId = null, reason = null) => {
+    const result = await db.query(
+        `INSERT INTO stock (productsid, variantid, quantity, minstock)
+         VALUES ((SELECT productsid FROM variants WHERE variantid = $1), $1, $2, $3)
+         ON CONFLICT (productsid, variantid)
+         DO UPDATE SET quantity = $2, minstock = $3, updatedat = NOW()
+         RETURNING stockid`,
+        [variantId, quantity, reorderLevel]
+    );
+    const stockId = result.rows[0] ? result.rows[0].stockid : null;
+    if (stockId != null) {
+        await createStockLog({
+            stock_id: stockId,
+            user_id: userId,
+            change_type: 'ADJUST',
+            quantity,
+            reason: reason || 'Variant stock update',
+        });
+    }
+    return stockId;
 };
 
-/**
- * Decrement stock
- */
-export const decrementStock = async (variantId, amount) => {
-    const [result] = await db.query(`
-        UPDATE stocks 
-        SET quantity = quantity - ?
-        WHERE variant_id = ? AND quantity >= ?
-    `, [amount, variantId, amount]);
-    return result.affectedRows;
+export const incrementStock = async (variantId, amount, userId = null, reason = null) => {
+    const result = await db.query(
+        `UPDATE stock SET quantity = quantity + $1, updatedat = NOW()
+         WHERE variantid = $2 RETURNING stockid`,
+        [amount, variantId]
+    );
+    const stockId = result.rows[0] ? result.rows[0].stockid : null;
+    if (stockId != null) {
+        await createStockLog({
+            stock_id: stockId,
+            user_id: userId,
+            change_type: 'IN',
+            quantity: amount,
+            reason: reason || 'Stock increment',
+        });
+    }
+    return stockId;
 };
 
-/**
- * Get low stock products
- */
+export const decrementStock = async (variantId, amount, userId = null, reason = null) => {
+    const result = await db.query(
+        `UPDATE stock SET quantity = quantity - $1, updatedat = NOW()
+         WHERE variantid = $2 AND quantity >= $1 RETURNING stockid`,
+        [amount, variantId]
+    );
+    const stockId = result.rows[0] ? result.rows[0].stockid : null;
+    if (stockId != null) {
+        await createStockLog({
+            stock_id: stockId,
+            user_id: userId,
+            change_type: 'OUT',
+            quantity: amount,
+            reason: reason || 'Stock decrement',
+        });
+    }
+    return stockId;
+};
+
 export const getLowStockProducts = async () => {
-    const [rows] = await db.query(`
-        SELECT pv.*, s.quantity, s.reorder_level, p.product_name
-        FROM stocks s
-        JOIN product_variants pv ON s.variant_id = pv.variant_id
-        JOIN products p ON pv.product_id = p.product_id
-        WHERE s.quantity <= s.reorder_level
-        ORDER BY s.quantity ASC
-    `);
+    const { rows } = await db.query(
+        `SELECT stockid AS stock_id, productname AS product_name, sku, quantity,
+                minstock AS reorder_level, shortage
+         FROM view_stock_low`
+    );
     return rows;
 };
 
-// ==================== DISCOUNT OPERATIONS ====================
+// ── DISCOUNTS ─────────────────────────────────────────────────────────────────
 
-/**
- * Apply discount to product
- */
 export const applyDiscount = async (productId, discountAmount, startDate, endDate) => {
-    const [result] = await db.query(`
-        INSERT INTO product_discounts (product_id, discount_amount, start_date, end_date)
-        VALUES (?, ?, ?, ?)
-    `, [productId, discountAmount, startDate, endDate]);
-
-    return result.insertId;
+    const { rows } = await db.query(
+        `INSERT INTO discounts (productsid, amounts, startdate, enddate)
+         VALUES ($1, $2, $3, $4) RETURNING discountsid`,
+        [productId, discountAmount, startDate, endDate]
+    );
+    return rows[0].discountsid;
 };
 
-/**
- * Get active discount for product
- */
 export const getActiveDiscount = async (productId) => {
-    const [rows] = await db.query(`
-        SELECT * FROM product_discounts 
-        WHERE product_id = ? 
-        AND NOW() BETWEEN start_date AND end_date
-        ORDER BY discount_id DESC
-        LIMIT 1
-    `, [productId]);
+    const { rows } = await db.query(
+        `SELECT discountsid AS discount_id, productsid AS product_id,
+                amounts AS discount_amount, startdate AS start_date, enddate AS end_date
+         FROM discounts
+         WHERE productsid = $1 AND NOW() BETWEEN startdate AND enddate
+         ORDER BY discountsid DESC
+         LIMIT 1`,
+        [productId]
+    );
     return rows[0];
 };
 
-/**
- * Get all discounts for product
- */
 export const getProductDiscounts = async (productId) => {
-    const [rows] = await db.query(
-        'SELECT * FROM product_discounts WHERE product_id = ? ORDER BY start_date DESC',
+    const { rows } = await db.query(
+        `SELECT discountsid AS discount_id, productsid AS product_id,
+                amounts AS discount_amount, startdate AS start_date, enddate AS end_date
+         FROM discounts WHERE productsid = $1 ORDER BY startdate DESC`,
         [productId]
     );
     return rows;
 };
 
-/**
- * Delete discount
- */
 export const deleteDiscount = async (discountId) => {
-    const [result] = await db.query('DELETE FROM product_discounts WHERE discount_id = ?', [discountId]);
-    return result.affectedRows > 0;
+    const result = await db.query('DELETE FROM discounts WHERE discountsid = $1', [discountId]);
+    return result.rowCount > 0;
 };
 
-/**
- * Update discount
- */
 export const updateDiscount = async (discountId, discountData) => {
     const { discount_amount, start_date, end_date } = discountData;
+    const result = await db.query(
+        `UPDATE discounts SET amounts = $1, startdate = $2, enddate = $3 WHERE discountsid = $4`,
+        [discount_amount, start_date, end_date, discountId]
+    );
+    return result.rowCount;
+};
 
-    const [result] = await db.query(`
-        UPDATE product_discounts 
-        SET discount_amount = ?, start_date = ?, end_date = ?
-        WHERE discount_id = ?
-    `, [discount_amount, start_date, end_date, discountId]);
-
-    return result.affectedRows;
+export const getAllDiscounts = async () => {
+    const { rows } = await db.query(
+        `SELECT
+             d.discountsid    AS discount_id,
+             d.productsid     AS product_id,
+             p.productname    AS product_name,
+             d.amounts        AS discount_amount,
+             d.startdate      AS start_date,
+             d.enddate        AS end_date,
+             d.createdat      AS created_at
+         FROM discounts d
+         JOIN products p ON d.productsid = p.productsid
+         ORDER BY d.createdat DESC`
+    );
+    return rows;
 };
 
 export { db };

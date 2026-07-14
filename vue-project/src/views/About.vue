@@ -26,10 +26,10 @@ const stats = [
 ];
 
 const team = [
-    { name: 'Sokha Lim', role: 'Founder & Creative Director', img: 'https://i.pravatar.cc/400?img=12' },
-    { name: 'Dara Pich', role: 'Head of Curation', img: 'https://i.pravatar.cc/400?img=47' },
-    { name: 'Rithya Chan', role: 'Operations Lead', img: 'https://i.pravatar.cc/400?img=33' },
-    { name: 'Lina Seng', role: 'Customer Experience', img: 'https://i.pravatar.cc/400?img=24' },
+    { name: 'Bun Rathanak Pong', role: 'Founder & Creative Director', img: 'https://i.pravatar.cc/400?img=12' },
+    { name: 'Bun Rathanak Pong', role: 'Head of Curation', img: 'https://i.pravatar.cc/400?img=47' },
+    { name: 'Bun Rathanak Pong', role: 'Operations Lead', img: 'https://i.pravatar.cc/400?img=33' },
+    { name: 'Bun Rathanak Pong', role: 'Customer Experience', img: 'https://i.pravatar.cc/400?img=24' },
 ];
 </script>
 
@@ -56,7 +56,7 @@ const team = [
                                 Shop the catalog
                                 <ArrowRight class="w-4 h-4" />
                             </RouterLink>
-                            <RouterLink to="/contact" class="btn-outline border-neutral-700 text-paper hover:bg-paper hover:text-ink">
+                            <RouterLink to="/contact" class="btn-outline border-neutral-700 text-slate-400 hover:bg-paper hover:text-ink">
                                 Get in touch
                             </RouterLink>
                         </div>
@@ -76,7 +76,7 @@ const team = [
 
         <!-- Stats -->
         <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-10">
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 bg-paper border border-neutral-200 rounded-3xl p-6 lg:p-8 shadow-[0_12px_32px_-8px_rgb(0_0_0_/_0.12)]">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 bg-paper border border-neutral-200 rounded-3xl p-6 lg:p-8 shadow-[0_12px_32px_-8px_rgb(0_0_0_/0.12)]">
                 <div v-for="s in stats" :key="s.label" class="text-center lg:text-left space-y-1">
                     <p class="text-3xl lg:text-4xl font-elegant font-bold text-ink tabular-nums">{{ s.number }}</p>
                     <p class="text-xs font-bold uppercase tracking-[0.2em] text-neutral-500">{{ s.label }}</p>
@@ -111,7 +111,7 @@ const team = [
                 <blockquote class="text-3xl md:text-4xl font-elegant font-medium text-ink leading-relaxed">
                     "We don't sell products. We share the things we love with people who will love them too."
                 </blockquote>
-                <p class="mt-6 text-sm font-bold text-neutral-500 uppercase tracking-[0.2em]">— Sokha Lim, Founder</p>
+                <p class="mt-6 text-sm font-bold text-neutral-500 uppercase tracking-[0.2em]">— Bun Rathanak Pong, Founder</p>
             </div>
         </section>
 
@@ -132,7 +132,7 @@ const team = [
             </div>
             <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div v-for="m in team" :key="m.name" class="group">
-                    <div class="aspect-[3/4] rounded-2xl overflow-hidden bg-neutral-100 mb-4">
+                    <div class="aspect-3/4 rounded-2xl overflow-hidden bg-neutral-100 mb-4">
                         <img :src="m.img" :alt="m.name" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
                     </div>
                     <h3 class="text-lg font-bold text-ink">{{ m.name }}</h3>

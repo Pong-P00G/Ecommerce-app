@@ -1,10 +1,33 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import { ChevronLeft, ChevronRight, ArrowRight, Sparkles } from 'lucide-vue-next';
 
 const currentSlide = ref(0);
 const autoPlayInterval = ref(null);
+const slideKey = ref(0);
+
+// ── Parallax state ──
+const heroRef = ref(null);
+const mouseX = ref(0);
+const mouseY = ref(0);
+const parallaxStyle = computed(() => ({
+    transform: `translate(${mouseX.value * 1.5}px, ${mouseY.value * 1.2}px) scale(1.08)`
+}));
+
+const handleMouseMove = (e) => {
+    if (!heroRef.value) return;
+    const rect = heroRef.value.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 2;  // -1 to 1
+    const y = ((e.clientY - rect.top) / rect.height - 0.5) * 2; // -1 to 1
+    mouseX.value = x * 8;
+    mouseY.value = y * 6;
+};
+
+const resetParallax = () => {
+    mouseX.value = 0;
+    mouseY.value = 0;
+};
 
 const heroSlides = [
     {
@@ -44,12 +67,15 @@ const heroSlides = [
 
 const nextSlide = () => {
     currentSlide.value = (currentSlide.value + 1) % heroSlides.length;
+    slideKey.value++;
 };
 const prevSlide = () => {
     currentSlide.value = currentSlide.value === 0 ? heroSlides.length - 1 : currentSlide.value - 1;
+    slideKey.value++;
 };
 const goToSlide = (index) => {
     currentSlide.value = index;
+    slideKey.value++;
 };
 const startAutoPlay = () => {
     stopAutoPlay();
@@ -68,9 +94,11 @@ onUnmounted(() => stopAutoPlay());
 
 <template>
     <section
+        ref="heroRef"
         class="relative h-[420px] md:h-[520px] lg:h-[600px] overflow-hidden rounded-3xl bg-ink group"
         @mouseenter="stopAutoPlay"
-        @mouseleave="startAutoPlay"
+        @mouseleave="startAutoPlay"; resetParallax()
+        @mousemove="handleMouseMove"
     >
         <!-- Slides -->
         <div
@@ -80,56 +108,59 @@ onUnmounted(() => stopAutoPlay());
             :class="currentSlide === index ? 'opacity-100 z-10' : 'opacity-0 z-0'"
         >
             <!-- Background image -->
-            <div class="absolute inset-0">
-                <img :src="slide.image" :alt="slide.title" class="w-full h-full object-cover scale-105" />
+            <div class="absolute inset-0 overflow-hidden">
+                <img
+                    :src="slide.image"
+                    :alt="slide.title"
+                    class="w-full h-full object-cover transition-transform duration-[250ms] ease-out will-change-transform"
+                    :class="currentSlide === index ? 'scale-110' : 'scale-105'"
+                    :style="currentSlide === index ? parallaxStyle : undefined"
+                />
                 <div class="absolute inset-0 bg-gradient-to-r from-ink via-ink/70 to-transparent"></div>
                 <div class="absolute inset-0 bg-gradient-to-t from-ink/40 to-transparent"></div>
             </div>
 
             <!-- Content -->
             <div class="relative h-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 flex items-center">
-                <div class="max-w-2xl space-y-6">
+                <!-- Key wrapper to re-trigger stagger animations on slide change -->
+                <div :key="`content-${slideKey}-${index}`" class="max-w-2xl space-y-6">
                     <div
-                        class="inline-flex items-center gap-2 px-4 py-1.5 bg-paper/15 backdrop-blur-md border border-paper/20 rounded-full text-paper text-xs font-bold uppercase tracking-[0.2em]"
-                        :class="currentSlide === index ? 'animate-fade-up' : 'opacity-0'"
+                        class="inline-flex items-center gap-2 px-4 py-1.5 bg-paper/15 backdrop-blur-md border border-paper/20 rounded-full text-paper text-xs font-bold uppercase tracking-[0.2em] animate-fade-up"
+                        style="animation-delay: 50ms"
                     >
                         <span class="w-1.5 h-1.5 bg-accent rounded-full pulse-dot"></span>
                         {{ slide.badge }}
                     </div>
 
                     <p
-                        class="text-sm font-bold uppercase tracking-[0.25em] text-accent"
-                        :class="currentSlide === index ? 'animate-fade-up' : 'opacity-0'"
-                        style="animation-delay: 0.1s"
+                        class="text-sm font-bold uppercase tracking-[0.25em] text-accent animate-fade-up"
+                        style="animation-delay: 150ms"
                     >
                         {{ slide.eyebrow }}
                     </p>
 
                     <h2
-                        class="text-5xl md:text-7xl lg:text-8xl font-elegant text-paper leading-[0.95]"
-                        :class="currentSlide === index ? 'animate-fade-up' : 'opacity-0'"
-                        style="animation-delay: 0.2s"
+                        class="text-5xl md:text-7xl lg:text-8xl font-elegant text-paper leading-[0.95] animate-fade-up"
+                        style="animation-delay: 280ms"
                     >
                         {{ slide.title }}
                         <span class="block font-bold italic">{{ slide.titleAccent }}</span>
                     </h2>
 
                     <p
-                        class="text-base md:text-lg text-paper/80 font-light max-w-lg leading-relaxed"
-                        :class="currentSlide === index ? 'animate-fade-up' : 'opacity-0'"
-                        style="animation-delay: 0.3s"
+                        class="text-base md:text-lg text-paper/80 font-light max-w-lg leading-relaxed animate-fade-up"
+                        style="animation-delay: 400ms"
                     >
                         {{ slide.description }}
                     </p>
 
                     <div
-                        class="flex items-center gap-4 pt-2"
-                        :class="currentSlide === index ? 'animate-fade-up' : 'opacity-0'"
-                        style="animation-delay: 0.4s"
+                        class="flex items-center gap-4 pt-2 animate-fade-up"
+                        style="animation-delay: 520ms"
                     >
                         <RouterLink
                             :to="slide.ctaLink"
-                            class="inline-flex items-center gap-2 px-7 py-3.5 bg-accent text-white font-bold text-sm rounded-full shadow-[0_8px_24px_-6px_rgb(249_115_22_/_0.6)] hover:bg-accent-600 hover:-translate-y-0.5 transition-all duration-300 group/cta"
+                            class="shine-effect inline-flex items-center gap-2 px-7 py-3.5 bg-accent text-white font-bold text-sm rounded-full shadow-[0_8px_24px_-6px_rgb(249_115_22_/_0.6)] hover:bg-accent-600 hover:-translate-y-0.5 transition-all duration-300 group/cta"
                         >
                             {{ slide.cta }}
                             <ArrowRight class="w-4 h-4 group-hover/cta:translate-x-1 transition-transform" />

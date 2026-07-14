@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import * as UserModels from '../model/userModel.js';
+import { notifyNewUser } from './dashboardService.js';
 
 // Get all users
 export const getAllUsers = async () => {
@@ -26,18 +27,31 @@ export const getUserByEmailOrUsername = async (identifier) => {
     return await UserModels.getUserByEmailOrUsername(identifier);
 };
 
-// Create users
+// Create users — hashes password in app layer
 export const createUsers = async (userData) => {
-    return await UserModels.createUsers(userData);
+    const plainPassword = userData.password || userData.password_hash;
+    const hashedPassword = plainPassword ? await bcrypt.hash(plainPassword, 12) : null;
+
+    return await UserModels.createUsers({
+        role_id: userData.role_id,
+        username: userData.username,
+        first_name: userData.first_name,
+        mid_name: userData.mid_name || null,
+        last_name: userData.last_name,
+        email: userData.email,
+        password_hash: hashedPassword
+    });
 };
 
-// Update User
+// Update User — hash password in app layer if changing
 export const updateUser = async (id, userData) => {
-    // If updating password, hash it first
-    if (userData.password_hash) {
-        userData.password_hash = await bcrypt.hash(userData.password_hash, 10);
+    const data = { ...userData };
+    if (data.password || data.password_hash) {
+        const plainPassword = data.password || data.password_hash;
+        data.password_hash = await bcrypt.hash(plainPassword, 12);
+        delete data.password;
     }
-    return await UserModels.updateUsers(id, userData);
+    return await UserModels.updateUsers(id, data);
 };
 
 // Delete User
@@ -55,32 +69,30 @@ export const usernameExists = async (username) => {
     return await UserModels.usernameExists(username);
 };
 
-// Register new user
+// Register new user — password is hashed in app layer
 export const register = async (data) => {
-    // Check if email already exists
     const existingEmail = await UserModels.emailExists(data.email);
-    if (existingEmail) {
-        throw new Error('Email already exists');
-    }
-    
-    // Check if username already exists
+    if (existingEmail) throw new Error('Email already exists');
+
     const existingUsername = await UserModels.usernameExists(data.username);
-    if (existingUsername) {
-        throw new Error('Username already taken');
-    }
-    
-    // Hash password
-    const hashedPassword = await bcrypt.hash(data.password, 10);
-    
-    return await UserModels.createUsers({
-        role_id: data.role_id || 2,
-        username: data.username,
-        first_name: data.first_name,
-        mid_name: data.mid_name || null,
-        last_name: data.last_name,
-        email: data.email,
-        password_hash: hashedPassword 
+    if (existingUsername) throw new Error('Username already taken');
+
+    const hashedPassword = await bcrypt.hash(data.password, 12);
+
+    const user = await UserModels.createUsers({
+        role_id: 3, // public registration is always customer
+        username:      data.username,
+        first_name:    data.first_name,
+        mid_name:      data.mid_name || null,
+        last_name:     data.last_name,
+        email:         data.email,
+        password_hash: hashedPassword
     });
+
+    // Fire-and-forget: notify admins of new registration
+    notifyNewUser(user.username, false).catch(() => {});
+
+    return user;
 };
 
 // Login user with email or username

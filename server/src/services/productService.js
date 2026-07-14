@@ -1,5 +1,7 @@
 import * as ProductModel from '../model/products/productModel.js';
 import * as CategoryModel from '../model/products/categoryModel.js';
+import { getStockHistoryForProduct } from '../model/products/stockLogModel.js';
+import { notifyNewProduct, notifyLowStock } from './dashboardService.js';
 
 // ==================== COMPLETE PRODUCT CREATION ====================
 
@@ -46,13 +48,17 @@ export const createCompleteProduct = async (productData) => {
                 const imageId = await ProductModel.addProductImage(
                     productId,
                     image.image_url,
-                    isMain ? 1 : 0
+                    isMain ? 1 : 0,
+                    image.alt_text != null ? image.alt_text : null,
+                    image.sort_order != null ? image.sort_order : 0
                 );
                 
                 createdImages.push({
                     image_id: imageId,
                     image_url: image.image_url,
-                    is_main: isMain
+                    is_main: isMain,
+                    alt_text: image.alt_text || null,
+                    sort_order: image.sort_order || 0
                 });
             }
         }
@@ -62,10 +68,10 @@ export const createCompleteProduct = async (productData) => {
         if (variants && variants.length > 0) {
             for (const variant of variants) {
                 const {
-                    variant_name,
                     sku,
                     variant_color,
                     variant_size,
+                    options,
                     stock_quantity = 0,
                     reorder_level = 5
                 } = variant;
@@ -81,13 +87,20 @@ export const createCompleteProduct = async (productData) => {
                 // Create variant
                 const variantId = await ProductModel.createVariant({
                     product_id: productId,
-                    variant_name,
                     sku
                 });
 
-                // Add variant options if provided
-                if (variant_color && variant_size) {
-                    await ProductModel.addVariantOptions(variantId, variant_color, variant_size);
+                // Resolve options: prefer explicit `options` array, fall back to legacy color/size
+                let resolvedOptions = [];
+                if (Array.isArray(options) && options.length > 0) {
+                    resolvedOptions = options;
+                } else if (variant_color || variant_size) {
+                    if (variant_color) resolvedOptions.push({ attribute_name: 'Color', value: variant_color });
+                    if (variant_size)  resolvedOptions.push({ attribute_name: 'Size',  value: variant_size  });
+                }
+
+                if (resolvedOptions.length > 0) {
+                    await ProductModel.addVariantOptions(variantId, resolvedOptions);
                 }
 
                 // Set initial stock
@@ -102,6 +115,9 @@ export const createCompleteProduct = async (productData) => {
 
         // 5. Get complete product with all details
         const completeProduct = await ProductModel.getProductById(productId);
+
+        // Fire-and-forget: notify admins of new product
+        notifyNewProduct(product_name).catch(() => {});
 
         return {
             ...completeProduct,
@@ -230,14 +246,20 @@ export const deleteCategory = async (categoryId) => {
 
 // ==================== IMAGE SERVICES ====================
 
-export const addProductImage = async (productId, imageUrl, isMain = false) => {
+export const addProductImage = async (productId, imageUrl, isMain = false, altText = null, sortOrder = 0) => {
     const exists = await ProductModel.productExists(productId);
     if (!exists) {
         throw new Error('Product not found');
     }
 
-    const imageId = await ProductModel.addProductImage(productId, imageUrl, isMain ? 1 : 0);
-    return { imageId, imageUrl, isMain };
+    const imageId = await ProductModel.addProductImage(
+        productId,
+        imageUrl,
+        isMain ? 1 : 0,
+        altText,
+        sortOrder
+    );
+    return { imageId, imageUrl, isMain, altText, sortOrder };
 };
 
 export const getProductImages = async (productId) => {
@@ -275,10 +297,10 @@ export const getVariantById = async (variantId) => {
 };
 
 export const createVariant = async (variantData) => {
-    const { product_id, variant_name, sku, variant_color, variant_size, initial_stock = 0 } = variantData;
+    const { product_id, sku, variant_color, variant_size, options, initial_stock = 0 } = variantData;
 
-    if (!product_id || !variant_name) {
-        throw new Error('Missing required fields: product_id, variant_name');
+    if (!product_id) {
+        throw new Error('Missing required field: product_id');
     }
 
     const productExists = await ProductModel.productExists(product_id);
@@ -293,10 +315,19 @@ export const createVariant = async (variantData) => {
         }
     }
 
-    const variantId = await ProductModel.createVariant({ product_id, variant_name, sku });
+    const variantId = await ProductModel.createVariant({ product_id, sku });
 
-    if (variant_color && variant_size) {
-        await ProductModel.addVariantOptions(variantId, variant_color, variant_size);
+    // Resolve options: prefer explicit `options` array, fall back to legacy color/size
+    let resolvedOptions = [];
+    if (Array.isArray(options) && options.length > 0) {
+        resolvedOptions = options;
+    } else if (variant_color || variant_size) {
+        if (variant_color) resolvedOptions.push({ attribute_name: 'Color', value: variant_color });
+        if (variant_size)  resolvedOptions.push({ attribute_name: 'Size',  value: variant_size  });
+    }
+
+    if (resolvedOptions.length > 0) {
+        await ProductModel.addVariantOptions(variantId, resolvedOptions);
     }
 
     if (initial_stock > 0) {
@@ -307,7 +338,7 @@ export const createVariant = async (variantData) => {
 };
 
 export const updateVariant = async (variantId, variantData) => {
-    const { variant_name, sku, variant_color, variant_size } = variantData;
+    const { sku, variant_color, variant_size, options } = variantData;
 
     if (sku) {
         const existing = await ProductModel.skuExists(sku);
@@ -319,17 +350,22 @@ export const updateVariant = async (variantId, variantData) => {
         }
     }
 
-    if (variant_name || sku) {
-        await ProductModel.updateVariant(variantId, { variant_name, sku });
+    if (sku) {
+        await ProductModel.updateVariant(variantId, { sku });
     }
 
-    if (variant_color && variant_size) {
-        const options = await ProductModel.getVariantOptions(variantId);
-        if (options) {
-            await ProductModel.updateVariantOptions(options.option_id, variant_color, variant_size);
-        } else {
-            await ProductModel.addVariantOptions(variantId, variant_color, variant_size);
-        }
+    // Resolve options: prefer explicit `options` array, fall back to legacy color/size
+    let resolvedOptions = null;
+    if (Array.isArray(options)) {
+        resolvedOptions = options;
+    } else if (variant_color || variant_size) {
+        resolvedOptions = [];
+        if (variant_color) resolvedOptions.push({ attribute_name: 'Color', value: variant_color });
+        if (variant_size)  resolvedOptions.push({ attribute_name: 'Size',  value: variant_size  });
+    }
+
+    if (resolvedOptions !== null && resolvedOptions.length > 0) {
+        await ProductModel.updateVariantOptions(variantId, resolvedOptions);
     }
 
     return await getVariantById(variantId);
@@ -353,25 +389,25 @@ export const getStock = async (variantId) => {
     return stock;
 };
 
-export const updateStock = async (variantId, quantity, reorderLevel = 5) => {
+export const updateStock = async (variantId, quantity, reorderLevel = 5, userId = null, reason = null) => {
     if (quantity < 0) {
         throw new Error('Stock quantity cannot be negative');
     }
 
-    await ProductModel.updateStock(variantId, quantity, reorderLevel);
+    await ProductModel.updateStock(variantId, quantity, reorderLevel, userId, reason);
     return await getStock(variantId);
 };
 
-export const incrementStock = async (variantId, amount) => {
+export const incrementStock = async (variantId, amount, userId = null, reason = null) => {
     if (amount <= 0) {
         throw new Error('Amount must be greater than 0');
     }
 
-    await ProductModel.incrementStock(variantId, amount);
+    await ProductModel.incrementStock(variantId, amount, userId, reason);
     return await getStock(variantId);
 };
 
-export const decrementStock = async (variantId, amount) => {
+export const decrementStock = async (variantId, amount, userId = null, reason = null) => {
     if (amount <= 0) {
         throw new Error('Amount must be greater than 0');
     }
@@ -381,12 +417,79 @@ export const decrementStock = async (variantId, amount) => {
         throw new Error('Insufficient stock');
     }
 
-    await ProductModel.decrementStock(variantId, amount);
-    return await getStock(variantId);
+    await ProductModel.decrementStock(variantId, amount, userId, reason);
+    const updated = await getStock(variantId);
+
+    // Fire-and-forget: check if stock is now below threshold
+    if (updated.quantity > 0 && updated.quantity < (updated.reorder_level || 5)) {
+        const variant = await ProductModel.getVariantById(variantId).catch(() => null);
+        const productName = variant ? `Product #${variant.product_id}` : `Item #${variantId}`;
+        notifyLowStock(productName, updated.quantity, variant?.sku || null).catch(() => {});
+    }
+
+    return updated;
+};
+
+// Product-level stock (variantId IS NULL)
+
+export const getProductStock = async (productId) => {
+    const stock = await ProductModel.getProductStock(productId);
+    if (!stock) {
+        return { product_id: productId, variant_id: null, quantity: 0, reorder_level: 5 };
+    }
+    return stock;
+};
+
+export const updateProductStock = async (productId, quantity, reorderLevel = 5, userId = null, reason = null) => {
+    if (quantity < 0) {
+        throw new Error('Stock quantity cannot be negative');
+    }
+
+    const productExists = await ProductModel.productExists(productId);
+    if (!productExists) {
+        throw new Error('Product not found');
+    }
+
+    await ProductModel.updateProductStock(productId, quantity, reorderLevel, userId, reason);
+    return await getProductStock(productId);
 };
 
 export const getLowStockProducts = async () => {
     return await ProductModel.getLowStockProducts();
+};
+
+// ── STOCK HISTORY ───────────────────────────────────────────────────────────
+
+export const getStockHistory = async (productId) => {
+    return await getStockHistoryForProduct(productId);
+};
+
+// ── BULK STOCK UPDATE ──────────────────────────────────────────────────────────
+
+export const bulkUpdateStock = async (updates, userId = null) => {
+    const results = { updated: 0, failed: 0, errors: [] };
+    for (const item of updates) {
+        try {
+            const { product_id, quantity, reorder_level, reason } = item;
+            if (!product_id || quantity === undefined) {
+                results.failed++;
+                results.errors.push({ product_id, error: 'product_id and quantity are required' });
+                continue;
+            }
+            await ProductModel.updateProductStock(
+                product_id,
+                quantity,
+                reorder_level != null ? reorder_level : 5,
+                userId,
+                reason || 'Bulk stock update'
+            );
+            results.updated++;
+        } catch (err) {
+            results.failed++;
+            results.errors.push({ product_id: item.product_id, error: err.message });
+        }
+    }
+    return results;
 };
 
 // ==================== DISCOUNT SERVICES ====================
@@ -452,6 +555,10 @@ export const deleteDiscount = async (discountId) => {
         throw new Error('Discount not found');
     }
     return true;
+};
+
+export const getAllDiscounts = async () => {
+    return await ProductModel.getAllDiscounts();
 };
 
 // ==================== BULK OPERATIONS ====================

@@ -57,7 +57,7 @@ const handleLogin = async () => {
         localStorage.setItem('rememberMe', 'true');
       }
 
-      // Redirect based on role_id (1 = Admin, 2 = User)
+      // Redirect based on role_id (1 = superadmin, 2 = admin, 3 = user/customer)
       if (authStore.user?.role_id === 1) {
         router.push('/admin/dashboard');
       } else {

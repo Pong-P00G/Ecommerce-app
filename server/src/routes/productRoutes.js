@@ -1,7 +1,7 @@
 import express from 'express';
 import * as productController from '../controller/productController.js';
-import protect from '../middleware/authMiddleware.js';
-import { isAdmin } from '../middleware/authMiddleware.js';
+import protect from '../middleware/authMiddleWare.js';
+import { isAdmin } from '../middleware/authMiddleWare.js';
 import {
     validateCompleteProduct,
     validatePagination,
@@ -118,6 +118,16 @@ router.get('/:id/images', productController.getProductImages);
 // @access  Public
 router.get('/:id/discounts', productController.getProductDiscounts);
 
+// @route   GET /api/products/:id/stock
+// @desc    Get product-level stock (variantId IS NULL)
+// @access  Public
+router.get('/:id/stock', productController.getProductStock);
+
+// @route   PUT /api/products/:id/stock
+// @desc    Upsert product-level stock
+// @access  Private/Admin
+router.put('/:id/stock', protect, isAdmin, productController.updateProductStock);
+
 // @route   GET /api/products/:id/discount/active
 // @desc    Get active discount for product
 // @access  Public
@@ -169,6 +179,11 @@ router.post('/:id/discount', protect, isAdmin, validateDiscount, validate, produ
 // @desc    Update discount
 // @access  Private/Admin
 router.put('/discount/:discountId', protect, isAdmin, validateDiscount, validate, productController.updateDiscount);
+
+// @route   GET /api/discounts
+// @desc    Get all discounts across all products with product info
+// @access  Private/Admin
+router.get('/discounts', protect, isAdmin, productController.getAllDiscounts);
 
 // @route   DELETE /api/products/discount/:discountId
 // @desc    Delete discount
@@ -226,5 +241,15 @@ router.post('/variants/:variantId/stock/decrement', protect, isAdmin, productCon
 // @desc    Get low stock products
 // @access  Private/Admin
 router.get('/stock/low', protect, isAdmin, productController.getLowStockProducts);
+
+// @route   GET /api/products/:id/stock/history
+// @desc    Get stock change history for a product
+// @access  Private/Admin
+router.get('/:id/stock/history', protect, isAdmin, productController.getStockHistory);
+
+// @route   POST /api/products/stock/bulk-update
+// @desc    Bulk update stock for multiple products
+// @access  Private/Admin
+router.post('/stock/bulk-update', protect, isAdmin, productController.bulkUpdateStock);
 
 export default router;

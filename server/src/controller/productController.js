@@ -36,7 +36,10 @@ export const getPaginatedProducts = async (req, res) => {
             category,
             minPrice,
             maxPrice,
-            status
+            status,
+            stockStatus,
+            sortField,
+            sortDirection
         } = req.query;
 
         const result = await productService.getPaginatedProducts(
@@ -47,7 +50,10 @@ export const getPaginatedProducts = async (req, res) => {
                 category,
                 minPrice: minPrice ? parseFloat(minPrice) : null,
                 maxPrice: maxPrice ? parseFloat(maxPrice) : null,
-                status
+                status,
+                stockStatus,
+                sortField,
+                sortDirection
             }
         );
 
@@ -339,11 +345,13 @@ export const getProductImages = async (req, res) => {
 
 export const addProductImage = async (req, res) => {
     try {
-        const { image_url, is_main } = req.body;
+        const { image_url, is_main, alt_text, sort_order } = req.body;
         const image = await productService.addProductImage(
             req.params.id,
             image_url,
-            is_main
+            is_main,
+            alt_text != null ? alt_text : null,
+            sort_order != null ? sort_order : 0
         );
         
         res.status(201).json({
@@ -493,11 +501,14 @@ export const getStock = async (req, res) => {
 
 export const updateStock = async (req, res) => {
     try {
-        const { quantity, reorder_level } = req.body;
+        const { quantity, reorder_level, reason } = req.body;
+        const userId = req.user ? req.user.id : null;
         const stock = await productService.updateStock(
             req.params.variantId,
             quantity,
-            reorder_level
+            reorder_level,
+            userId,
+            reason || null
         );
         
         res.json({
@@ -515,8 +526,9 @@ export const updateStock = async (req, res) => {
 
 export const incrementStock = async (req, res) => {
     try {
-        const { amount } = req.body;
-        const stock = await productService.incrementStock(req.params.variantId, amount);
+        const { amount, reason } = req.body;
+        const userId = req.user ? req.user.id : null;
+        const stock = await productService.incrementStock(req.params.variantId, amount, userId, reason || null);
         
         res.json({
             success: true,
@@ -533,12 +545,55 @@ export const incrementStock = async (req, res) => {
 
 export const decrementStock = async (req, res) => {
     try {
-        const { amount } = req.body;
-        const stock = await productService.decrementStock(req.params.variantId, amount);
+        const { amount, reason } = req.body;
+        const userId = req.user ? req.user.id : null;
+        const stock = await productService.decrementStock(req.params.variantId, amount, userId, reason || null);
         
         res.json({
             success: true,
             message: 'Stock decremented successfully',
+            data: stock
+        });
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// ==================== PRODUCT-LEVEL STOCK CONTROLLERS ====================
+
+export const getProductStock = async (req, res) => {
+    try {
+        const stock = await productService.getProductStock(req.params.id);
+        res.json({
+            success: true,
+            data: stock
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+export const updateProductStock = async (req, res) => {
+    try {
+        const { quantity, reorder_level, reason } = req.body;
+        const userId = req.user ? req.user.id : null;
+        const stock = await productService.updateProductStock(
+            req.params.id,
+            quantity,
+            reorder_level,
+            userId,
+            reason || null
+        );
+        
+        res.json({
+            success: true,
+            message: 'Product stock updated successfully',
             data: stock
         });
     } catch (error) {
@@ -559,6 +614,49 @@ export const getLowStockProducts = async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// ── STOCK HISTORY ──────────────────────────────────────────────────────────
+
+export const getStockHistory = async (req, res) => {
+    try {
+        const logs = await productService.getStockHistory(req.params.id);
+        res.json({
+            success: true,
+            data: logs
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// ── BULK STOCK UPDATE ──────────────────────────────────────────────────────────
+
+export const bulkUpdateStock = async (req, res) => {
+    try {
+        const { updates } = req.body;
+        if (!updates || !Array.isArray(updates) || updates.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Updates array is required with at least one item'
+            });
+        }
+        const userId = req.user ? req.user.id : null;
+        const result = await productService.bulkUpdateStock(updates, userId);
+        res.json({
+            success: true,
+            message: `Bulk stock update complete: ${result.updated} updated, ${result.failed} failed`,
+            data: result
+        });
+    } catch (error) {
+        res.status(400).json({
             success: false,
             message: error.message
         });
@@ -641,6 +739,22 @@ export const deleteDiscount = async (req, res) => {
         });
     } catch (error) {
         res.status(404).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+export const getAllDiscounts = async (req, res) => {
+    try {
+        const discounts = await productService.getAllDiscounts();
+        res.json({
+            success: true,
+            count: discounts.length,
+            data: discounts
+        });
+    } catch (error) {
+        res.status(500).json({
             success: false,
             message: error.message
         });

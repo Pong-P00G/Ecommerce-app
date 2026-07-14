@@ -4,7 +4,9 @@ import { useRouter } from 'vue-router';
 import { useProductStore } from '../../stores/product.js';
 import { storeToRefs } from 'pinia';
 import { ArrowLeft, X, Plus, Image as ImageIcon, Package, Sparkles } from 'lucide-vue-next';
+import { useToast } from '../../composables/useToast.js';
 
+const toast = useToast();
 const router = useRouter();
 const productStore = useProductStore();
 const { categories, loading } = storeToRefs(productStore);
@@ -59,14 +61,14 @@ const handleSubmit = async () => {
   try {
     const result = await productStore.createCompleteProduct(form.value);
     if (result.success) {
-      alert('Product created successfully!');
+      toast.success('Product created successfully!');
       router.push('/admin/dashboard');
     } else {
-      alert('Error: ' + (result.error || 'Failed to create product'));
+      toast.error(result.error || 'Failed to create product');
     }
   } catch (error) {
     console.error('Error creating product:', error);
-    alert('Error creating product');
+    toast.error(error.response?.data?.message || 'Error creating product');
   } finally {
     submitting.value = false;
   }

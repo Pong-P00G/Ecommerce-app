@@ -4,6 +4,7 @@ import { useRoute, useRouter, RouterLink } from 'vue-router';
 import { useProductStore } from '../../stores/product.js';
 import { useAuthStore } from '../../stores/auth.js';
 import { storeToRefs } from 'pinia';
+import { useHead } from '@unhead/vue';
 import {
     Heart,
     Share2,
@@ -20,7 +21,12 @@ import {
     AlertTriangle,
     ZoomIn,
     Sparkles,
+    Star,
+    MessageSquare,
+    ThumbsUp,
 } from 'lucide-vue-next';
+import { reviewAPI } from '../../api/reviewApi.js';
+import { useToast } from '../../composables/useToast.js';
 
 const route = useRoute();
 const router = useRouter();
@@ -159,17 +165,39 @@ const addToWishlist = () => {
     alert('Added to wishlist!');
 };
 
+const showShareMenu = ref(false);
+
 const shareProduct = () => {
     if (navigator.share) {
         navigator.share({
             title: product.value?.product_name,
-            text: `Check out ${product.value?.product_name}`,
+            text: `Check out ${product.value?.product_name} at AlieeShop`,
             url: window.location.href
         });
     } else {
-        navigator.clipboard.writeText(window.location.href);
-        alert('Link copied to clipboard!');
+        showShareMenu.value = !showShareMenu.value;
     }
+};
+
+const shareUrl = computed(() => encodeURIComponent(window.location.href));
+const shareText = computed(() => encodeURIComponent(`Check out ${product.value?.product_name} at AlieeShop`));
+
+const shareLinks = computed(() => [
+    { name: 'Facebook',   url: `https://www.facebook.com/sharer/sharer.php?u=${shareUrl.value}`,           color: 'bg-[#1877F2]' },
+    { name: 'Twitter',    url: `https://twitter.com/intent/tweet?text=${shareText.value}&url=${shareUrl.value}`, color: 'bg-[#000000]' },
+    { name: 'LinkedIn',   url: `https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl.value}`,         color: 'bg-[#0A66C2]' },
+    { name: 'Pinterest',  url: `https://pinterest.com/pin/create/button/?url=${shareUrl.value}&description=${shareText.value}`, color: 'bg-[#E60023]' },
+    { name: 'Copy Link',  url: null, color: 'bg-zinc-600' },
+]);
+
+const shareOnPlatform = (link) => {
+    if (link.url) {
+        window.open(link.url, '_blank', 'width=600,height=400');
+    } else {
+        navigator.clipboard.writeText(window.location.href);
+        showShareMenu.value = false;
+    }
+    showShareMenu.value = false;
 };
 
 const editProduct = () => {
@@ -195,6 +223,110 @@ const handleImageError = (event) => {
 
 const formatPrice = (price) => parseFloat(price || 0).toFixed(2);
 
+// ── Reviews ─────────────────────────────────────────────────────────────────
+
+
+
+const toast = useToast();
+
+const reviews = ref([]);
+const ratingSummary = ref(null);
+const loadingReviews = ref(false);
+
+const reviewForm = ref({ rating: 0, title: '', comment: '' });
+const submittingReview = ref(false);
+const showReviewForm = ref(false);
+const hoverRating = ref(0);
+const userReview = ref(null); // user's own review for this product
+
+const isAuthenticated = computed(() => authStore.isAuthenticated);
+
+const averageRating = computed(() => {
+    if (!ratingSummary.value) return 0;
+    return ratingSummary.value.average_rating || 0;
+});
+
+const totalReviews = computed(() => {
+    if (!ratingSummary.value) return 0;
+    return ratingSummary.value.total_reviews || 0;
+});
+
+const ratingDistribution = computed(() => {
+    if (!ratingSummary.value) return [];
+    const total = totalReviews.value || 1;
+    return [
+        { stars: 5, count: ratingSummary.value.five_star || 0, pct: Math.round(((ratingSummary.value.five_star || 0) / total) * 100) },
+        { stars: 4, count: ratingSummary.value.four_star || 0, pct: Math.round(((ratingSummary.value.four_star || 0) / total) * 100) },
+        { stars: 3, count: ratingSummary.value.three_star || 0, pct: Math.round(((ratingSummary.value.three_star || 0) / total) * 100) },
+        { stars: 2, count: ratingSummary.value.two_star || 0, pct: Math.round(((ratingSummary.value.two_star || 0) / total) * 100) },
+        { stars: 1, count: ratingSummary.value.one_star || 0, pct: Math.round(((ratingSummary.value.one_star || 0) / total) * 100) },
+    ];
+});
+
+const fetchReviews = async () => {
+    const productId = route.params.id;
+    if (!productId) return;
+    loadingReviews.value = true;
+    try {
+        const res = await reviewAPI.getProductReviews(productId);
+        if (res.success) {
+            reviews.value = res.data.reviews || [];
+            ratingSummary.value = res.data.summary || null;
+            // Check if current user has already reviewed
+            if (isAuthenticated.value) {
+                userReview.value = reviews.value.find(r => r.user_id === authStore.user?.id) || null;
+            }
+        }
+    } catch (err) {
+        console.error('Failed to load reviews:', err);
+    } finally {
+        loadingReviews.value = false;
+    }
+};
+
+const submitReview = async () => {
+    if (reviewForm.value.rating === 0) {
+        toast.warning('Please select a rating');
+        return;
+    }
+    submittingReview.value = true;
+    try {
+        const res = await reviewAPI.submitReview(route.params.id, {
+            rating: reviewForm.value.rating,
+            title: reviewForm.value.title,
+            comment: reviewForm.value.comment,
+        });
+        if (res.success) {
+            toast.success('Review submitted! Pending moderation.');
+            showReviewForm.value = false;
+            reviewForm.value = { rating: 0, title: '', comment: '' };
+            await fetchReviews();
+        } else {
+            toast.error(res.message || 'Failed to submit review');
+        }
+    } catch (err) {
+        console.error('Review submission error:', err);
+        toast.error(err.response?.data?.message || 'Failed to submit review');
+    } finally {
+        submittingReview.value = false;
+    }
+};
+
+const renderStars = (rating) => {
+    return Array.from({ length: 5 }, (_, i) => i < rating);
+};
+
+const formatReviewDate = (d) => {
+    if (!d) return '';
+    const date = new Date(d);
+    const now = new Date();
+    const diff = Math.floor((now - date) / 86400000);
+    if (diff === 0) return 'Today';
+    if (diff === 1) return 'Yesterday';
+    if (diff < 7) return `${diff} days ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
 watch(() => route.params.id, async (newId) => {
     if (newId) {
         selectedImage.value = 0;
@@ -202,6 +334,43 @@ watch(() => route.params.id, async (newId) => {
         quantity.value = 1;
         await loadProduct();
     }
+});
+
+// ── SEO: Dynamic product meta tags (reactive getters — no watch needed) ────────
+
+const productDescription = computed(() => {
+    if (!product.value) return '';
+    return product.value.product_description?.substring(0, 200) || `Shop ${product.value.product_name} at AlieeShop`;
+});
+
+// useHead with reactive getter functions — replaces entries automatically when refs change
+useHead({
+    title: () => product.value?.product_name || 'Product Details',
+    meta: () => {
+        if (!product.value) return [];
+        const name = product.value.product_name;
+        const desc = productDescription.value;
+        const image = product.value.main_image || productImages.value[0] || '';
+        const price = currentPrice.value;
+        const url = `https://alieeshop.com/product/${product.value.product_id}`;
+        return [
+            { name: 'description', content: desc },
+            { property: 'og:title', content: `${name} | AlieeShop` },
+            { property: 'og:description', content: desc },
+            { property: 'og:image', content: image },
+            { property: 'og:url', content: url },
+            { property: 'og:type', content: 'product' },
+            { property: 'product:price:amount', content: String(price) },
+            { property: 'product:price:currency', content: 'USD' },
+            { name: 'twitter:card', content: 'summary_large_image' },
+            { name: 'twitter:title', content: `${name} | AlieeShop` },
+            { name: 'twitter:description', content: desc },
+            { name: 'twitter:image', content: image },
+        ];
+    },
+    link: () => product.value
+        ? [{ rel: 'canonical', href: `https://alieeshop.com/product/${product.value.product_id}` }]
+        : [],
 });
 
 onMounted(async () => {
@@ -267,12 +436,28 @@ onMounted(async () => {
                             >
                                 <Heart class="w-5 h-5" />
                             </button>
-                            <button
-                                @click="shareProduct"
-                                class="w-11 h-11 rounded-full bg-paper shadow-md hover:bg-accent hover:text-white text-ink inline-flex items-center justify-center transition-all duration-200"
-                            >
-                                <Share2 class="w-5 h-5" />
-                            </button>
+                            <div class="relative">
+                                <button
+                                    @click.stop="shareProduct"
+                                    class="w-11 h-11 rounded-full bg-paper shadow-md hover:bg-accent hover:text-white text-ink inline-flex items-center justify-center transition-all duration-200"
+                                >
+                                    <Share2 class="w-5 h-5" />
+                                </button>
+                                <!-- Social Share Popup -->
+                                <div v-if="showShareMenu" @click.stop
+                                    class="absolute right-0 top-full mt-2 w-44 bg-paper rounded-2xl shadow-xl border border-neutral-200 z-50 overflow-hidden max-w-[calc(100vw-2rem)]">
+                                    <div class="p-1.5">
+                                        <button v-for="link in shareLinks" :key="link.name"
+                                            @click="shareOnPlatform(link)"
+                                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-neutral-50 transition-colors text-left">
+                                            <span :class="['w-7 h-7 rounded-lg inline-flex items-center justify-center text-paper text-xs font-bold shrink-0', link.color]">
+                                                {{ link.name.charAt(0) }}
+                                            </span>
+                                            <span class="text-sm font-semibold text-ink">{{ link.name }}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="absolute bottom-4 right-4 w-10 h-10 rounded-full bg-paper/90 backdrop-blur-sm inline-flex items-center justify-center text-ink">
                             <ZoomIn class="w-5 h-5" />
@@ -479,6 +664,198 @@ onMounted(async () => {
                             </div>
                         </div>
                     </article>
+                </div>
+            </section>
+
+            <!-- Reviews Section -->
+            <section class="mt-12 sm:mt-16 border-t border-neutral-200 pt-10">
+                <div class="flex items-start justify-between gap-6 mb-8 flex-wrap">
+                    <div>
+                        <span class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-accent mb-2">
+                            <MessageSquare class="w-3.5 h-3.5" />
+                            Reviews
+                        </span>
+                        <div class="flex items-center gap-3 mt-1">
+                            <h2 class="heading-hero text-2xl sm:text-3xl text-ink">Customer reviews</h2>
+                            <span v-if="!loadingReviews" class="px-3 py-1 bg-neutral-100 rounded-full text-xs font-bold text-neutral-600 tabular-nums">
+                                {{ totalReviews }}
+                            </span>
+                        </div>
+                    </div>
+                    <button
+                        v-if="isAuthenticated && !userReview && !showReviewForm"
+                        @click="showReviewForm = true"
+                        class="btn-accent text-sm gap-2"
+                    >
+                        <Star class="w-4 h-4" />
+                        Write a Review
+                    </button>
+                </div>
+
+                <!-- Loading -->
+                <div v-if="loadingReviews" class="py-12 text-center">
+                    <div class="w-8 h-8 border-3 border-neutral-200 border-t-accent rounded-full animate-spin mx-auto"></div>
+                </div>
+
+                <div v-else-if="totalReviews > 0" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Rating Summary Sidebar -->
+                    <div class="lg:col-span-1 space-y-5">
+                        <div class="card-flat p-6 text-center">
+                            <p class="text-4xl sm:text-5xl font-bold text-ink tabular-nums">{{ averageRating }}</p>
+                            <div class="flex items-center justify-center gap-0.5 mt-2">
+                                <Star
+                                    v-for="(filled, i) in renderStars(Math.round(averageRating))"
+                                    :key="i"
+                                    :class="['w-5 h-5', filled ? 'fill-amber-400 text-amber-400' : 'fill-neutral-200 text-neutral-200']"
+                                />
+                            </div>
+                            <p class="text-sm text-neutral-500 mt-2">{{ totalReviews }} review{{ totalReviews !== 1 ? 's' : '' }}</p>
+                        </div>
+
+                        <div class="card-flat p-5 space-y-2">
+                            <div v-for="dist in ratingDistribution" :key="dist.stars" class="flex items-center gap-2">
+                                <span class="text-xs font-semibold text-ink w-3 text-right tabular-nums">{{ dist.stars }}</span>
+                                <Star class="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" />
+                                <div class="flex-1 h-2 bg-neutral-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-amber-400 rounded-full transition-all" :style="{ width: dist.pct + '%' }"></div>
+                                </div>
+                                <span class="text-xs text-neutral-500 w-8 text-right tabular-nums">{{ dist.count }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Review List -->
+                    <div class="lg:col-span-2 space-y-4">
+                        <!-- Review Submission Form -->
+                        <div v-if="showReviewForm" class="card-flat p-5 border-2 border-accent/20">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-ink">Write your review</h3>
+                                <button @click="showReviewForm = false" class="text-neutral-400 hover:text-ink transition-colors">
+                                    <X class="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <!-- Star Selector -->
+                            <div class="mb-4">
+                                <p class="text-xs font-bold uppercase tracking-[0.15em] text-ink mb-2">Your Rating</p>
+                                <div class="flex items-center gap-1">
+                                    <button
+                                        v-for="star in 5"
+                                        :key="star"
+                                        @click="reviewForm.rating = star"
+                                        @mouseenter="hoverRating = star"
+                                        @mouseleave="hoverRating = 0"
+                                        class="p-0.5 transition-transform hover:scale-110"
+                                    >
+                                        <Star
+                                            :class="['w-7 h-7 transition-colors',
+                                                (hoverRating || reviewForm.rating) >= star
+                                                    ? 'fill-amber-400 text-amber-400'
+                                                    : 'fill-neutral-200 text-neutral-200'
+                                            ]"
+                                        />
+                                    </button>
+                                    <span v-if="reviewForm.rating > 0" class="ml-2 text-sm text-neutral-500">
+                                        {{ ['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent'][reviewForm.rating] }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Title -->
+                            <div class="mb-3">
+                                <label class="block text-xs font-bold uppercase tracking-[0.15em] text-ink mb-2">Title <span class="text-neutral-400">(optional)</span></label>
+                                <input
+                                    v-model="reviewForm.title"
+                                    type="text"
+                                    placeholder="Summary of your review"
+                                    class="input-base text-sm"
+                                />
+                            </div>
+
+                            <!-- Comment -->
+                            <div class="mb-4">
+                                <label class="block text-xs font-bold uppercase tracking-[0.15em] text-ink mb-2">Comment <span class="text-neutral-400">(optional)</span></label>
+                                <textarea
+                                    v-model="reviewForm.comment"
+                                    placeholder="Share your experience with this product..."
+                                    class="input-base text-sm min-h-24"
+                                    rows="4"
+                                ></textarea>
+                            </div>
+
+                            <div class="flex gap-3 justify-end">
+                                <button @click="showReviewForm = false" class="btn-outline text-sm" :disabled="submittingReview">
+                                    Cancel
+                                </button>
+                                <button
+                                    @click="submitReview"
+                                    :disabled="submittingReview || reviewForm.rating === 0"
+                                    class="btn-accent text-sm gap-2"
+                                >
+                                    <div v-if="submittingReview" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                    <Star v-else class="w-4 h-4" />
+                                    {{ submittingReview ? 'Submitting...' : 'Submit Review' }}
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Review Cards -->
+                        <div
+                            v-for="review in reviews"
+                            :key="review.review_id"
+                            class="card-flat p-5"
+                        >
+                            <div class="flex items-start gap-3">
+                                <div class="w-9 h-9 rounded-full bg-neutral-100 text-neutral-600 flex items-center justify-center font-bold text-sm shrink-0">
+                                    {{ (review.username || '?').charAt(0).toUpperCase() }}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <p class="font-bold text-sm text-ink">{{ review.username }}</p>
+                                        <span class="text-xs text-neutral-400">&middot;</span>
+                                        <span class="text-xs text-neutral-500">{{ formatReviewDate(review.created_at) }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-0.5 mt-1">
+                                        <Star
+                                            v-for="(filled, i) in renderStars(review.rating)"
+                                            :key="i"
+                                            :class="['w-3.5 h-3.5', filled ? 'fill-amber-400 text-amber-400' : 'fill-neutral-200 text-neutral-200']"
+                                        />
+                                    </div>
+                                    <p v-if="review.title" class="font-semibold text-sm text-ink mt-2">{{ review.title }}</p>
+                                    <p v-if="review.comment" class="text-sm text-neutral-600 leading-relaxed mt-1">{{ review.comment }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- User already reviewed notice -->
+                        <div v-if="userReview && !showReviewForm" class="p-4 bg-neutral-50 rounded-xl text-center">
+                            <ThumbsUp class="w-6 h-6 text-accent mx-auto mb-2" />
+                            <p class="text-sm text-neutral-600">You've reviewed this product. Thank you!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- No Reviews State -->
+                <div v-else-if="!loadingReviews" class="card-flat p-10 text-center">
+                    <MessageSquare class="w-14 h-14 text-neutral-200 mx-auto mb-4" />
+                    <p class="text-neutral-500 font-semibold">No reviews yet</p>
+                    <p class="text-xs text-neutral-400 mt-1">Be the first to share your experience!</p>
+                    <button
+                        v-if="isAuthenticated && !userReview"
+                        @click="showReviewForm = true"
+                        class="btn-accent text-sm gap-2 mt-5"
+                    >
+                        <Star class="w-4 h-4" />
+                        Write a Review
+                    </button>
+                    <router-link
+                        v-else-if="!isAuthenticated"
+                        :to="{ name: 'login', query: { redirect: route.fullPath } }"
+                        class="btn-accent text-sm gap-2 mt-5 inline-flex"
+                    >
+                        Sign in to review
+                    </router-link>
                 </div>
             </section>
         </div>

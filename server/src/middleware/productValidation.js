@@ -20,21 +20,28 @@ export const validateCompleteProduct = (req, res, next) => {
         product_name: Joi.string().min(1).max(150).required(),
         base_price: Joi.number().positive().required(),
         descriptions: Joi.string().max(1000).allow('', null).optional(),
-        product_status: Joi.string().valid('active', 'inactive', 'draft', 'out_of_stock').optional().default('active'),
+        product_status: Joi.string().valid('active', 'inactive', 'archived').optional().default('active'),
 
         images: Joi.array().items(
             Joi.object({
                 image_url: Joi.string().uri().required(),
-                is_main: Joi.boolean().optional()
+                is_main: Joi.boolean().optional(),
+                alt_text: Joi.string().max(255).allow('', null).optional(),
+                sort_order: Joi.number().integer().min(0).optional().default(0)
             })
         ).optional(),
 
         variants: Joi.array().items(
             Joi.object({
-                variant_name: Joi.string().min(1).max(200).required(),
                 sku: Joi.string().max(100).optional().allow('', null),
                 variant_color: Joi.string().max(200).optional().allow('', null),
                 variant_size: Joi.string().max(200).optional().allow('', null),
+                options: Joi.array().items(
+                    Joi.object({
+                        attribute_name: Joi.string().max(100).required(),
+                        value: Joi.string().max(100).required()
+                    })
+                ).optional(),
                 stock_quantity: Joi.number().integer().min(0).optional().default(0),
                 reorder_level: Joi.number().integer().min(0).optional().default(5)
             })
@@ -66,7 +73,10 @@ export const validatePagination = (req, res, next) => {
         category: Joi.string().optional().allow(''),
         minPrice: Joi.number().min(0).optional(),
         maxPrice: Joi.number().min(0).optional(),
-        status: Joi.string().valid('active', 'inactive', 'draft', 'out_of_stock').optional()
+        status: Joi.string().valid('active', 'inactive', 'archived').optional(),
+        stockStatus: Joi.string().valid('in_stock', 'low_stock', 'out_of_stock').optional(),
+        sortField: Joi.string().valid('product_name', 'base_price', 'product_status', 'created_at', 'category_name', 'total_stock').optional(),
+        sortDirection: Joi.string().valid('asc', 'desc').optional()
     });
 
     const { error } = schema.validate(req.query, { abortEarly: false });
@@ -92,7 +102,7 @@ export const validateProduct = (req, res, next) => {
         product_name: Joi.string().min(1).max(150).required(),
         base_price: Joi.number().positive().required(),
         descriptions: Joi.string().max(1000).allow('', null).optional(),
-        product_status: Joi.string().valid('active', 'inactive', 'draft', 'out_of_stock').required()
+        product_status: Joi.string().valid('active', 'inactive', 'archived').required()
     });
 
     const { error } = schema.validate(req.body, { abortEarly: false });
@@ -131,10 +141,15 @@ export const validateCategory = (req, res, next) => {
 export const validateVariant = (req, res, next) => {
     const schema = Joi.object({
         product_id: Joi.number().integer().positive().required(),
-        variant_name: Joi.string().min(1).max(200).required(),
         sku: Joi.string().max(100).optional().allow('', null),
         variant_color: Joi.string().max(200).optional().allow('', null),
         variant_size: Joi.string().max(200).optional().allow('', null),
+        options: Joi.array().items(
+            Joi.object({
+                attribute_name: Joi.string().max(100).required(),
+                value: Joi.string().max(100).required()
+            })
+        ).optional(),
         initial_stock: Joi.number().integer().min(0).optional()
     });
 
@@ -202,19 +217,26 @@ export const validateBulkProducts = (req, res, next) => {
                 product_name: Joi.string().min(1).max(150).required(),
                 base_price: Joi.number().positive().required(),
                 descriptions: Joi.string().max(1000).allow('', null).optional(),
-                product_status: Joi.string().valid('active', 'inactive', 'draft', 'out_of_stock').optional(),
+                product_status: Joi.string().valid('active', 'inactive', 'archived').optional(),
                 images: Joi.array().items(
                     Joi.object({
                         image_url: Joi.string().uri().required(),
-                        is_main: Joi.boolean().optional()
+                        is_main: Joi.boolean().optional(),
+                        alt_text: Joi.string().max(255).allow('', null).optional(),
+                        sort_order: Joi.number().integer().min(0).optional().default(0)
                     })
                 ).optional(),
                 variants: Joi.array().items(
                     Joi.object({
-                        variant_name: Joi.string().min(1).max(200).required(),
                         sku: Joi.string().max(100).optional().allow('', null),
                         variant_color: Joi.string().max(200).optional().allow('', null),
                         variant_size: Joi.string().max(200).optional().allow('', null),
+                        options: Joi.array().items(
+                            Joi.object({
+                                attribute_name: Joi.string().max(100).required(),
+                                value: Joi.string().max(100).required()
+                            })
+                        ).optional(),
                         stock_quantity: Joi.number().integer().min(0).optional(),
                         reorder_level: Joi.number().integer().min(0).optional()
                     })

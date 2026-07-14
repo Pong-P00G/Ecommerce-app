@@ -34,8 +34,8 @@ export const isAdmin = (req, res, next) => {
         });
     }
 
-    // Check if user has admin role (role_id = 1)
-    if (req.user.role_id !== 1) {
+    // Check if user has admin role (role_id = 1 or 2)
+    if (req.user.role_id !== 1 && req.user.role_id !== 2) {
         return res.status(403).json({
             success: false,
             message: 'Access denied. Admin privileges required.'
@@ -54,8 +54,8 @@ export const isUser = (req, res, next) => {
         });
     }
 
-    // Check if user has User role (role_id = 2)
-    if (req.user.role_id !== 2) {
+    // Check if user has User/Customer role (role_id = 3)
+    if (req.user.role_id !== 3) {
         return res.status(403).json({
             success: false,
             message: 'Access denied. User role required.'

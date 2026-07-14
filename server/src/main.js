@@ -14,6 +14,11 @@ import authRoutes from './routes/authRoutes.js'
 import productRoutes from './routes/productRoutes.js'
 import dashboardRoutes from './routes/dashboardRoutes.js'
 import imageRoutes from './routes/imageRoutes.js'
+import cartRoutes from './routes/cartRoutes.js'
+import orderRoutes from './routes/orderRoutes.js'
+import paymentRoutes from './routes/paymentRoutes.js'
+import newsletterRoutes from './routes/newsletterRoutes.js'
+import reviewRoutes from './routes/reviewRoutes.js'
 
 
 const app = express()
@@ -37,6 +42,11 @@ app.use('/api/products', productRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/images', imageRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/newsletter', newsletterRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // Serve static files from CDN
 app.use('/cdn', express.static(path.join(__dirname, '../../cdn')));
@@ -49,7 +59,7 @@ app.get('/', (req, res) => {
         endpoints: {
             auth: '/api/auth',
             users: '/api/users',
-            product: '/api/product',
+            product: '/api/products',
             health: '/health'
         }
     });
@@ -62,6 +72,83 @@ app.get('/health', (req, res) => {
         message: 'Server is running',
         timestamp: new Date().toISOString()
     });
+});
+
+// ── SEO: robots.txt ───────────────────────────────────────────────────────────
+
+app.get('/robots.txt', (req, res) => {
+    res.type('text/plain');
+    res.send([
+        'User-agent: *',
+        'Allow: /',
+        'Disallow: /admin/',
+        'Disallow: /api/',
+        'Disallow: /login',
+        'Disallow: /register',
+        'Disallow: /forgotPassword',
+        'Disallow: /userprofile',
+        '',
+        `Sitemap: ${process.env.FRONTEND_URL || 'http://localhost:3001'}/sitemap.xml`,
+        '',
+        '# AlieeShop',
+    ].join('\n'));
+});
+
+// ── SEO: Sitemap ──────────────────────────────────────────────────────────────
+
+app.get('/sitemap.xml', async (req, res) => {
+    try {
+        const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+
+        // Fetch active products for dynamic sitemap entries
+        let products = [];
+        try {
+            const { rows } = await db.query(
+                `SELECT productsid, productname, createdat FROM products WHERE status = 'active' ORDER BY productsid`
+            );
+            products = rows;
+        } catch (err) {
+            // DB might not be available; return static sitemap only
+            console.warn('Could not fetch products for sitemap:', err.message);
+        }
+
+        const today = new Date().toISOString().split('T')[0];
+
+        const staticPages = [
+            { url: '/', priority: '1.0', changefreq: 'daily' },
+            { url: '/product', priority: '0.9', changefreq: 'daily' },
+            { url: '/about', priority: '0.5', changefreq: 'monthly' },
+            { url: '/contact', priority: '0.5', changefreq: 'monthly' },
+            { url: '/gift-cards', priority: '0.6', changefreq: 'weekly' },
+            { url: '/track-order', priority: '0.4', changefreq: 'monthly' },
+            { url: '/returns', priority: '0.5', changefreq: 'monthly' },
+            { url: '/shipping', priority: '0.5', changefreq: 'monthly' },
+            { url: '/faq', priority: '0.6', changefreq: 'weekly' },
+            { url: '/careers', priority: '0.3', changefreq: 'monthly' },
+            { url: '/press', priority: '0.4', changefreq: 'monthly' },
+        ];
+
+        const urls = [
+            ...staticPages.map(p => `  <url>\n    <loc>${baseUrl}${p.url}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>${p.changefreq}</changefreq>\n    <priority>${p.priority}</priority>\n  </url>`),
+            ...products.map(p => {
+                const date = p.createdat ? new Date(p.createdat).toISOString().split('T')[0] : today;
+                return `  <url>\n    <loc>${baseUrl}/product/${p.productsid}</loc>\n    <lastmod>${date}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>`;
+            }),
+        ];
+
+        const sitemap = [
+            '<?xml version="1.0" encoding="UTF-8"?>',
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+            urls.join('\n'),
+            '</urlset>',
+        ].join('\n');
+
+        res.header('Content-Type', 'application/xml');
+        res.send(sitemap);
+    } catch (err) {
+        console.error('Sitemap generation error:', err.message);
+        res.status(500).json({ success: false, message: 'Failed to generate sitemap' });
+    }
 });
 
 // 404 handler - must be after all routes
@@ -82,6 +169,64 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5001;
+
+// ── Startup bootstrap ────────────────────────────────────────────────────────
+
+let lowStockInterval = null;
+
+(async () => {
+    // Auto-create notifications table on startup
+    try {
+        const { ensureTable } = await import('./model/notificationModel.js');
+        await ensureTable();
+        console.log('✅ Notifications table ready');
+    } catch (err) {
+        console.warn('⚠️ Could not init notifications table:', err.message);
+    }
+
+    // Start hourly low-stock check (after table is ready)
+    try {
+        const { checkAndNotifyLowStock } = await import('./services/dashboardService.js');
+        // Run once on startup
+        checkAndNotifyLowStock().catch(() => {});
+        // Then every hour
+        lowStockInterval = setInterval(() => {
+            checkAndNotifyLowStock().catch(() => {});
+        }, 60 * 60 * 1000); // 1 hour
+        console.log('⏰ Low-stock checker scheduled (every hour)');
+    } catch (err) {
+        console.warn('⚠️ Could not start low-stock checker:', err.message);
+    }
+
+    // Auto-create newsletter subscribers table on startup
+    try {
+        const { ensureTable } = await import('./model/newsletterModel.js');
+        await ensureTable();
+        console.log('✅ Newsletter subscribers table ready');
+    } catch (err) {
+        console.warn('⚠️ Could not init newsletter table:', err.message);
+    }
+
+    // Auto-create notification preferences & push subscriptions tables
+    try {
+        const { ensurePrefsTable, ensurePushTable } = await import('./model/notificationModel.js');
+        await ensurePrefsTable();
+        await ensurePushTable();
+        console.log('✅ Notification preferences & push subscriptions tables ready');
+    } catch (err) {
+        console.warn('⚠️ Could not init notification prefs tables:', err.message);
+    }
+
+    // Auto-create reviews table on startup
+    try {
+        const { ensureTable } = await import('./model/reviewModel.js');
+        await ensureTable();
+        console.log('✅ Reviews table ready');
+    } catch (err) {
+        console.warn('⚠️ Could not init reviews table:', err.message);
+    }
+})();
+
 app.listen(PORT, () => {
     console.log('='.repeat(50));
     console.log(`🚀 Server is running on port ${PORT}`);
@@ -89,6 +234,16 @@ app.listen(PORT, () => {
     console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3001'}`);
     console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log('='.repeat(50));
+});
+
+// Graceful shutdown — clear the interval
+process.on('SIGTERM', () => {
+    if (lowStockInterval) clearInterval(lowStockInterval);
+    process.exit(0);
+});
+process.on('SIGINT', () => {
+    if (lowStockInterval) clearInterval(lowStockInterval);
+    process.exit(0);
 });
 
 

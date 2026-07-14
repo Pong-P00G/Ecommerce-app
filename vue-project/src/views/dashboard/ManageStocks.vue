@@ -2,47 +2,73 @@
 import { ref, computed, onMounted } from 'vue';
 import { useProductStore } from '../../stores/product.js';
 import { storeToRefs } from 'pinia';
+import { stockAPI } from '../../api/products/stockApi.js';
+import { dashboardAPI } from '../../api/dashboardApi.js';
+import { useToast } from '../../composables/useToast.js';
+import {
+    Package,
+    AlertTriangle,
+    XCircle,
+    Search,
+    RefreshCw,
+    Bell,
+    History,
+    CheckSquare,
+    Square,
+    Clock,
+    Users,
+} from 'lucide-vue-next';
 
+const toast = useToast();
 const productStore = useProductStore();
 const { products, loading } = storeToRefs(productStore);
 
-// Local state
 const searchQuery = ref('');
-const filterStatus = ref('all'); // all, low, out
+const filterStatus = ref('all');
 const showUpdateModal = ref(false);
 const selectedProduct = ref(null);
 const newStock = ref(0);
+const newReorderLevel = ref(5);
+const stockReason = ref('');
+const updatingStock = ref(false);
+const checkingLowStock = ref(false);
 
-// Computed
+const selectedIds = ref(new Set());
+const showBulkUpdateModal = ref(false);
+const bulkNewStock = ref(0);
+const bulkReorderLevel = ref(5);
+const bulkReason = ref('');
+const bulkUpdating = ref(false);
+
+const showHistoryModal = ref(false);
+const historyProduct = ref(null);
+const stockHistory = ref([]);
+const loadingHistory = ref(false);
+
 const filteredProducts = computed(() => {
   let result = products.value || [];
-
-  // Search filter
   if (searchQuery.value) {
-    const search = searchQuery.value.toLowerCase();
+    const q = searchQuery.value.toLowerCase();
     result = result.filter(p =>
-      p.product_name?.toLowerCase().includes(search) ||
-      p.category_name?.toLowerCase().includes(search)
+      p.product_name?.toLowerCase().includes(q) ||
+      p.category_name?.toLowerCase().includes(q)
     );
   }
-
-  // Status filter
   if (filterStatus.value === 'low') {
     result = result.filter(p => {
-      const stock = parseInt(p.total_stock || 0);
-      return stock > 0 && stock < 10;
+      const s = parseInt(p.total_stock || 0);
+      return s > 0 && s < 10;
     });
   } else if (filterStatus.value === 'out') {
     result = result.filter(p => parseInt(p.total_stock || 0) === 0);
   }
-
   return result;
 });
 
 const lowStockCount = computed(() =>
   products.value?.filter(p => {
-    const stock = parseInt(p.total_stock || 0);
-    return stock > 0 && stock < 10;
+    const s = parseInt(p.total_stock || 0);
+    return s > 0 && s < 10;
   }).length || 0
 );
 
@@ -50,21 +76,65 @@ const outOfStockCount = computed(() =>
   products.value?.filter(p => parseInt(p.total_stock || 0) === 0).length || 0
 );
 
-// Methods
+const allSelectedOnPage = computed(() => {
+  if (filteredProducts.value.length === 0) return false;
+  return filteredProducts.value.every(p => selectedIds.value.has(p.product_id));
+});
+
+const someSelectedOnPage = computed(() => {
+  if (filteredProducts.value.length === 0) return false;
+  return filteredProducts.value.some(p => selectedIds.value.has(p.product_id)) && !allSelectedOnPage.value;
+});
+
+const hasSelectedItems = computed(() => selectedIds.value.size > 0);
+
 const getStockStatus = (stock) => {
-  const stockNum = parseInt(stock || 0);
-  if (stockNum === 0) {
-    return { text: 'Out of Stock', class: 'bg-red-100 text-red-700', dotClass: 'bg-red-600' };
-  }
-  if (stockNum < 10) {
-    return { text: 'Low Stock', class: 'bg-yellow-100 text-yellow-700', dotClass: 'bg-yellow-600' };
-  }
-  return { text: 'In Stock', class: 'bg-green-100 text-green-700', dotClass: 'bg-green-600' };
+  const n = parseInt(stock || 0);
+  if (n === 0) return { text: 'Out of Stock', class: 'bg-red-50 text-red-700', dotClass: 'bg-red-500' };
+  if (n < 10) return { text: 'Low Stock', class: 'bg-amber-50 text-amber-700', dotClass: 'bg-amber-500' };
+  return { text: 'In Stock', class: 'bg-emerald-50 text-emerald-700', dotClass: 'bg-emerald-500' };
 };
+
+const getChangeTypeBadge = (type) => {
+  const map = {
+    IN: 'bg-emerald-100 text-emerald-700',
+    OUT: 'bg-red-100 text-red-700',
+    ADJUST: 'bg-amber-100 text-amber-700',
+    RETURN: 'bg-blue-100 text-blue-700',
+    DAMAGED: 'bg-purple-100 text-purple-700',
+  };
+  return map[type] || 'bg-zinc-100 text-zinc-700';
+};
+
+const formatPrice = (price) => parseFloat(price || 0).toFixed(2);
+
+const filterBtnClass = (v) => ({
+  'bg-zinc-900 text-white': filterStatus.value === v,
+  'bg-zinc-100 text-zinc-700 hover:bg-zinc-200': filterStatus.value !== v,
+});
+
+const toggleSelectAll = () => {
+  if (allSelectedOnPage.value) {
+    filteredProducts.value.forEach(p => selectedIds.value.delete(p.product_id));
+  } else {
+    filteredProducts.value.forEach(p => selectedIds.value.add(p.product_id));
+  }
+  selectedIds.value = new Set(selectedIds.value);
+};
+
+const toggleSelect = (id) => {
+  const s = new Set(selectedIds.value);
+  if (s.has(id)) s.delete(id); else s.add(id);
+  selectedIds.value = s;
+};
+
+const clearSelection = () => { selectedIds.value = new Set(); };
 
 const openUpdateModal = (product) => {
   selectedProduct.value = product;
   newStock.value = parseInt(product.total_stock || 0);
+  newReorderLevel.value = parseInt(product.reorder_level || 5);
+  stockReason.value = '';
   showUpdateModal.value = true;
 };
 
@@ -72,248 +142,445 @@ const closeUpdateModal = () => {
   showUpdateModal.value = false;
   selectedProduct.value = null;
   newStock.value = 0;
+  newReorderLevel.value = 5;
+  stockReason.value = '';
 };
 
 const updateStock = async () => {
   if (!selectedProduct.value) return;
-
+  updatingStock.value = true;
   try {
-    // TODO: Call API to update stock
-    console.log('Updating stock for product:', selectedProduct.value.product_id, 'to:', newStock.value);
-
-    // Update local state
-    selectedProduct.value.total_stock = newStock.value;
-
-    alert('Stock updated successfully!');
-    closeUpdateModal();
-  } catch (error) {
-    console.error('Error updating stock:', error);
-    alert('Error updating stock');
+    const response = await stockAPI.updateProductStock(
+      selectedProduct.value.product_id,
+      newStock.value,
+      newReorderLevel.value,
+      stockReason.value || null
+    );
+    if (response.success) {
+      selectedProduct.value.total_stock = newStock.value;
+      selectedProduct.value.reorder_level = newReorderLevel.value;
+      toast.success('Stock updated');
+      closeUpdateModal();
+    } else {
+      toast.error(response.message || 'Update failed');
+    }
+  } catch (err) {
+    console.error('Stock update error:', err);
+    toast.error(err.response?.data?.message || 'Error updating stock');
+  } finally {
+    updatingStock.value = false;
   }
 };
 
-const formatPrice = (price) => parseFloat(price || 0).toFixed(2);
+const openBulkUpdateModal = () => {
+  bulkNewStock.value = 0;
+  bulkReorderLevel.value = 5;
+  bulkReason.value = '';
+  showBulkUpdateModal.value = true;
+};
+
+const closeBulkUpdateModal = () => {
+  showBulkUpdateModal.value = false;
+  bulkNewStock.value = 0;
+  bulkReason.value = '';
+};
+
+const executeBulkUpdate = async () => {
+  if (selectedIds.value.size === 0) return;
+  bulkUpdating.value = true;
+  try {
+    const ids = Array.from(selectedIds.value);
+    const updates = ids.map(id => ({
+      product_id: id,
+      quantity: bulkNewStock.value,
+      reorder_level: bulkReorderLevel.value,
+      reason: bulkReason.value || 'Bulk stock update',
+    }));
+    const response = await stockAPI.bulkUpdateStock(updates);
+    if (response.success) {
+      const count = response.data?.updated || ids.length;
+      toast.success('Updated ' + count + ' product(s)');
+      closeBulkUpdateModal();
+      selectedIds.value = new Set();
+      await productStore.fetchAllProducts();
+    } else {
+      toast.error(response.message || 'Bulk update failed');
+    }
+  } catch (err) {
+    console.error('Bulk update error:', err);
+    toast.error(err.response?.data?.message || 'Error in bulk update');
+  } finally {
+    bulkUpdating.value = false;
+  }
+};
+
+const openHistoryModal = async (product) => {
+  historyProduct.value = product;
+  showHistoryModal.value = true;
+  loadingHistory.value = true;
+  stockHistory.value = [];
+  try {
+    const response = await stockAPI.getStockHistory(product.product_id);
+    if (response.success) {
+      stockHistory.value = response.data || [];
+    }
+  } catch (err) {
+    console.error('Stock history error:', err);
+    toast.error('Failed to load stock history');
+  } finally {
+    loadingHistory.value = false;
+  }
+};
+
+const closeHistoryModal = () => {
+  showHistoryModal.value = false;
+  historyProduct.value = null;
+  stockHistory.value = [];
+};
+
+const formatTimestamp = (ts) => {
+  if (!ts) return '';
+  const d = new Date(ts);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
+    ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+};
+
+const handleCheckLowStock = async () => {
+  checkingLowStock.value = true;
+  try {
+    const res = await dashboardAPI.checkLowStock();
+    if (res.success) {
+      const c = res.data?.notificationsCreated || 0;
+      if (c > 0) toast.success(c + ' low-stock notification(s) created');
+      else toast.info('Low-stock check complete - no issues found');
+      await productStore.fetchAllProducts();
+    } else {
+      toast.error(res.message || 'Check failed');
+    }
+  } catch (err) {
+    console.error('Low stock check error:', err);
+    toast.error(err.response?.data?.message || 'Error checking low stock');
+  } finally {
+    checkingLowStock.value = false;
+  }
+};
 
 const handleImageError = (event) => {
   event.target.src = 'https://via.placeholder.com/80?text=No+Image';
 };
 
-// Lifecycle
 onMounted(async () => {
   await productStore.fetchAllProducts();
 });
 </script>
 
 <template>
-  <div class="min-h-screen bg-neutral-50">
+  <div class="min-h-screen bg-zinc-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-      <!-- Header -->
-      <div class="mb-8">
-        <h1 class="text-2xl sm:text-3xl font-bold text-ink">Stock Management</h1>
-        <p class="text-neutral-600 mt-1 text-sm sm:text-base">Monitor and update product inventory</p>
+
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+        <div>
+          <span class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-amber-700 mb-2">
+            <Package class="w-3.5 h-3.5" />
+            Inventory
+          </span>
+          <h1 class="text-2xl sm:text-3xl font-bold text-zinc-900">Stock Management</h1>
+          <p class="text-zinc-500 mt-1 text-sm">Monitor inventory, update stock, and configure alerts</p>
+        </div>
       </div>
 
-      <!-- Stats -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8">
-        <div class="bg-paper rounded-2xl shadow-sm p-6">
-          <div class="flex items-center justify-between mb-4">
-            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
+        <div class="bg-white rounded-2xl p-5 sm:p-6 border border-zinc-100">
+          <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center mb-4">
+            <Package class="w-6 h-6 text-amber-700" />
           </div>
-          <p class="text-neutral-600 text-sm mb-1">Total Products</p>
-          <p class="text-3xl font-bold text-ink">{{ products?.length || 0 }}</p>
+          <p class="text-zinc-500 text-xs uppercase tracking-[0.15em] font-bold mb-1">Total Products</p>
+          <p class="text-3xl font-bold text-zinc-900">{{ products?.length || 0 }}</p>
         </div>
-
-        <div class="bg-paper rounded-2xl shadow-sm p-6 border-l-4 border-yellow-500">
-          <div class="flex items-center justify-between mb-4">
-            <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-              <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            </div>
+        <div class="bg-white rounded-2xl p-5 sm:p-6 border border-amber-100">
+          <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center mb-4">
+            <AlertTriangle class="w-6 h-6 text-amber-600" />
           </div>
-          <p class="text-neutral-600 text-sm mb-1">Low Stock</p>
-          <p class="text-3xl font-bold text-yellow-600">{{ lowStockCount }}</p>
+          <p class="text-zinc-500 text-xs uppercase tracking-[0.15em] font-bold mb-1">Low Stock</p>
+          <p class="text-3xl font-bold text-amber-600">{{ lowStockCount }}</p>
         </div>
-
-        <div class="bg-paper rounded-2xl shadow-sm p-6 border-l-4 border-red-500">
-          <div class="flex items-center justify-between mb-4">
-            <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-              <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </div>
+        <div class="bg-white rounded-2xl p-5 sm:p-6 border border-red-100">
+          <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center mb-4">
+            <XCircle class="w-6 h-6 text-red-600" />
           </div>
-          <p class="text-neutral-600 text-sm mb-1">Out of Stock</p>
+          <p class="text-zinc-500 text-xs uppercase tracking-[0.15em] font-bold mb-1">Out of Stock</p>
           <p class="text-3xl font-bold text-red-600">{{ outOfStockCount }}</p>
         </div>
       </div>
 
-      <!-- Filters -->
-      <div class="bg-paper rounded-2xl shadow-sm p-6 mb-6">
+      <div class="bg-white rounded-2xl p-4 sm:p-5 border border-zinc-100 mb-6">
         <div class="flex flex-col sm:flex-row gap-4">
-          <!-- Search -->
-          <div class="flex-1">
-            <div class="relative">
-              <input v-model="searchQuery" type="text" placeholder="Search products..."
-                class="w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400" />
-              <svg class="absolute left-3 top-3.5 h-5 w-5 text-neutral-400" fill="none" stroke="currentColor"
-                viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
+          <div class="flex-1 relative">
+            <Search class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+            <input v-model="searchQuery" type="text" placeholder="Search products..."
+              class="w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-900 transition-all" />
           </div>
-
-          <!-- Status Filter -->
           <div class="flex flex-wrap gap-2">
-            <button @click="filterStatus = 'all'" :class="{
-              'bg-ink text-white': filterStatus === 'all',
-              'bg-neutral-100 text-neutral-700': filterStatus !== 'all'
-            }" class="px-4 py-3 rounded-lg font-medium transition-colors">
-              All
-            </button>
-            <button @click="filterStatus = 'low'" :class="{
-              'bg-yellow-600 text-white': filterStatus === 'low',
-              'bg-neutral-100 text-neutral-700': filterStatus !== 'low'
-            }" class="px-4 py-3 rounded-lg font-medium transition-colors">
-              Low Stock
-            </button>
-            <button @click="filterStatus = 'out'" :class="{
-              'bg-red-600 text-white': filterStatus === 'out',
-              'bg-neutral-100 text-neutral-700': filterStatus !== 'out'
-            }" class="px-4 py-3 rounded-lg font-medium transition-colors">
-              Out of Stock
+            <button @click="filterStatus = 'all'" :class="filterBtnClass('all')"
+              class="px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors">All</button>
+            <button @click="filterStatus = 'low'" :class="filterBtnClass('low')"
+              class="px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors">Low Stock</button>
+            <button @click="filterStatus = 'out'" :class="filterBtnClass('out')"
+              class="px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors">Out of Stock</button>
+            <div class="w-px h-8 bg-zinc-200 self-center mx-1 hidden sm:block"></div>
+            <button @click="handleCheckLowStock" :disabled="checkingLowStock"
+              class="px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 bg-amber-50 text-amber-700 hover:bg-amber-100 disabled:opacity-50">
+              <Bell v-if="!checkingLowStock" class="w-4 h-4" />
+              <RefreshCw v-else class="w-4 h-4 animate-spin" />
+              {{ checkingLowStock ? 'Checking...' : 'Check Alerts' }}
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Loading -->
-      <div v-if="loading" class="flex items-center justify-center py-20">
-        <div class="w-16 h-16 border-4 border-neutral-200 border-t-ink rounded-full animate-spin"></div>
+      <div v-if="hasSelectedItems"
+        class="bg-zinc-900 text-white rounded-2xl px-5 py-3 mb-4 flex items-center justify-between gap-4 flex-wrap">
+        <div class="flex items-center gap-3">
+          <CheckSquare class="w-5 h-5 text-amber-400" />
+          <span class="text-sm font-semibold tabular-nums">{{ selectedIds.size }}</span>
+          <span class="text-sm text-zinc-400">selected</span>
+          <button @click="clearSelection" class="text-xs text-zinc-400 hover:text-white underline underline-offset-2 transition-colors">Clear</button>
+        </div>
+        <button @click="openBulkUpdateModal"
+          class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold transition-all">
+          Update Stock
+        </button>
       </div>
 
-      <!-- Products Table -->
-      <div v-else class="bg-paper rounded-2xl shadow-sm overflow-hidden">
+      <div v-if="loading" class="flex items-center justify-center py-20">
+        <RefreshCw class="w-10 h-10 text-zinc-300 animate-spin" />
+      </div>
+
+      <div v-else class="bg-white rounded-2xl border border-zinc-100 overflow-hidden">
         <div class="overflow-x-auto">
-          <table class="w-full min-w-[800px]">
-            <thead class="bg-neutral-50 border-b border-neutral-200">
+          <table class="w-full min-w-225">
+            <thead class="bg-zinc-50 border-b border-zinc-200">
               <tr>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wider">Product
+                <th class="px-4 sm:px-6 py-3.5 w-12">
+                  <button @click="toggleSelectAll" class="p-0.5">
+                    <CheckSquare v-if="allSelectedOnPage" class="w-4 h-4 text-amber-600" />
+                    <Square v-else-if="someSelectedOnPage" class="w-4 h-4 text-amber-600 opacity-60" />
+                    <Square v-else class="w-4 h-4 text-zinc-300 hover:text-zinc-400 transition-colors" />
+                  </button>
                 </th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wider">Category
-                </th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wider">Price</th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wider">Stock</th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wider">Status</th>
-                <th class="px-6 py-4 text-right text-xs font-semibold text-neutral-600 uppercase tracking-wider">Actions
-                </th>
+                <th class="px-4 sm:px-6 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500">Product</th>
+                <th class="px-4 sm:px-6 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500">Category</th>
+                <th class="px-4 sm:px-6 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500">Price</th>
+                <th class="px-4 sm:px-6 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500">Stock</th>
+                <th class="px-4 sm:px-6 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500">Reorder at</th>
+                <th class="px-4 sm:px-6 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500">Status</th>
+                <th class="px-4 sm:px-6 py-3.5 text-right text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500">Actions</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-neutral-200">
+            <tbody class="divide-y divide-zinc-100">
               <tr v-for="product in filteredProducts" :key="product.product_id"
-                class="hover:bg-neutral-50 transition-colors">
-                <!-- Product -->
-                <td class="px-6 py-4">
-                  <div class="flex items-center gap-4">
-                    <div class="w-16 h-16 bg-neutral-100 rounded-lg overflow-hidden shrink-0">
+                class="hover:bg-zinc-50/80 transition-colors"
+                :class="{ 'bg-amber-50/30': selectedIds.has(product.product_id) }">
+                <td class="px-4 sm:px-6 py-3">
+                  <button @click="toggleSelect(product.product_id)" class="p-0.5">
+                    <CheckSquare v-if="selectedIds.has(product.product_id)" class="w-4 h-4 text-amber-600" />
+                    <Square v-else class="w-4 h-4 text-zinc-300 hover:text-zinc-400 transition-colors" />
+                  </button>
+                </td>
+                <td class="px-4 sm:px-6 py-3">
+                  <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-zinc-100 rounded-xl overflow-hidden shrink-0">
                       <img :src="product.main_image || 'https://via.placeholder.com/80'" :alt="product.product_name"
                         class="w-full h-full object-cover" @error="handleImageError" />
                     </div>
                     <div class="min-w-0">
-                      <p class="font-semibold text-ink truncate">{{ product.product_name }}</p>
-                      <p class="text-sm text-neutral-500 truncate">ID: {{ product.product_id }}</p>
+                      <p class="font-semibold text-zinc-900 text-sm truncate">{{ product.product_name }}</p>
+                      <p class="text-xs text-zinc-500">ID: {{ product.product_id }}</p>
                     </div>
                   </div>
                 </td>
-
-                <!-- Category -->
-                <td class="px-6 py-4">
-                  <span class="text-sm text-ink">{{ product.category_name || 'N/A' }}</span>
+                <td class="px-4 sm:px-6 py-3">
+                  <span class="text-sm text-zinc-700">{{ product.category_name || 'N/A' }}</span>
                 </td>
-
-                <!-- Price -->
-                <td class="px-6 py-4">
-                  <span class="text-sm font-semibold text-ink">${{ formatPrice(product.final_price) }}</span>
+                <td class="px-4 sm:px-6 py-3">
+                  <span class="text-sm font-semibold text-zinc-900 tabular-nums">{{ '$' }}{{ formatPrice(product.final_price || product.base_price) }}</span>
                 </td>
-
-                <!-- Stock -->
-                <td class="px-6 py-4">
-                  <span class="text-2xl font-bold text-ink">{{ product.total_stock || 0 }}</span>
+                <td class="px-4 sm:px-6 py-3">
+                  <span class="text-2xl font-bold text-zinc-900 tabular-nums">{{ product.total_stock || 0 }}</span>
                 </td>
-
-                <!-- Status -->
-                <td class="px-6 py-4">
+                <td class="px-4 sm:px-6 py-3">
+                  <span class="text-sm tabular-nums font-semibold"
+                    :class="parseInt(product.total_stock || 0) <= parseInt(product.reorder_level || 5) ? 'text-amber-600' : 'text-zinc-500'">
+                    {{ product.reorder_level || 5 }}
+                  </span>
+                </td>
+                <td class="px-4 sm:px-6 py-3">
                   <span :class="getStockStatus(product.total_stock).class"
-                    class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold">
+                    class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold">
                     <div :class="getStockStatus(product.total_stock).dotClass" class="w-2 h-2 rounded-full"></div>
                     {{ getStockStatus(product.total_stock).text }}
                   </span>
                 </td>
-
-                <!-- Actions -->
-                <td class="px-6 py-4 text-right">
-                  <button @click="openUpdateModal(product)"
-                    class="px-4 py-2 bg-ink text-white rounded-lg hover:bg-neutral-800 transition-colors text-sm font-medium">
-                    Update Stock
-                  </button>
+                <td class="px-4 sm:px-6 py-3 text-right">
+                  <div class="flex items-center justify-end gap-1">
+                    <button @click="openHistoryModal(product)"
+                      class="p-2 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-all"
+                      title="View stock history">
+                      <History class="w-4 h-4" />
+                    </button>
+                    <button @click="openUpdateModal(product)"
+                      class="px-3 py-2 bg-zinc-900 text-white rounded-xl hover:bg-zinc-800 transition-all text-xs font-semibold">
+                      Update
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <!-- Empty State -->
-        <div v-if="filteredProducts.length === 0" class="text-center py-12">
-          <svg class="mx-auto h-12 w-12 text-neutral-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-          </svg>
-          <p class="text-neutral-500">No products found</p>
+        <div v-if="filteredProducts.length === 0" class="text-center py-16">
+          <Package class="mx-auto w-12 h-12 text-zinc-300 mb-4" />
+          <p class="text-zinc-500 text-sm font-semibold">No products found</p>
+          <p class="text-xs text-zinc-400 mt-1">Try adjusting your search or filter.</p>
         </div>
       </div>
     </div>
 
-    <!-- Update Stock Modal -->
+    <!-- Single Stock Update Modal -->
     <div v-if="showUpdateModal" @click="closeUpdateModal"
-      class="fixed inset-0 bg-ink/50 z-50 flex items-center justify-center p-4">
-      <div @click.stop class="bg-paper rounded-2xl p-5 sm:p-8 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
-        <h3 class="text-xl font-bold text-ink mb-6">Update Stock</h3>
+      class="fixed inset-0 bg-zinc-900/50 z-50 flex items-center justify-center p-4">
+      <div @click.stop class="bg-white rounded-2xl p-5 sm:p-8 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+        <h3 class="text-xl font-bold text-zinc-900 mb-6">Update Stock</h3>
 
-        <!-- Product Info -->
-        <div class="flex items-center gap-4 mb-6 p-4 bg-neutral-50 rounded-lg">
-          <div class="w-16 h-16 bg-neutral-200 rounded-lg overflow-hidden shrink-0">
+        <div class="flex items-center gap-4 mb-6 p-4 bg-zinc-50 rounded-xl">
+          <div class="w-16 h-16 bg-zinc-200 rounded-xl overflow-hidden shrink-0">
             <img :src="selectedProduct?.main_image || 'https://via.placeholder.com/80'"
               :alt="selectedProduct?.product_name" class="w-full h-full object-cover" @error="handleImageError" />
           </div>
           <div class="flex-1 min-w-0">
-            <p class="font-semibold text-ink truncate">{{ selectedProduct?.product_name }}</p>
-            <p class="text-sm text-neutral-500">Current: {{ selectedProduct?.total_stock || 0 }} units</p>
+            <p class="font-semibold text-zinc-900 truncate">{{ selectedProduct?.product_name }}</p>
+            <p class="text-sm text-zinc-500">Current: <span class="font-semibold text-zinc-900">{{ selectedProduct?.total_stock || 0 }}</span> units</p>
           </div>
         </div>
 
-        <!-- Stock Input -->
-        <div class="mb-6">
-          <label class="block text-sm font-semibold text-ink mb-2">New Stock Quantity</label>
+        <div class="mb-4">
+          <label class="block text-xs font-bold uppercase tracking-[0.15em] text-zinc-900 mb-2">New Stock Quantity</label>
           <input v-model.number="newStock" type="number" min="0"
-            class="w-full px-4 py-3 border-2 border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 text-lg font-semibold" />
+            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-lg font-bold tabular-nums text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-900 transition-all" />
         </div>
 
-        <!-- Actions -->
+        <div class="mb-4">
+          <label class="block text-xs font-bold uppercase tracking-[0.15em] text-zinc-900 mb-2">
+            Alert Threshold
+            <span class="text-zinc-400 font-normal normal-case ml-1">(reorder when stock falls below)</span>
+          </label>
+          <input v-model.number="newReorderLevel" type="number" min="0"
+            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-base font-semibold tabular-nums text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-900 transition-all" />
+        </div>
+
+        <div class="mb-6">
+          <label class="block text-xs font-bold uppercase tracking-[0.15em] text-zinc-900 mb-2">Reason (optional)</label>
+          <input v-model="stockReason" type="text" placeholder="e.g. Restock from supplier"
+            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-900 transition-all" />
+        </div>
+
         <div class="flex gap-3">
-          <button @click="closeUpdateModal"
-            class="flex-1 px-6 py-3 bg-neutral-100 text-neutral-700 rounded-lg hover:bg-neutral-200 transition-colors font-semibold">
-            Cancel
+          <button @click="closeUpdateModal" class="flex-1 px-4 py-3 border border-zinc-200 rounded-xl text-sm font-semibold text-zinc-700 hover:bg-zinc-50 transition-colors" :disabled="updatingStock">Cancel</button>
+          <button @click="updateStock" :disabled="updatingStock"
+            class="flex-1 px-4 py-3 bg-zinc-900 text-white rounded-xl text-sm font-semibold hover:bg-zinc-800 transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-2">
+            <RefreshCw v-if="updatingStock" class="w-4 h-4 animate-spin" />
+            {{ updatingStock ? 'Updating...' : 'Update Stock' }}
           </button>
-          <button @click="updateStock"
-            class="flex-1 px-6 py-3 bg-ink text-white rounded-lg hover:bg-neutral-800 transition-colors font-semibold">
-            Update
+        </div>
+      </div>
+    </div>
+
+    <!-- Bulk Stock Update Modal -->
+    <div v-if="showBulkUpdateModal" @click="closeBulkUpdateModal"
+      class="fixed inset-0 bg-zinc-900/50 z-50 flex items-center justify-center p-4">
+      <div @click.stop class="bg-white rounded-2xl p-5 sm:p-8 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+        <h3 class="text-xl font-bold text-zinc-900 mb-2">Bulk Stock Update</h3>
+        <p class="text-sm text-zinc-500 mb-6">Update stock for <strong class="text-zinc-900">{{ selectedIds.size }}</strong> selected product(s)</p>
+
+        <div class="mb-4">
+          <label class="block text-xs font-bold uppercase tracking-[0.15em] text-zinc-900 mb-2">New Stock Quantity</label>
+          <input v-model.number="bulkNewStock" type="number" min="0"
+            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-lg font-bold tabular-nums text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-900 transition-all" />
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-xs font-bold uppercase tracking-[0.15em] text-zinc-900 mb-2">Alert Threshold</label>
+          <input v-model.number="bulkReorderLevel" type="number" min="0"
+            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-base font-semibold tabular-nums text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-900 transition-all" />
+        </div>
+
+        <div class="mb-6">
+          <label class="block text-xs font-bold uppercase tracking-[0.15em] text-zinc-900 mb-2">Reason (optional)</label>
+          <input v-model="bulkReason" type="text" placeholder="e.g. End-of-month restock"
+            class="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/20 focus:border-zinc-900 transition-all" />
+        </div>
+
+        <div class="flex gap-3">
+          <button @click="closeBulkUpdateModal" class="flex-1 px-4 py-3 border border-zinc-200 rounded-xl text-sm font-semibold text-zinc-700 hover:bg-zinc-50 transition-colors" :disabled="bulkUpdating">Cancel</button>
+          <button @click="executeBulkUpdate" :disabled="bulkUpdating"
+            class="flex-1 px-4 py-3 bg-zinc-900 text-white rounded-xl text-sm font-semibold hover:bg-zinc-800 transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-2">
+            <RefreshCw v-if="bulkUpdating" class="w-4 h-4 animate-spin" />
+            {{ bulkUpdating ? 'Updating...' : 'Update All' }}
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stock History Modal -->
+    <div v-if="showHistoryModal" @click="closeHistoryModal"
+      class="fixed inset-0 bg-zinc-900/50 z-50 flex items-center justify-center p-4">
+      <div @click.stop class="bg-white rounded-2xl p-5 sm:p-8 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <span class="text-[10px] uppercase tracking-[0.2em] text-amber-700 font-bold">Stock History</span>
+            <h3 class="text-lg font-bold text-zinc-900 mt-1">{{ historyProduct?.product_name }}</h3>
+          </div>
+          <button @click="closeHistoryModal" class="p-2 rounded-lg hover:bg-zinc-100 transition-colors">
+            <svg class="w-5 h-5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div v-if="loadingHistory" class="flex items-center justify-center py-12">
+          <RefreshCw class="w-8 h-8 text-zinc-300 animate-spin" />
+        </div>
+
+        <div v-else-if="stockHistory.length === 0" class="text-center py-12">
+          <Clock class="w-12 h-12 text-zinc-200 mx-auto mb-3" />
+          <p class="text-zinc-500 font-medium">No stock history yet</p>
+          <p class="text-xs text-zinc-400 mt-1">Stock changes will appear here once you update inventory.</p>
+        </div>
+
+        <div v-else class="space-y-3 max-h-96 overflow-y-auto">
+          <div v-for="log in stockHistory" :key="log.log_id"
+            class="flex items-start gap-4 p-4 bg-zinc-50 rounded-xl">
+            <div :class="['px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0', getChangeTypeBadge(log.change_type)]">
+              {{ log.change_type }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-baseline gap-2">
+                <span v-if="log.change_type === 'IN'" class="text-emerald-600 font-bold text-lg">+{{ log.quantity }}</span>
+                <span v-else-if="log.change_type === 'OUT'" class="text-red-600 font-bold text-lg">-{{ log.quantity }}</span>
+                <span v-else class="text-amber-600 font-bold text-lg">{{ log.quantity }}</span>
+              </div>
+              <p v-if="log.reason" class="text-xs text-zinc-500 mt-0.5">{{ log.reason }}</p>
+              <div class="flex items-center gap-3 mt-1 text-[10px] text-zinc-400">
+                <span class="inline-flex items-center gap-1">
+                  <Clock class="w-3 h-3" />
+                  {{ formatTimestamp(log.created_at) }}
+                </span>
+                <span v-if="log.user_name" class="inline-flex items-center gap-1">
+                  <Users class="w-3 h-3" />
+                  {{ log.user_name }}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

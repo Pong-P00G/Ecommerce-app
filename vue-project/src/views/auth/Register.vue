@@ -28,7 +28,7 @@ const formData = ref({
   last_name: '',
   email: '',
   password: '',
-  role_id: 2 // Default to customer role
+  role_id: 3 // Default to customer role (schema: 3 = user)
 });
 
 const confirmPassword = ref('');
@@ -186,7 +186,7 @@ const handleSubmit = async () => {
     if (result.success) {
       success.value = 'Registration successful! Redirecting...';
       setTimeout(() => {
-        // Redirect based on role_id (1 = Admin, 2 = User)
+        // Redirect based on role_id (1 = superadmin, 2 = admin, 3 = user/customer)
         if (authStore.user?.role_id === 1) {
           router.push('/admin/dashboard');
         } else {

@@ -15,20 +15,41 @@ import {
     Truck,
     RotateCcw,
     CreditCard,
-    Sparkles
+    Sparkles,
+    Loader2,
+    AlertCircle,
+    CheckCircle
 } from 'lucide-vue-next';
+import { subscribeNewsletter } from '../api/api.js';
 
 const currentYear = new Date().getFullYear();
 const email = ref('');
 const subscribed = ref(false);
+const subscribing = ref(false);
+const subscribeError = ref('');
 
-const submitNewsletter = () => {
+const submitNewsletter = async () => {
     if (!email.value || !email.value.includes('@')) return;
-    subscribed.value = true;
-    setTimeout(() => {
-        subscribed.value = false;
+    
+    subscribing.value = true;
+    subscribeError.value = '';
+    
+    try {
+        const result = await subscribeNewsletter(email.value);
+        subscribed.value = true;
         email.value = '';
-    }, 3500);
+        setTimeout(() => {
+            subscribed.value = false;
+        }, 4000);
+    } catch (err) {
+        const msg = err.response?.data?.message || 'Something went wrong. Please try again.';
+        subscribeError.value = msg;
+        setTimeout(() => {
+            subscribeError.value = '';
+        }, 4000);
+    } finally {
+        subscribing.value = false;
+    }
 };
 
 const scrollToTop = () => {
@@ -129,19 +150,26 @@ const perks = [
                                     placeholder="Enter your email"
                                     class="w-full pl-11 pr-4 py-3 bg-neutral-900 border border-neutral-800 rounded-full text-sm text-paper placeholder:text-neutral-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
                                 />
-                            </div>
-                            <button
-                                type="submit"
-                                class="inline-flex items-center justify-center gap-2 px-5 py-3 bg-accent hover:bg-accent-600 text-white font-bold text-sm rounded-full transition-all duration-300 shadow-[0_8px_24px_-6px_rgb(249_115_22_/0.45)] hover:shadow-[0_12px_28px_-6px_rgb(249_115_22_/0.55)] hover:-translate-y-0.5"
-                            >
-                                <Send class="w-4 h-4" />
-                                <span class="hidden sm:inline">Subscribe</span>
-                            </button>
+                            </div>                                <button
+                                    type="submit"
+                                    :disabled="subscribing"
+                                    class="inline-flex items-center justify-center gap-2 px-5 py-3 bg-accent hover:bg-accent-600 text-white font-bold text-sm rounded-full transition-all duration-300 shadow-[0_8px_24px_-6px_rgb(249_115_22_/0.45)] hover:shadow-[0_12px_28px_-6px_rgb(249_115_22_/0.55)] hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                                >
+                                    <component :is="subscribing ? Loader2 : Send" class="w-4 h-4" :class="{ 'animate-spin': subscribing }" />
+                                    <span class="hidden sm:inline">{{ subscribing ? 'Sending...' : 'Subscribe' }}</span>
+                                </button>
                         </form>
+                        <!-- Success / Error feedback -->
                         <transition name="slide-fade">
                             <p v-if="subscribed" class="text-xs text-accent-300 font-medium flex items-center gap-1.5">
-                                <span class="w-1.5 h-1.5 bg-accent-400 rounded-full pulse-dot"></span>
+                                <CheckCircle class="w-3.5 h-3.5 text-accent-400" />
                                 Thanks for subscribing! Check your inbox.
+                            </p>
+                        </transition>
+                        <transition name="slide-fade">
+                            <p v-if="subscribeError" class="text-xs text-red-400 font-medium flex items-center gap-1.5">
+                                <AlertCircle class="w-3.5 h-3.5 text-red-400" />
+                                {{ subscribeError }}
                             </p>
                         </transition>
                         <p class="text-xs text-neutral-500">

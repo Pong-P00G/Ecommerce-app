@@ -30,5 +30,11 @@ export const discountAPI = {
     async deleteDiscount(discountId) {
         const { data } = await api.delete(`/products/discount/${discountId}`);
         return data;
+    },
+
+    // Get all discounts across all products (Admin only)
+    async getAllDiscounts() {
+        const { data } = await api.get('/products/discounts');
+        return data;
     }
-}
+};

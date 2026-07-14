@@ -39,4 +39,14 @@ export const stockAPI = {
         const { data } = await api.get('/products/stock/low');
         return data;
     },
-}
+
+    // Update product-level stock (Admin only)
+    async updateProductStock(productId, quantity, reorderLevel = 5, reason = null) {
+        const { data } = await api.put(`/products/${productId}/stock`, {
+            quantity,
+            reorder_level: reorderLevel,
+            reason
+        });
+        return data;
+    },
+};

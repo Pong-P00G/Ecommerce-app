@@ -1,7 +1,7 @@
 import express from 'express';
 import * as imageController from '../controller/imageController.js';
-import protect from '../middleware/authMiddleware.js';
-import { isAdmin } from '../middleware/authMiddleware.js';
+import protect from '../middleware/authMiddleWare.js';
+import { isAdmin } from '../middleware/authMiddleWare.js';
 
 const router = express.Router();
 

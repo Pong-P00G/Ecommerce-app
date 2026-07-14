@@ -1,272 +1,597 @@
 <script setup>
 import { ref } from 'vue';
+import { dashboardAPI } from '../../api/dashboardApi.js';
+import { useToast } from '../../composables/useToast.js';
+import {
+    FileText,
+    Package,
+    Users,
+    DollarSign,
+    Download,
+    BarChart3,
+    Sparkles,
+    FileSpreadsheet,
+    Tag,
+    TrendingDown,
+    Clock,
+    Percent,
+    AlertTriangle,
+} from 'lucide-vue-next';
+
+const toast = useToast();
 
 const reportType = ref('sales');
 const dateRange = ref('month');
 const startDate = ref('');
 const endDate = ref('');
 const generating = ref(false);
-
-const reportHistory = ref([
-  { id: 1, name: 'Sales Report - January 2026', type: 'Sales', date: '2026-01-24', size: '245 KB' },
-  { id: 2, name: 'Inventory Report - January 2026', type: 'Inventory', date: '2026-01-23', size: '189 KB' },
-  { id: 3, name: 'Customer Report - January 2026', type: 'Customer', date: '2026-01-22', size: '156 KB' },
-  { id: 4, name: 'Sales Report - December 2025', type: 'Sales', date: '2026-01-15', size: '298 KB' }
-]);
+const generatedReport = ref(null);
 
 const reportTypes = [
-  { value: 'sales', label: 'Sales Report', icon: '📊', desc: 'Revenue, orders, and sales analytics' },
-  { value: 'inventory', label: 'Inventory Report', icon: '📦', desc: 'Stock levels and product performance' },
-  { value: 'customer', label: 'Customer Report', icon: '👥', desc: 'Customer data and behavior' },
-  { value: 'financial', label: 'Financial Report', icon: '💰', desc: 'Profit, expenses, and financial metrics' }
+    { value: 'sales',     label: 'Sales Report',     icon: BarChart3,    desc: 'Revenue, orders, and sales analytics',
+      color: 'bg-accent/10 text-accent' },
+    { value: 'inventory', label: 'Inventory Report',  icon: Package,     desc: 'Stock levels and product performance',
+      color: 'bg-ink/10 text-ink' },
+    { value: 'customer',  label: 'Customer Report',   icon: Users,       desc: 'Customer data and behavior',
+      color: 'bg-info/10 text-info' },
+    { value: 'financial', label: 'Financial Report',  icon: DollarSign,  desc: 'Revenue, orders, and financial metrics',
+      color: 'bg-success/10 text-success' },
+    { value: 'discount',  label: 'Discount Report',   icon: Tag,         desc: 'Discount usage, redemption rates, revenue impact',
+      color: 'bg-purple-500/10 text-purple-600' }
 ];
 
 const generateReport = async () => {
-  generating.value = true;
+    try {
+        generating.value = true;
 
-  // Simulate report generation
-  await new Promise(resolve => setTimeout(resolve, 2000));
+        const params = {
+            type: reportType.value,
+            dateRange: dateRange.value
+        };
+        if (dateRange.value === 'custom') {
+            params.startDate = startDate.value;
+            params.endDate = endDate.value;
+        }
 
-  const newReport = {
-    id: reportHistory.value.length + 1,
-    name: `${reportTypes.find(t => t.value === reportType.value).label} - ${new Date().toLocaleDateString()}`,
-    type: reportTypes.find(t => t.value === reportType.value).label,
-    date: new Date().toISOString().split('T')[0],
-    size: Math.floor(Math.random() * 300) + 100 + ' KB'
-  };
+        const response = await dashboardAPI.generateReport(params);
 
-  reportHistory.value.unshift(newReport);
-  generating.value = false;
-
-  alert('Report generated successfully!');
-};
-
-const downloadReport = (report) => {
-  alert(`Downloading: ${report.name}`);
-  // TODO: Implement actual download
-};
-
-const deleteReport = (reportId) => {
-  if (confirm('Are you sure you want to delete this report?')) {
-    const index = reportHistory.value.findIndex(r => r.id === reportId);
-    if (index !== -1) {
-      reportHistory.value.splice(index, 1);
-      alert('Report deleted successfully!');
+        if (response.success) {
+            generatedReport.value = response.data;
+            toast.success('Report generated successfully!');
+        } else {
+            toast.error(response.message || 'Failed to generate report');
+        }
+    } catch (err) {
+        console.error('Error generating report:', err);
+        toast.error(err.response?.data?.message || 'Failed to generate report');
+    } finally {
+        generating.value = false;
     }
-  }
 };
+
+const downloadReport = () => {
+    if (!generatedReport.value) return;
+
+    const dataStr = JSON.stringify(generatedReport.value, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${generatedReport.value.label?.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast.success(`Downloaded ${generatedReport.value.label}`);
+};
+
+const downloadAsCSV = () => {
+    if (!generatedReport.value) return;
+
+    let csv = '';
+    const data = generatedReport.value;
+
+    if (data.summary) {
+        csv += 'Metric,Value\n';
+        Object.entries(data.summary).forEach(([key, val]) => {
+            if (typeof val !== 'object') {
+                csv += `${key},${val}\n`;
+            }
+        });
+    } else if (data.low_stock_items?.length > 0) {
+        csv += 'Product,SKU,Quantity,Reorder Level,Shortage\n';
+        data.low_stock_items.forEach(item => {
+            csv += `${item.productname},${item.sku || ''},${item.quantity},${item.reorder_level},${item.shortage}\n`;
+        });
+    } else if (data.recent_users?.length > 0) {
+        csv += 'Username,Email,Joined\n';
+        data.recent_users.forEach(u => {
+            csv += `${u.username},${u.email},${u.joined_at || ''}\n`;
+        });
+    } else {
+        csv += `Report,${data.label},Generated,${data.generated_at}\n`;
+    }
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${data.label?.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast.success('CSV downloaded');
+};
+
+const newReport = () => {
+    generatedReport.value = null;
+};
+
+const formatPrice = (price) => parseFloat(price || 0).toFixed(2);
 
 const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+};
+
+const truncate = (text, len = 60) => {
+    if (!text || text.length <= len) return text || '';
+    return text.substring(0, len) + '...';
 };
 </script>
 
 <template>
-  <div class="min-h-screen bg-neutral-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-      <!-- Header -->
-      <div class="mb-8">
-        <h1 class="text-2xl sm:text-3xl font-bold text-ink">Reports</h1>
-        <p class="text-neutral-600 mt-1 text-sm sm:text-base">Generate and download business reports</p>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Report Generator -->
-        <div class="lg:col-span-2 space-y-6">
-          <!-- Report Type Selection -->
-          <div class="bg-paper rounded-2xl shadow-sm p-5 sm:p-6">
-            <h2 class="text-lg font-bold text-ink mb-6">Generate New Report</h2>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <label v-for="type in reportTypes" :key="type.value" :class="{
-                'border-ink bg-neutral-50': reportType === type.value,
-                'border-neutral-200': reportType !== type.value
-              }"
-                class="flex items-start gap-4 p-4 border-2 rounded-xl cursor-pointer hover:bg-neutral-50 transition-colors">
-                <input v-model="reportType" type="radio" :value="type.value" class="mt-1" />
-                <div class="flex-1">
-                  <div class="flex items-center gap-2 mb-1">
-                    <span class="text-2xl">{{ type.icon }}</span>
-                    <p class="font-semibold text-ink">{{ type.label }}</p>
-                  </div>
-                  <p class="text-sm text-neutral-600">{{ type.desc }}</p>
-                </div>
-              </label>
+    <div class="min-h-screen bg-neutral-100">
+        <div class="section py-6 sm:py-8">
+            <!-- Header -->
+            <div class="mb-8">
+                <span class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-accent mb-2">
+                    <FileText class="w-3.5 h-3.5" />
+                    Reports
+                </span>
+                <h1 class="text-2xl sm:text-3xl font-bold text-ink">Generate &amp; download reports</h1>
+                <p class="text-neutral-500 mt-1 text-sm">Create business reports with live data from your store</p>
             </div>
 
-            <!-- Date Range -->
-            <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-semibold text-ink mb-2">Date Range</label>
-                <select v-model="dateRange"
-                  class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 bg-paper">
-                  <option value="week">Last 7 Days</option>
-                  <option value="month">Last 30 Days</option>
-                  <option value="quarter">Last 3 Months</option>
-                  <option value="year">Last Year</option>
-                  <option value="custom">Custom Range</option>
-                </select>
-              </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Report Generator -->
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="card-flat p-5 sm:p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <span class="text-[10px] uppercase tracking-[0.2em] text-accent font-bold">Generator</span>
+                                <h2 class="font-elegant font-bold text-xl text-ink mt-1">Create new report</h2>
+                            </div>
+                        </div>
 
-              <!-- Custom Date Range -->
-              <div v-if="dateRange === 'custom'" class="grid grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-sm font-semibold text-ink mb-2">Start Date</label>
-                  <input v-model="startDate" type="date"
-                    class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400" />
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <label v-for="type in reportTypes" :key="type.value"
+                                :class="[
+                                    'flex items-start gap-4 p-4 border-2 rounded-xl cursor-pointer hover:bg-neutral-50 transition-all',
+                                    reportType === type.value
+                                        ? 'border-ink bg-neutral-50'
+                                        : 'border-neutral-200'
+                                ]"
+                            >
+                                <input v-model="reportType" type="radio" :value="type.value" class="mt-1.5 shrink-0" />
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <component :is="type.icon" class="w-4 h-4 shrink-0" :class="type.color.split(' ')[1]" />
+                                        <p class="font-semibold text-sm text-ink">{{ type.label }}</p>
+                                    </div>
+                                    <p class="text-xs text-neutral-500">{{ type.desc }}</p>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-[0.2em] text-ink mb-2">Date range</label>
+                                <select v-model="dateRange" class="input-base">
+                                    <option value="week">Last 7 Days</option>
+                                    <option value="month">Last 30 Days</option>
+                                    <option value="quarter">Last 3 Months</option>
+                                    <option value="year">Last Year</option>
+                                    <option value="custom">Custom Range</option>
+                                </select>
+                            </div>
+                            <div v-if="dateRange === 'custom'" class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase tracking-[0.15em] text-ink mb-2">Start date</label>
+                                    <input v-model="startDate" type="date" class="input-base" />
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase tracking-[0.15em] text-ink mb-2">End date</label>
+                                    <input v-model="endDate" type="date" class="input-base" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <button @click="generateReport" :disabled="generating"
+                            class="btn-accent w-full mt-6 py-3.5 disabled:opacity-50">
+                            <div v-if="generating" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            <FileText v-else class="w-4 h-4" />
+                            {{ generating ? 'Generating report...' : 'Generate Report' }}
+                        </button>
+                    </div>
+
+                    <!-- Report Preview -->
+                    <div v-if="generatedReport" class="card-flat p-5 sm:p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <span class="text-[10px] uppercase tracking-[0.2em] text-accent font-bold">Preview</span>
+                                <h2 class="font-elegant font-bold text-xl text-ink mt-1">{{ generatedReport.label }}</h2>
+                                <p class="text-xs text-neutral-500 mt-1">Generated {{ formatDate(generatedReport.generated_at) }}</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button @click="downloadAsCSV" class="btn-ghost text-xs gap-1.5">
+                                    <FileSpreadsheet class="w-3.5 h-3.5" />
+                                    CSV
+                                </button>
+                                <button @click="downloadReport" class="btn-primary text-xs gap-1.5">
+                                    <Download class="w-3.5 h-3.5" />
+                                    JSON
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Sales Report -->
+                        <div v-if="generatedReport.type === 'sales' && generatedReport.summary" class="space-y-4">
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                <div class="bg-neutral-50 rounded-xl p-4">
+                                    <p class="text-[10px] uppercase tracking-[0.15em] text-neutral-500 font-bold mb-1">Revenue</p>
+                                    <p class="text-xl font-bold text-ink tabular-nums">{{ '$' }}{{ formatPrice(generatedReport.summary.total_revenue) }}</p>
+                                </div>
+                                <div class="bg-neutral-50 rounded-xl p-4">
+                                    <p class="text-[10px] uppercase tracking-[0.15em] text-neutral-500 font-bold mb-1">Orders</p>
+                                    <p class="text-xl font-bold text-ink tabular-nums">{{ generatedReport.summary.total_orders }}</p>
+                                </div>
+                                <div class="bg-neutral-50 rounded-xl p-4">
+                                    <p class="text-[10px] uppercase tracking-[0.15em] text-neutral-500 font-bold mb-1">Customers</p>
+                                    <p class="text-xl font-bold text-ink tabular-nums">{{ generatedReport.summary.total_customers }}</p>
+                                </div>
+                                <div class="bg-neutral-50 rounded-xl p-4">
+                                    <p class="text-[10px] uppercase tracking-[0.15em] text-neutral-500 font-bold mb-1">Avg Order</p>
+                                    <p class="text-xl font-bold text-ink tabular-nums">{{ '$' }}{{ formatPrice(generatedReport.summary.average_order_value) }}</p>
+                                </div>
+                            </div>
+                            <div v-if="generatedReport.product_performance?.length" class="overflow-x-auto">
+                                <p class="text-xs font-bold uppercase tracking-[0.15em] text-neutral-500 mb-3">Top products</p>
+                                <table class="w-full min-w-[400px]">
+                                    <thead class="bg-neutral-50 border-b border-neutral-200">
+                                        <tr>
+                                            <th class="px-4 py-2.5 text-left text-[10px] font-bold uppercase text-neutral-500">Product</th>
+                                            <th class="px-4 py-2.5 text-right text-[10px] font-bold uppercase text-neutral-500">Units</th>
+                                            <th class="px-4 py-2.5 text-right text-[10px] font-bold uppercase text-neutral-500">Revenue</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-neutral-200">
+                                        <tr v-for="p in generatedReport.product_performance" :key="p.name" class="hover:bg-neutral-50">
+                                            <td class="px-4 py-3 text-sm font-semibold text-ink">{{ truncate(p.name, 40) }}</td>
+                                            <td class="px-4 py-3 text-sm text-right text-ink tabular-nums">{{ p.units }}</td>
+                                            <td class="px-4 py-3 text-sm text-right text-ink tabular-nums font-bold">{{ '$' }}{{ formatPrice(p.revenue) }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Inventory Report -->
+                        <div v-else-if="generatedReport.type === 'inventory'" class="space-y-4">
+                            <div class="grid grid-cols-3 gap-3">
+                                <div class="bg-neutral-50 rounded-xl p-4">
+                                    <p class="text-[10px] uppercase tracking-[0.15em] text-neutral-500 font-bold mb-1">Total Products</p>
+                                    <p class="text-xl font-bold text-ink tabular-nums">{{ generatedReport.total_products }}</p>
+                                </div>
+                                <div class="bg-neutral-50 rounded-xl p-4">
+                                    <p class="text-[10px] uppercase tracking-[0.15em] text-neutral-500 font-bold mb-1">Low Stock</p>
+                                    <p class="text-xl font-bold text-warning tabular-nums">{{ generatedReport.low_stock_count }}</p>
+                                </div>
+                                <div class="bg-neutral-50 rounded-xl p-4">
+                                    <p class="text-[10px] uppercase tracking-[0.15em] text-neutral-500 font-bold mb-1">Out of Stock</p>
+                                    <p class="text-xl font-bold text-danger tabular-nums">{{ generatedReport.out_of_stock_count }}</p>
+                                </div>
+                            </div>
+                            <div v-if="generatedReport.low_stock_items?.length" class="overflow-x-auto">
+                                <p class="text-xs font-bold uppercase tracking-[0.15em] text-neutral-500 mb-3">Low stock items</p>
+                                <table class="w-full min-w-[400px]">
+                                    <thead class="bg-neutral-50 border-b border-neutral-200">
+                                        <tr>
+                                            <th class="px-4 py-2.5 text-left text-[10px] font-bold uppercase text-neutral-500">Product</th>
+                                            <th class="px-4 py-2.5 text-right text-[10px] font-bold uppercase text-neutral-500">Stock</th>
+                                            <th class="px-4 py-2.5 text-right text-[10px] font-bold uppercase text-neutral-500">Min</th>
+                                            <th class="px-4 py-2.5 text-right text-[10px] font-bold uppercase text-neutral-500">Shortage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-neutral-200">
+                                        <tr v-for="item in generatedReport.low_stock_items" :key="item.productname" class="hover:bg-neutral-50">
+                                            <td class="px-4 py-3 text-sm font-semibold text-ink">{{ truncate(item.productname, 40) }}</td>
+                                            <td class="px-4 py-3 text-sm text-right text-ink tabular-nums">{{ item.quantity }}</td>
+                                            <td class="px-4 py-3 text-sm text-right text-neutral-600 tabular-nums">{{ item.reorder_level }}</td>
+                                            <td class="px-4 py-3 text-sm text-right text-danger tabular-nums font-bold">{{ item.shortage }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Customer Report -->
+                        <div v-else-if="generatedReport.type === 'customer'" class="space-y-4">
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                <div class="bg-neutral-50 rounded-xl p-4">
+                                    <p class="text-[10px] uppercase tracking-[0.15em] text-neutral-500 font-bold mb-1">Total</p>
+                                    <p class="text-xl font-bold text-ink tabular-nums">{{ generatedReport.total_users }}</p>
+                                </div>
+                                <div class="bg-neutral-50 rounded-xl p-4">
+                                    <p class="text-[10px] uppercase tracking-[0.15em] text-neutral-500 font-bold mb-1">New Today</p>
+                                    <p class="text-xl font-bold text-accent tabular-nums">{{ generatedReport.new_today }}</p>
+                                </div>
+                                <div class="bg-neutral-50 rounded-xl p-4">
+                                    <p class="text-[10px] uppercase tracking-[0.15em] text-neutral-500 font-bold mb-1">This Week</p>
+                                    <p class="text-xl font-bold text-ink tabular-nums">{{ generatedReport.new_this_week }}</p>
+                                </div>
+                                <div class="bg-neutral-50 rounded-xl p-4">
+                                    <p class="text-[10px] uppercase tracking-[0.15em] text-neutral-500 font-bold mb-1">This Month</p>
+                                    <p class="text-xl font-bold text-ink tabular-nums">{{ generatedReport.new_this_month }}</p>
+                                </div>
+                            </div>
+                            <div v-if="generatedReport.recent_users?.length" class="overflow-x-auto">
+                                <p class="text-xs font-bold uppercase tracking-[0.15em] text-neutral-500 mb-3">Recent users</p>
+                                <table class="w-full min-w-[400px]">
+                                    <thead class="bg-neutral-50 border-b border-neutral-200">
+                                        <tr>
+                                            <th class="px-4 py-2.5 text-left text-[10px] font-bold uppercase text-neutral-500">Username</th>
+                                            <th class="px-4 py-2.5 text-left text-[10px] font-bold uppercase text-neutral-500">Email</th>
+                                            <th class="px-4 py-2.5 text-right text-[10px] font-bold uppercase text-neutral-500">Joined</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-neutral-200">
+                                        <tr v-for="u in generatedReport.recent_users" :key="u.id" class="hover:bg-neutral-50">
+                                            <td class="px-4 py-3 text-sm font-semibold text-ink">{{ u.username }}</td>
+                                            <td class="px-4 py-3 text-sm text-neutral-600">{{ u.email }}</td>
+                                            <td class="px-4 py-3 text-sm text-right text-neutral-600 tabular-nums">{{ formatDate(u.joined_at) }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Financial Report -->
+                        <div v-else-if="generatedReport.type === 'financial'" class="space-y-4">
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                <div class="bg-neutral-50 rounded-xl p-4">
+                                    <p class="text-[10px] uppercase tracking-[0.15em] text-neutral-500 font-bold mb-1">Revenue</p>
+                                    <p class="text-xl font-bold text-ink tabular-nums">{{ '$' }}{{ formatPrice(generatedReport.revenue?.month) }}</p>
+                                </div>
+                                <div class="bg-neutral-50 rounded-xl p-4">
+                                    <p class="text-[10px] uppercase tracking-[0.15em] text-neutral-500 font-bold mb-1">Total Orders</p>
+                                    <p class="text-xl font-bold text-ink tabular-nums">{{ generatedReport.orders?.total }}</p>
+                                </div>
+                                <div class="bg-neutral-50 rounded-xl p-4">
+                                    <p class="text-[10px] uppercase tracking-[0.15em] text-neutral-500 font-bold mb-1">Avg Order</p>
+                                    <p class="text-xl font-bold text-ink tabular-nums">{{ '$' }}{{ formatPrice(generatedReport.average_order_value) }}</p>
+                                </div>
+                                <div class="bg-neutral-50 rounded-xl p-4">
+                                    <p class="text-[10px] uppercase tracking-[0.15em] text-neutral-500 font-bold mb-1">Growth</p>
+                                    <p class="text-xl font-bold tabular-nums" :class="(generatedReport.growth?.revenue || 0) > 0 ? 'text-success' : 'text-danger'">
+                                        {{ generatedReport.growth?.revenue > 0 ? '+' : '' }}{{ generatedReport.growth?.revenue || 0 }}%
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Discount Report -->
+                        <div v-else-if="generatedReport.type === 'discount'" class="space-y-6">
+                            <!-- Summary KPI Cards -->
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                <div class="bg-neutral-50 rounded-xl p-4">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <Tag class="w-3.5 h-3.5 text-purple-500" />
+                                        <p class="text-[10px] uppercase tracking-[0.15em] text-neutral-500 font-bold">Total Discounts</p>
+                                    </div>
+                                    <p class="text-xl font-bold text-ink tabular-nums">{{ generatedReport.summary.total_discounts }}</p>
+                                </div>
+                                <div class="bg-neutral-50 rounded-xl p-4">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <Percent class="w-3.5 h-3.5 text-accent" />
+                                        <p class="text-[10px] uppercase tracking-[0.15em] text-neutral-500 font-bold">Redemption Rate</p>
+                                    </div>
+                                    <p class="text-xl font-bold text-ink tabular-nums">{{ generatedReport.summary.redemption_rate }}%</p>
+                                </div>
+                                <div class="bg-neutral-50 rounded-xl p-4">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <TrendingDown class="w-3.5 h-3.5 text-danger" />
+                                        <p class="text-[10px] uppercase tracking-[0.15em] text-neutral-500 font-bold">Revenue Impact</p>
+                                    </div>
+                                    <p class="text-xl font-bold text-ink tabular-nums">{{ '$' }}{{ formatPrice(generatedReport.summary.total_discount_amount) }}</p>
+                                </div>
+                                <div class="bg-neutral-50 rounded-xl p-4">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <Clock class="w-3.5 h-3.5 text-amber-500" />
+                                        <p class="text-[10px] uppercase tracking-[0.15em] text-neutral-500 font-bold">Avg Amount</p>
+                                    </div>
+                                    <p class="text-xl font-bold text-ink tabular-nums">{{ '$' }}{{ formatPrice(generatedReport.summary.avg_discount_amount) }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Status Breakdown -->
+                            <div class="grid grid-cols-3 gap-3">
+                                <div class="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
+                                    <p class="text-[10px] uppercase tracking-[0.15em] text-emerald-600 font-bold mb-1">Active</p>
+                                    <p class="text-lg font-bold text-emerald-700 tabular-nums">{{ generatedReport.summary.active_count }}</p>
+                                </div>
+                                <div class="bg-amber-50 rounded-xl p-4 border border-amber-100">
+                                    <p class="text-[10px] uppercase tracking-[0.15em] text-amber-600 font-bold mb-1">Scheduled</p>
+                                    <p class="text-lg font-bold text-amber-700 tabular-nums">{{ generatedReport.summary.scheduled_count }}</p>
+                                </div>
+                                <div class="bg-zinc-100 rounded-xl p-4 border border-zinc-200">
+                                    <p class="text-[10px] uppercase tracking-[0.15em] text-zinc-500 font-bold mb-1">Expired</p>
+                                    <p class="text-lg font-bold text-zinc-600 tabular-nums">{{ generatedReport.summary.expired_count }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Revenue Impact Comparison -->
+                            <div class="bg-neutral-50 rounded-xl p-4">
+                                <p class="text-xs font-bold uppercase tracking-[0.15em] text-neutral-500 mb-3">Revenue: Discounted vs Non-Discounted</p>
+                                <div class="space-y-3">
+                                    <div>
+                                        <div class="flex justify-between text-sm mb-1">
+                                            <span class="font-semibold text-ink">Non-Discounted Revenue</span>
+                                            <span class="font-bold text-ink tabular-nums">{{ '$' }}{{ formatPrice(generatedReport.summary.non_discounted_revenue) }}</span>
+                                        </div>
+                                        <div class="w-full bg-neutral-200 rounded-full h-2.5 overflow-hidden">
+                                            <div class="bg-accent h-2.5 rounded-full transition-all" :style="{ width: (100 - generatedReport.summary.discount_revenue_share) + '%' }"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-sm mb-1">
+                                            <span class="font-semibold text-ink">Discounted Revenue</span>
+                                            <span class="font-bold text-ink tabular-nums">{{ '$' }}{{ formatPrice(generatedReport.summary.discounted_revenue) }}</span>
+                                        </div>
+                                        <div class="w-full bg-neutral-200 rounded-full h-2.5 overflow-hidden">
+                                            <div class="bg-purple-500 h-2.5 rounded-full transition-all" :style="{ width: generatedReport.summary.discount_revenue_share + '%' }"></div>
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-neutral-500">{{ generatedReport.summary.discount_revenue_share }}% of total revenue comes from discounted orders</p>
+                                </div>
+                            </div>
+
+                            <!-- Discount Usage Table -->
+                            <div v-if="generatedReport.discount_usage?.length">
+                                <p class="text-xs font-bold uppercase tracking-[0.15em] text-neutral-500 mb-3">Discount usage breakdown</p>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full min-w-[500px]">
+                                        <thead class="bg-neutral-50 border-b border-neutral-200">
+                                            <tr>
+                                                <th class="px-4 py-2.5 text-left text-[10px] font-bold uppercase text-neutral-500">Product</th>
+                                                <th class="px-4 py-2.5 text-right text-[10px] font-bold uppercase text-neutral-500">Amount</th>
+                                                <th class="px-4 py-2.5 text-right text-[10px] font-bold uppercase text-neutral-500">Times Used</th>
+                                                <th class="px-4 py-2.5 text-right text-[10px] font-bold uppercase text-neutral-500">Revenue</th>
+                                                <th class="px-4 py-2.5 text-center text-[10px] font-bold uppercase text-neutral-500">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-neutral-200">
+                                            <tr v-for="d in generatedReport.discount_usage" :key="d.discount_id" class="hover:bg-neutral-50">
+                                                <td class="px-4 py-3 text-sm font-semibold text-ink">{{ truncate(d.product_name, 35) }}</td>
+                                                <td class="px-4 py-3 text-sm text-right text-ink tabular-nums font-bold">{{ '$' }}{{ formatPrice(d.discount_amount) }}</td>
+                                                <td class="px-4 py-3 text-sm text-right tabular-nums"
+                                                    :class="d.times_used > 0 ? 'text-ink font-semibold' : 'text-neutral-400'">
+                                                    {{ d.times_used }}
+                                                </td>
+                                                <td class="px-4 py-3 text-sm text-right text-ink tabular-nums">{{ '$' }}{{ formatPrice(d.revenue_from_used) }}</td>
+                                                <td class="px-4 py-3 text-center">
+                                                    <span v-if="d.times_used > 0"
+                                                        class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-50 text-emerald-600">
+                                                        Redeemed
+                                                    </span>
+                                                    <span v-else
+                                                        class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-zinc-100 text-zinc-500">
+                                                        Unused
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div v-else class="p-6 text-center text-neutral-400 text-sm bg-neutral-50 rounded-xl">
+                                No discounts found in the system
+                            </div>
+
+                            <!-- Usage Trend -->
+                            <div v-if="generatedReport.usage_trend?.length" class="bg-neutral-50 rounded-xl p-4">
+                                <p class="text-xs font-bold uppercase tracking-[0.15em] text-neutral-500 mb-3">Discount usage trend</p>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full min-w-[300px]">
+                                        <thead class="border-b border-neutral-200">
+                                            <tr>
+                                                <th class="px-4 py-2 text-left text-[10px] font-bold uppercase text-neutral-500">Period</th>
+                                                <th class="px-4 py-2 text-right text-[10px] font-bold uppercase text-neutral-500">Discounts Used</th>
+                                                <th class="px-4 py-2 text-right text-[10px] font-bold uppercase text-neutral-500">Revenue</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-neutral-200">
+                                            <tr v-for="t in generatedReport.usage_trend" :key="t.period" class="hover:bg-white">
+                                                <td class="px-4 py-2.5 text-sm text-ink">{{ t.period }}</td>
+                                                <td class="px-4 py-2.5 text-sm text-right text-ink tabular-nums">{{ t.times_used }}</td>
+                                                <td class="px-4 py-2.5 text-sm text-right text-ink tabular-nums font-bold">{{ '$' }}{{ formatPrice(t.revenue) }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Expiring Soon -->
+                            <div v-if="generatedReport.expiring_soon?.length" class="bg-amber-50 rounded-xl p-4 border border-amber-100">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <AlertTriangle class="w-4 h-4 text-amber-500" />
+                                    <p class="text-sm font-bold text-amber-700">Expiring within 7 days</p>
+                                </div>
+                                <div class="space-y-2">
+                                    <div v-for="e in generatedReport.expiring_soon" :key="e.discount_id"
+                                        class="flex items-center justify-between text-sm bg-white/60 rounded-lg px-3 py-2">
+                                        <span class="font-semibold text-amber-800">{{ e.product_name }}</span>
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-amber-600 tabular-nums">{{ '$' }}{{ formatPrice(e.discount_amount) }}</span>
+                                            <span class="text-xs text-amber-500 tabular-nums">ends {{ formatDate(e.end_date) }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 pt-4 border-t border-neutral-200">
+                            <button @click="newReport" class="btn-outline text-sm">Generate another report</button>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                  <label class="block text-sm font-semibold text-ink mb-2">End Date</label>
-                  <input v-model="endDate" type="date"
-                    class="w-full px-4 py-3 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400" />
+
+                <!-- Sidebar -->
+                <div class="space-y-6">
+                    <div class="card-flat p-5 sm:p-6">
+                        <h3 class="text-sm font-bold text-ink mb-4">Export formats</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-3 p-3 bg-neutral-50 rounded-xl">
+                                <div class="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                                    <FileText class="w-5 h-5 text-accent" />
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold text-ink">JSON</p>
+                                    <p class="text-xs text-neutral-500">Full data export</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 p-3 bg-neutral-50 rounded-xl">
+                                <div class="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
+                                    <FileSpreadsheet class="w-5 h-5 text-success" />
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold text-ink">CSV</p>
+                                    <p class="text-xs text-neutral-500">Spreadsheet format</p>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-xs text-neutral-400 mt-4 leading-relaxed">
+                            Reports are generated in real-time using your current store data and can be downloaded immediately.
+                        </p>
+                    </div>
+
+                    <div class="card-flat p-5 sm:p-6 bg-accent/5 border-accent/20">
+                        <div class="flex gap-3">
+                            <Sparkles class="w-5 h-5 text-accent shrink-0 mt-0.5" />
+                            <div>
+                                <p class="text-sm font-bold text-ink mb-1">Real-time data</p>
+                                <p class="text-xs text-neutral-600 leading-relaxed">
+                                    All reports pull live data from your store. Generated reports can be downloaded as JSON or CSV for external analysis.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-              </div>
             </div>
-
-            <!-- Generate Button -->
-            <button @click="generateReport" :disabled="generating"
-              class="w-full mt-6 px-6 py-4 bg-ink text-white rounded-lg hover:bg-neutral-800 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-              <svg v-if="!generating" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <div v-else class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              {{ generating ? 'Generating Report...' : 'Generate Report' }}
-            </button>
-          </div>
-
-          <!-- Report Preview Info -->
-          <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 sm:p-6">
-            <div class="flex gap-3">
-              <svg class="h-6 w-6 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <div>
-                <p class="font-semibold text-blue-900 mb-1">Report Information</p>
-                <p class="text-sm text-blue-700">
-                  Your report will include detailed analytics, charts, and export options.
-                  Reports are generated in real-time and can be downloaded as PDF or CSV.
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
-
-        <!-- Quick Stats -->
-        <div class="space-y-6">
-          <div class="bg-paper rounded-2xl shadow-sm p-6">
-            <h3 class="text-lg font-bold text-ink mb-4">Quick Stats</h3>
-
-            <div class="space-y-4">
-              <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                <div>
-                  <p class="text-sm text-green-600 font-medium">Total Reports</p>
-                  <p class="text-2xl font-bold text-green-900">{{ reportHistory.length }}</p>
-                </div>
-                <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-
-              <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                <div>
-                  <p class="text-sm text-blue-600 font-medium">This Month</p>
-                  <p class="text-2xl font-bold text-blue-900">3</p>
-                </div>
-                <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <!-- Export Formats -->
-          <div class="bg-paper rounded-2xl shadow-sm p-6">
-            <h3 class="text-lg font-bold text-ink mb-4">Export Formats</h3>
-
-            <div class="space-y-2">
-              <div class="flex items-center gap-3 p-3 bg-neutral-50 rounded-lg">
-                <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                  <span class="text-sm font-bold text-red-600">PDF</span>
-                </div>
-                <div class="flex-1">
-                  <p class="text-sm font-semibold text-ink">PDF Document</p>
-                  <p class="text-xs text-neutral-500">Formatted report</p>
-                </div>
-              </div>
-
-              <div class="flex items-center gap-3 p-3 bg-neutral-50 rounded-lg">
-                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                  <span class="text-sm font-bold text-green-600">CSV</span>
-                </div>
-                <div class="flex-1">
-                  <p class="text-sm font-semibold text-ink">CSV Spreadsheet</p>
-                  <p class="text-xs text-neutral-500">Raw data export</p>
-                </div>
-              </div>
-
-              <div class="flex items-center gap-3 p-3 bg-neutral-50 rounded-lg">
-                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <span class="text-sm font-bold text-blue-600">XLS</span>
-                </div>
-                <div class="flex-1">
-                  <p class="text-sm font-semibold text-ink">Excel File</p>
-                  <p class="text-xs text-neutral-500">Advanced formatting</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Report History -->
-      <div class="mt-8 bg-paper rounded-2xl shadow-sm p-5 sm:p-6">
-        <h2 class="text-lg font-bold text-ink mb-6">Report History</h2>
-
-        <div class="space-y-3">
-          <div v-for="report in reportHistory" :key="report.id"
-            class="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 hover:bg-neutral-50 rounded-lg transition-colors gap-3">
-            <div class="flex items-center gap-4 flex-1 min-w-0">
-              <div class="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center shrink-0">
-                <svg class="h-6 w-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="font-semibold text-ink truncate">{{ report.name }}</p>
-                <div class="flex items-center gap-3 mt-1">
-                  <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
-                    {{ report.type }}
-                  </span>
-                  <span class="text-sm text-neutral-500">{{ formatDate(report.date) }}</span>
-                  <span class="text-sm text-neutral-500">{{ report.size }}</span>
-                </div>
-              </div>
-            </div>
-            <div class="flex items-center gap-2 flex-wrap">
-              <button @click="downloadReport(report)"
-                class="px-4 py-2 bg-ink text-white rounded-lg hover:bg-neutral-800 transition-colors text-sm font-medium flex items-center gap-2">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Download
-              </button>
-              <button @click="deleteReport(report.id)" class="p-2 text-neutral-400 hover:text-red-600 transition-colors">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
-  </div>
 </template>

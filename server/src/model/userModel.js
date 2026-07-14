@@ -1,91 +1,78 @@
 import db from '../database/dbpool.js';
 
-// Get all users
+const USER_SELECT = `
+    SELECT
+        u.usersid      AS user_id,
+        u.username,
+        u.firstname    AS first_name,
+        u.midname      AS mid_name,
+        u.lastname     AS last_name,
+        u.fullname     AS full_name,
+        u.email,
+        u.passwordhash AS password_hash,
+        u.isactive     AS is_active,
+        u.createdat    AS created_at,
+        r.rolesid      AS role_id,
+        r.rolename     AS role_name
+    FROM users u
+    LEFT JOIN roles r ON u.rolesid = r.rolesid
+`;
+
 export const getAllUsers = async () => {
-    const [rows] = await db.query(
-        'SELECT * FROM users'
-    );
+    const { rows } = await db.query(`${USER_SELECT} ORDER BY u.createdat DESC`);
     return rows;
 };
 
-// Get user by ID
 export const getUserById = async (id) => {
-    const [rows] = await db.query(
-        'SELECT * FROM users WHERE user_id = ?',
-        [id]
+    const { rows } = await db.query(`${USER_SELECT} WHERE u.usersid = $1`, [id]);
+    return rows[0];
+};
+
+export const getUserByEmail = async (email) => {
+    const { rows } = await db.query(`${USER_SELECT} WHERE u.email = $1`, [email]);
+    return rows[0];
+};
+
+export const getUserByUsername = async (username) => {
+    const { rows } = await db.query(`${USER_SELECT} WHERE u.username = $1`, [username]);
+    return rows[0];
+};
+
+export const getUserByEmailOrUsername = async (identifier) => {
+    const { rows } = await db.query(
+        `${USER_SELECT} WHERE u.email = $1 OR u.username = $1`,
+        [identifier]
     );
     return rows[0];
 };
 
-// Get user by email
-export const getUserByEmail = async (email) => {
-    const [rows] = await db.query(`
-        SELECT 
-            u.user_id, u.username, u.first_name, u.mid_name, u.last_name, 
-            CONCAT(u.first_name, ' ', IFNULL(u.mid_name, ''), ' ', u.last_name) AS full_name, u.email, u.password_hash, u.created_at, 
-            r.role_name, r.role_id
-        FROM users u
-        LEFT JOIN roles r ON u.role_id = r.role_id
-        WHERE u.email = ?
-      `, [email]);
-      return rows[0];
-};
-
-// Get user by username
-export const getUserByUsername = async (username) => {
-    const [rows] = await db.query(`
-        SELECT 
-          u.user_id, u.username, u.first_name, u.mid_name, u.last_name, 
-          CONCAT(u.first_name, ' ', IFNULL(u.mid_name, ''), ' ', u.last_name) AS full_name, u.email, u.password_hash, u.created_at, 
-          r.role_name, r.role_id
-        FROM users u
-        LEFT JOIN roles r ON u.role_id = r.role_id
-        WHERE u.username = ?
-      `, [username]);
-      return rows[0];
-};
-
-// Get user by email or username (with full details including role)
-export const getUserByEmailOrUsername = async (identifier) => {
-    const [rows] = await db.query(`
-        SELECT 
-          u.user_id, u.username, u.first_name, u.mid_name, u.last_name, 
-          CONCAT(u.first_name, ' ', IFNULL(u.mid_name, ''), ' ', u.last_name) AS full_name, u.email, u.password_hash, u.created_at, 
-          r.role_name, r.role_id
-        FROM users u
-        LEFT JOIN roles r ON u.role_id = r.role_id
-        WHERE u.email = ? OR u.username = ?
-    `, [identifier, identifier]);
-    return rows[0];
-};
-
-// Create user (password will be hashed by trigger)
+// Password must be pre-hashed by the service layer before calling this
 export const createUsers = async (userData) => {
-    const { 
-        role_id = 2, 
-        username, 
-        first_name, 
-        mid_name = null, 
-        last_name, 
-        email, 
-        password_hash 
+    const {
+        role_id = 3,
+        username,
+        first_name,
+        mid_name = null,
+        last_name,
+        email,
+        password_hash
     } = userData;
 
     if (!username || !email || !password_hash || !first_name || !last_name) {
         throw new Error('Missing required fields: username, email, password, first_name, or last_name');
     }
 
-    const [result] = await db.query(
-        `INSERT INTO users (role_id, username, first_name, mid_name, last_name, email, password_hash) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    const { rows } = await db.query(
+        `INSERT INTO users (rolesid, username, firstname, midname, lastname, email, passwordhash)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING usersid`,
         [role_id, username, first_name, mid_name, last_name, email, password_hash]
     );
 
-    // Return the created user
-    return await getUserById(result.insertId);
+    return getUserById(rows[0].usersid);
 };
 
-// Update user
+// If password_hash is provided it must already be hashed by the service layer
 export const updateUsers = async (id, userData) => {
     const { username, email, password_hash, first_name, mid_name, last_name, role_id } = userData;
 
@@ -93,51 +80,38 @@ export const updateUsers = async (id, userData) => {
     let values;
 
     if (password_hash) {
-        // Password will be hashed by trigger
         query = `
             UPDATE users
-            SET username = ?,
-                email = ?,
-                password_hash = ?,
-                first_name = ?,
-                mid_name = ?,
-                last_name = ?,
-                role_id = ?
-            WHERE user_id = ?
+            SET username = $1, email = $2, passwordhash = $3,
+                firstname = $4, midname = $5, lastname = $6, rolesid = $7
+            WHERE usersid = $8
         `;
         values = [username, email, password_hash, first_name, mid_name, last_name, role_id, id];
     } else {
         query = `
             UPDATE users
-            SET username = ?,
-                email = ?,
-                first_name = ?,
-                mid_name = ?,
-                last_name = ?,
-                role_id = ?
-            WHERE user_id = ?
+            SET username = $1, email = $2,
+                firstname = $3, midname = $4, lastname = $5, rolesid = $6
+            WHERE usersid = $7
         `;
         values = [username, email, first_name, mid_name, last_name, role_id, id];
     }
 
     await db.query(query, values);
-    return await getUserById(id);
+    return getUserById(id);
 };
 
-// Delete user
 export const deleteUser = async (id) => {
-    const [result] = await db.query('DELETE FROM users WHERE user_id = ?', [id]);
-    return result.affectedRows > 0;
+    const result = await db.query('DELETE FROM users WHERE usersid = $1', [id]);
+    return result.rowCount > 0;
 };
 
-// Check if email exists
 export const emailExists = async (email) => {
-    const [rows] = await db.query('SELECT user_id FROM users WHERE email = ?', [email]);
+    const { rows } = await db.query('SELECT usersid FROM users WHERE email = $1', [email]);
     return rows.length > 0;
-}
+};
 
-// Check if username exists
-export const usernameExists = async(username) => {
-    const [rows] = await db.query('SELECT user_id FROM users WHERE username = ?', [username]);
+export const usernameExists = async (username) => {
+    const { rows } = await db.query('SELECT usersid FROM users WHERE username = $1', [username]);
     return rows.length > 0;
-}
+};

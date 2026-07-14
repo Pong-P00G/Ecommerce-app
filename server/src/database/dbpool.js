@@ -1,29 +1,23 @@
-import mysql from 'mysql2/promise';
+import pg from 'pg';
+const { Pool } = pg;
 
-export const db = mysql.createPool({
+export const db = new Pool({
     host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER,
+    user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
-    port: process.env.DB_PORT || 3306,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-    authPlugins: {
-        mysql_native_password: () => () => process.env.DB_PASSWORD,
-        mysql_clear_password: () => () => process.env.DB_PASSWORD,
-        auth_gssapi_client: () => () => process.env.DB_PASSWORD
-    }
+    port: parseInt(process.env.DB_PORT) || 5432,
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+    ssl: process.env.DB_SSL === 'true'
 });
 
-// Test connection
-db.getConnection()
-    .then(connection => {
-        console.log("✅ Connected to MariaDB successfully");
-        connection.release();
-    })
+db.query('SELECT 1')
+    .then(() => console.log('✅ Connected to PostgreSQL successfully'))
     .catch(err => {
-        console.error("❌ MariaDB connection error:", err.message);
+        console.error('❌ PostgreSQL connection error:', err.message);
+        process.exit(1);
     });
 
 export default db;

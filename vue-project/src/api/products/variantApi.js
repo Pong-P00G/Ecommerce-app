@@ -2,8 +2,8 @@ import api from '../api'
 
 export const variantAPI = {
     
-    // Get prouct image
-    async getProductVaraints (productId) {
+    // Get product variants
+    async getProductVariants (productId) {
         const { data } = await api.get(`/products/${productId}/variants`);
         return data;
     },

@@ -35,9 +35,8 @@ export const validateRegister = (req, res, next) => {
                 'string.min': 'Last name must be at least 2 characters',
                 'any.required': 'Last name is required'
             }),
-        role_id: Joi.number().integer().min(1).optional()
     });
-    
+
     const { error } = schema.validate(req.body);
     if (error) {
         return res.status(400).json({ message: error.details[0].message });

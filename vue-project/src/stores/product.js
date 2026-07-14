@@ -68,10 +68,6 @@ export const useProductStore = defineStore('product', {
             this.error = null;
             
             try {
-                console.log('Fetching all products...');
-                const response = await productAPI.getAllProducts();
-                console.log('API Response:', response);
-                
                 // Handle different response formats
                 if (response.success && response.data) {
                     this.products = response.data;
@@ -83,13 +79,9 @@ export const useProductStore = defineStore('product', {
                     this.products = [];
                 }
                 
-                console.log('Products loaded:', this.products.length);
-                return { success: true, data: this.products };
             } catch (error) {
                 const errorMsg = error.response?.data?.message || error.message || 'Failed to fetch products';
                 this.error = errorMsg;
-                console.error('Fetch all products error:', error);
-                console.error('Error details:', error.response);
                 return { success: false, error: errorMsg };
             } finally {
                 this.loading = false;

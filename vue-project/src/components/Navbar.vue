@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { RouterLink, useRoute } from 'vue-router';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 import {
     ShoppingCart,
     Search,
@@ -12,14 +12,45 @@ import {
     Package,
     Phone,
     Info,
-    Sparkles
+    Sparkles,
+    LogOut,
+    LayoutDashboard,
+    ChevronDown
 } from 'lucide-vue-next';
+import { useAuthStore } from '../stores/auth.js';
 
 const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore();
 const isMenuOpen = ref(false);
 const isSearchOpen = ref(false);
 const scrolled = ref(false);
-const cartCount = ref(3); // Demo cart count
+const cartCount = ref(""); // Demo cart count
+const isDropdownOpen = ref(false);
+
+const user = computed(() => authStore.user);
+const isAuthenticated = computed(() => authStore.isAuthenticated);
+
+const initials = computed(() => {
+    if (!user.value) return '';
+    const name = user.value.username || user.value.email || 'U';
+    return name.charAt(0).toUpperCase();
+});
+
+const toggleDropdown = () => {
+    isDropdownOpen.value = !isDropdownOpen.value;
+};
+
+const closeDropdown = () => {
+    isDropdownOpen.value = false;
+};
+
+const handleLogout = () => {
+    authStore.logout();
+    closeDropdown();
+    closeMenu();
+    router.push('/');
+};
 
 const toggleMenu = () => {
     isMenuOpen.value = !isMenuOpen.value;
@@ -59,17 +90,27 @@ const handleEscapeKey = (event) => {
 
 onMounted(() => {
     document.addEventListener('keydown', handleEscapeKey);
+    document.addEventListener('click', handleClickOutside);
     window.addEventListener('scroll', handleScroll);
 });
 
 onUnmounted(() => {
     document.removeEventListener('keydown', handleEscapeKey);
+    document.removeEventListener('click', handleClickOutside);
     window.removeEventListener('scroll', handleScroll);
     document.body.style.overflow = '';
 });
 
+const handleClickOutside = (event) => {
+    const dropdown = document.getElementById('user-dropdown');
+    if (dropdown && !dropdown.contains(event.target)) {
+        isDropdownOpen.value = false;
+    }
+};
+
 watch(route, () => {
     closeMenu();
+    closeDropdown();
 });
 </script>
 
@@ -99,7 +140,6 @@ watch(route, () => {
                         <span class="text-2xl tracking-tight text-ink font-elegant">
                             <span class="font-light">ALIE</span><span class="font-bold">SHOP</span>
                         </span>
-                        <span class="absolute -top-1 -right-2 w-1.5 h-1.5 bg-accent rounded-full pulse-dot"></span>
                     </div>
                 </RouterLink>
 
@@ -154,7 +194,7 @@ watch(route, () => {
                         <ShoppingCart class="w-5 h-5" />
                         <span
                             v-if="cartCount > 0"
-                            class="absolute -top-0.5 -right-0.5 min-w-[20px] h-5 px-1 bg-accent text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-paper"
+                            class="absolute -top-0.5 -right-0.5 min-w-5 h-5 px-1 bg-accent text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-paper"
                         >
                             {{ cartCount }}
                         </span>
@@ -162,13 +202,79 @@ watch(route, () => {
 
                     <div class="w-px h-6 bg-neutral-300 mx-2"></div>
 
-                    <RouterLink
-                        to="/login"
-                        class="ml-1 inline-flex items-center justify-center gap-2 h-10 px-5 text-sm font-bold text-paper bg-ink rounded-full hover:bg-neutral-800 transition-all duration-300 shadow-sm hover:shadow-md"
-                    >
-                        <User class="w-4 h-4" />
-                        Sign In
-                    </RouterLink>
+                    <!-- Desktop User Area -->
+                    <div class="relative" id="user-dropdown">
+                        <template v-if="isAuthenticated && user">
+                            <button
+                                @click="toggleDropdown"
+                                class="ml-1 inline-flex items-center justify-center gap-2 h-10 px-4 text-sm font-bold text-paper bg-ink rounded-full hover:bg-neutral-800 transition-all duration-300 shadow-sm hover:shadow-md"
+                                :aria-expanded="isDropdownOpen"
+                                aria-haspopup="true"
+                                aria-label="User menu"
+                            >
+                                <div class="w-6 h-6 rounded-full bg-accent flex items-center justify-center text-xs font-bold text-white">
+                                    {{ initials }}
+                                </div>
+                                <span class="max-w-[100px] truncate">{{ user.username || user.email || 'User' }}</span>
+                                <ChevronDown class="w-3.5 h-3.5 transition-transform duration-200" :class="{ 'rotate-180': isDropdownOpen }" />
+                            </button>
+
+                            <!-- Dropdown -->
+                            <transition name="dropdown-fade">
+                                <div
+                                    v-if="isDropdownOpen"
+                                    class="absolute right-0 top-full mt-2 w-56 bg-paper border border-neutral-200 rounded-2xl shadow-xl overflow-hidden z-50"
+                                >
+                                    <!-- User info header -->
+                                    <div class="px-4 py-3 border-b border-neutral-100">
+                                        <p class="text-sm font-bold text-ink truncate">{{ user.username || 'User' }}</p>
+                                        <p class="text-xs text-neutral-500 truncate">{{ user.email || '' }}</p>
+                                    </div>
+
+                                    <div class="py-1">
+                                        <RouterLink
+                                            to="/userprofile"
+                                            @click="closeDropdown"
+                                            class="flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-ink transition-colors"
+                                        >
+                                            <User class="w-4 h-4" />
+                                            My Profile
+                                        </RouterLink>
+
+                                        <RouterLink
+                                            v-if="Number(user.role_id) === 1"
+                                            to="/admin/dashboard"
+                                            @click="closeDropdown"
+                                            class="flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-ink transition-colors"
+                                        >
+                                            <LayoutDashboard class="w-4 h-4" />
+                                            Admin Dashboard
+                                        </RouterLink>
+                                    </div>
+
+                                    <div class="border-t border-neutral-100 py-1">
+                                        <button
+                                            @click="handleLogout"
+                                            class="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                        >
+                                            <LogOut class="w-4 h-4" />
+                                            Sign Out
+                                        </button>
+                                    </div>
+                                </div>
+                            </transition>
+                        </template>
+
+                        <template v-else>
+                            <RouterLink
+                                to="/login"
+                                class="ml-1 inline-flex items-center justify-center gap-2 h-10 px-5 text-sm font-bold text-paper bg-ink rounded-full hover:bg-neutral-800 transition-all duration-300 shadow-sm hover:shadow-md"
+                            >
+                                <User class="w-4 h-4" />
+                                Sign In
+                            </RouterLink>
+                        </template>
+                    </div>
                 </div>
 
                 <!-- Mobile Menu Button -->
@@ -312,18 +418,58 @@ watch(route, () => {
                                 <span class="text-xs font-bold uppercase tracking-wider text-ink">Cart</span>
                                 <span
                                     v-if="cartCount > 0"
-                                    class="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 bg-accent text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-paper"
+                                    class="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 bg-accent text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-paper"
                                 >{{ cartCount }}</span>
                             </RouterLink>
                         </div>
-                        <RouterLink
-                            to="/login"
-                            @click="closeMenu"
-                            class="flex items-center justify-center gap-2 w-full px-6 py-3.5 text-sm font-bold text-paper bg-ink rounded-xl hover:bg-neutral-800 transition-all duration-300"
-                        >
-                            <User class="w-4 h-4" />
-                            Sign In / Join Now
-                        </RouterLink>
+                        <!-- Mobile User Area -->
+                        <template v-if="isAuthenticated && user">
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-3 px-3 py-2.5 bg-paper border border-neutral-200 rounded-xl">
+                                    <div class="w-9 h-9 rounded-full bg-accent flex items-center justify-center text-sm font-bold text-white shrink-0">
+                                        {{ initials }}
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm font-bold text-ink truncate">{{ user.username || 'User' }}</p>
+                                        <p class="text-xs text-neutral-500 truncate">{{ user.email || '' }}</p>
+                                    </div>
+                                </div>
+                                <RouterLink
+                                    to="/userprofile"
+                                    @click="closeMenu"
+                                    class="flex items-center justify-center gap-2 w-full px-6 py-3.5 text-sm font-bold text-paper bg-ink rounded-xl hover:bg-neutral-800 transition-all duration-300"
+                                >
+                                    <User class="w-4 h-4" />
+                                    My Profile
+                                </RouterLink>
+                                <RouterLink
+                                    v-if="Number(user.role_id) === 1"
+                                    to="/admin/dashboard"
+                                    @click="closeMenu"
+                                    class="flex items-center justify-center gap-2 w-full px-6 py-3.5 text-sm font-bold text-ink bg-neutral-100 rounded-xl hover:bg-neutral-200 transition-all duration-300"
+                                >
+                                    <LayoutDashboard class="w-4 h-4" />
+                                    Admin Dashboard
+                                </RouterLink>
+                                <button
+                                    @click="handleLogout"
+                                    class="flex items-center justify-center gap-2 w-full px-6 py-3.5 text-sm font-bold text-red-600 bg-red-50 rounded-xl hover:bg-red-100 transition-all duration-300"
+                                >
+                                    <LogOut class="w-4 h-4" />
+                                    Sign Out
+                                </button>
+                            </div>
+                        </template>
+                        <template v-else>
+                            <RouterLink
+                                to="/login"
+                                @click="closeMenu"
+                                class="flex items-center justify-center gap-2 w-full px-6 py-3.5 text-sm font-bold text-paper bg-ink rounded-xl hover:bg-neutral-800 transition-all duration-300"
+                            >
+                                <User class="w-4 h-4" />
+                                Sign In / Join Now
+                            </RouterLink>
+                        </template>
                     </div>
                 </div>
             </div>
@@ -335,5 +481,21 @@ watch(route, () => {
 header {
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
+}
+
+/* Dropdown fade animation */
+.dropdown-fade-enter-active {
+    transition: all 0.15s ease-out;
+}
+.dropdown-fade-leave-active {
+    transition: all 0.1s ease-in;
+}
+.dropdown-fade-enter-from {
+    opacity: 0;
+    transform: translateY(-4px);
+}
+.dropdown-fade-leave-to {
+    opacity: 0;
+    transform: translateY(-4px);
 }
 </style>
