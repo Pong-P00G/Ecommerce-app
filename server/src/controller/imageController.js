@@ -61,8 +61,8 @@ export const uploadImage = (req, res) => {
             });
         }
 
-        // Generate URL path (relative to CDN root)
         const imagePath = `/images/products/${req.file.filename}`;
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
 
         res.json({
             success: true,
@@ -71,8 +71,8 @@ export const uploadImage = (req, res) => {
                 filename: req.file.filename,
                 originalName: req.file.originalname,
                 size: req.file.size,
-                imagePath: imagePath,
-                url: `http://localhost:5001/cdn${imagePath}`
+                imagePath,
+                url: `${baseUrl}/cdn${imagePath}`
             }
         });
     });
@@ -98,12 +98,14 @@ export const uploadMultipleImages = (req, res) => {
             });
         }
 
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+
         const imagePaths = req.files.map(file => ({
             filename: file.filename,
             originalName: file.originalname,
             size: file.size,
             imagePath: `/images/products/${file.filename}`,
-            url: `http://localhost:5001/cdn/images/products/${file.filename}`
+            url: `${baseUrl}/cdn/images/products/${file.filename}`
         }));
 
         res.json({
@@ -158,15 +160,17 @@ export const getAllImages = (req, res) => {
             });
         }
 
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+
         const files = fs.readdirSync(imagesDir);
         const images = files
             .filter(file => {
                 const ext = path.extname(file).toLowerCase();
-                return ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext);
+                return ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'].includes(ext);
             })
             .map(file => ({
                 filename: file,
-                url: `http://localhost:5001/cdn/images/products/${file}`,
+                url: `${baseUrl}/cdn/images/products/${file}`,
                 path: `/images/products/${file}`
             }));
 

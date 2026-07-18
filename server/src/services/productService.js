@@ -16,6 +16,7 @@ export const createCompleteProduct = async (productData) => {
         base_price,
         descriptions,
         product_status = 'active',
+        tags = [],
         images = [],
         variants = []
     } = productData;
@@ -35,7 +36,8 @@ export const createCompleteProduct = async (productData) => {
             product_name,
             base_price,
             descriptions,
-            product_status
+            product_status,
+            tags
         });
 
         // 3. Add images if provided
@@ -71,6 +73,7 @@ export const createCompleteProduct = async (productData) => {
                     sku,
                     variant_color,
                     variant_size,
+                    variant_storage,
                     options,
                     stock_quantity = 0,
                     reorder_level = 5
@@ -87,16 +90,18 @@ export const createCompleteProduct = async (productData) => {
                 // Create variant
                 const variantId = await ProductModel.createVariant({
                     product_id: productId,
-                    sku
+                    sku,
+                    price: variant.variant_price || variant.price || null,
                 });
 
                 // Resolve options: prefer explicit `options` array, fall back to legacy color/size
                 let resolvedOptions = [];
                 if (Array.isArray(options) && options.length > 0) {
                     resolvedOptions = options;
-                } else if (variant_color || variant_size) {
-                    if (variant_color) resolvedOptions.push({ attribute_name: 'Color', value: variant_color });
-                    if (variant_size)  resolvedOptions.push({ attribute_name: 'Size',  value: variant_size  });
+                } else if (variant_color || variant_size || variant_storage) {
+                    if (variant_color)   resolvedOptions.push({ attribute_name: 'Color',   value: variant_color });
+                    if (variant_size)    resolvedOptions.push({ attribute_name: 'Size',    value: variant_size  });
+                    if (variant_storage) resolvedOptions.push({ attribute_name: 'Storage', value: variant_storage });
                 }
 
                 if (resolvedOptions.length > 0) {
@@ -159,6 +164,25 @@ export const getProductsByCategory = async (categoryName) => {
 
 export const getFeaturedProducts = async (limit = 10) => {
     return await ProductModel.getFeaturedProducts(limit);
+};
+
+export const getNewArrivals = async (limit = 10) => {
+    return await ProductModel.getNewArrivals(limit);
+};
+
+export const getComingSoon = async (limit = 10) => {
+    return await ProductModel.getComingSoon(limit);
+};
+
+export const getBestSellers = async (limit = 10) => {
+    return await ProductModel.getBestSellers(limit);
+};
+
+export const getProductsByTag = async (tag, limit = 10) => {
+    if (!tag || tag.trim() === '') {
+        throw new Error('Tag parameter is required');
+    }
+    return await ProductModel.getProductsByTag(tag.trim(), limit);
 };
 
 export const createProduct = async (productData) => {
@@ -297,7 +321,7 @@ export const getVariantById = async (variantId) => {
 };
 
 export const createVariant = async (variantData) => {
-    const { product_id, sku, variant_color, variant_size, options, initial_stock = 0 } = variantData;
+    const { product_id, sku, variant_color, variant_size, variant_storage, variant_price, options, initial_stock = 0 } = variantData;
 
     if (!product_id) {
         throw new Error('Missing required field: product_id');
@@ -315,15 +339,16 @@ export const createVariant = async (variantData) => {
         }
     }
 
-    const variantId = await ProductModel.createVariant({ product_id, sku });
+    const variantId = await ProductModel.createVariant({ product_id, sku, price: variant_price || null });
 
     // Resolve options: prefer explicit `options` array, fall back to legacy color/size
     let resolvedOptions = [];
     if (Array.isArray(options) && options.length > 0) {
         resolvedOptions = options;
-    } else if (variant_color || variant_size) {
-        if (variant_color) resolvedOptions.push({ attribute_name: 'Color', value: variant_color });
-        if (variant_size)  resolvedOptions.push({ attribute_name: 'Size',  value: variant_size  });
+    } else if (variant_color || variant_size || variant_storage) {
+        if (variant_color)   resolvedOptions.push({ attribute_name: 'Color',   value: variant_color });
+        if (variant_size)    resolvedOptions.push({ attribute_name: 'Size',    value: variant_size  });
+        if (variant_storage) resolvedOptions.push({ attribute_name: 'Storage', value: variant_storage });
     }
 
     if (resolvedOptions.length > 0) {
@@ -338,7 +363,7 @@ export const createVariant = async (variantData) => {
 };
 
 export const updateVariant = async (variantId, variantData) => {
-    const { sku, variant_color, variant_size, options } = variantData;
+    const { sku, variant_color, variant_size, variant_storage, variant_price, options } = variantData;
 
     if (sku) {
         const existing = await ProductModel.skuExists(sku);
@@ -350,18 +375,17 @@ export const updateVariant = async (variantId, variantData) => {
         }
     }
 
-    if (sku) {
-        await ProductModel.updateVariant(variantId, { sku });
-    }
+    await ProductModel.updateVariant(variantId, { sku, price: variant_price || null });
 
     // Resolve options: prefer explicit `options` array, fall back to legacy color/size
     let resolvedOptions = null;
     if (Array.isArray(options)) {
         resolvedOptions = options;
-    } else if (variant_color || variant_size) {
+    } else if (variant_color || variant_size || variant_storage) {
         resolvedOptions = [];
-        if (variant_color) resolvedOptions.push({ attribute_name: 'Color', value: variant_color });
-        if (variant_size)  resolvedOptions.push({ attribute_name: 'Size',  value: variant_size  });
+        if (variant_color)   resolvedOptions.push({ attribute_name: 'Color',   value: variant_color });
+        if (variant_size)    resolvedOptions.push({ attribute_name: 'Size',    value: variant_size  });
+        if (variant_storage) resolvedOptions.push({ attribute_name: 'Storage', value: variant_storage });
     }
 
     if (resolvedOptions !== null && resolvedOptions.length > 0) {

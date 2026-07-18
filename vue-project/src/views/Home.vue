@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
 import {
     ArrowRight,
@@ -21,37 +21,176 @@ import {
     X,
     Check,
     RefreshCw,
+    Clock,
+    TrendingUp,
+    Zap,
+    Star,
 } from 'lucide-vue-next';
 import { useToast } from '../composables/useToast.js';
+import { useProductStore } from '../stores/product.js';
 import LazyImage from '../components/LazyImage.vue';
 import ProductCarousel from '../components/ProductCarousel.vue';
 import HeroCarousel from '../components/HeroCarousel.vue';
+import TabbedProductCarousel from '../components/TabbedProductCarousel.vue';
+import ProductBadge from '../components/ProductBadge.vue';
 
 const toast = useToast();
+const productStore = useProductStore();
 
 const loadingProducts = ref(false);
+const loadingSections = ref(true);
 
-const rawProducts = [
-    { id: 1, name: 'Aurora Tee', price: 29, category: 'Tops', tags: ['casual', 'cotton'], description: 'Soft breathable cotton tee', image: '/p1.jpg', badge: 'New', href: '/product/1' },
-    { id: 2, name: 'Nimbus Hoodie', price: 59, category: 'Outerwear', tags: ['cozy', 'fleece'], description: 'Warm hoodie for everyday wear', image: '/p2.jpg', badge: 'Hot', href: '/product/2' },
-    { id: 3, name: 'Voyager Pants', price: 69, category: 'Bottoms', tags: ['stretch', 'travel'], description: 'Comfortable stretch pants', image: '/p3.jpg', badge: 'Bestseller', href: '/product/3' },
-    { id: 4, name: 'Lumen Cap', price: 19, category: 'Accessories', tags: ['sun', 'casual'], description: 'Lightweight cap', image: '/p4.jpg', badge: 'Popular', href: '/product/4' },
-    { id: 5, name: 'Echo Socks', price: 9, category: 'Accessories', tags: ['comfort'], description: 'Everyday socks', image: '/p5.jpg', badge: '', href: '/product/5' },
-    { id: 6, name: 'Haven Jacket', price: 129, category: 'Outerwear', tags: ['waterproof'], description: 'Weather-ready jacket', image: '/p6.jpg', badge: 'New', href: '/product/6' },
-    { id: 7, name: 'Sierra Boots', price: 149, category: 'Footwear', tags: ['leather', 'rugged'], description: 'Handcrafted leather boots', image: '/p7.jpg', badge: '', href: '/product/7' },
-    { id: 8, name: 'Drift Backpack', price: 89, category: 'Accessories', tags: ['travel', 'canvas'], description: 'Roomy canvas backpack', image: '/p8.jpg', badge: 'Hot', href: '/product/8' },
-    { id: 9, name: 'Mirage Sunglasses', price: 79, category: 'Accessories', tags: ['uv', 'unisex'], description: 'Polarised UV lenses', image: '/p9.jpg', badge: 'New', href: '/product/9' },
-];
+// ── Real product data from store ──
+const featuredProducts = ref([]);
+const newArrivals = ref([]);
+const bestSellers = ref([]);
+const comingSoon = ref([]);
+const allProducts = ref([]);
 
+/**
+ * Map API product to component format with dynamic badges.
+ * Badge priority: Coming Soon > New > Best Seller > Popular
+ */
+function mapProduct(p, sectionContext = '') {
+    let badge = '';
+    let badgeVariant = 'ink';
+    let badgeSource = null;  // 'tag' | 'heuristic'
+
+    const tags = p.tags || [];
+
+    // 1. Coming Soon — tagged with 'coming_soon' or within coming-soon section
+    if (tags.includes('coming_soon') || sectionContext === 'coming-soon') {
+        badge = 'Coming Soon';
+        badgeVariant = 'info';
+        badgeSource = tags.includes('coming_soon') ? 'tag' : 'heuristic';
+    }
+    // 2. New Arrival — products explicitly tagged as 'new_arrival'
+    else if (tags.includes('new_arrival')) {
+        badge = 'New Arrival';
+        badgeVariant = 'success';
+        badgeSource = 'tag';
+    }
+    // 3. Best Seller — products explicitly tagged as 'best_seller'
+    else if (tags.includes('best_seller')) {
+        badge = 'Best Seller';
+        badgeVariant = 'warning';
+        badgeSource = 'tag';
+    }
+    // 4. Heuristic fallback — recent creation date or high stock
+    else if (p.created_at) {
+        const createdDate = new Date(p.created_at);
+        const now = new Date();
+        const daysSinceCreated = (now - createdDate) / (1000 * 60 * 60 * 24);
+        if (daysSinceCreated <= 14) {
+            badge = 'New';
+            badgeVariant = 'success';
+            badgeSource = 'heuristic';
+        } else if (p.total_stock > 50) {
+            badge = 'Best Seller';
+            badgeVariant = 'warning';
+            badgeSource = 'heuristic';
+        } else if (p.total_stock > 20) {
+            badge = 'Popular';
+            badgeVariant = 'ink';
+            badgeSource = 'heuristic';
+        }
+    }
+    // Fallback if no created_at
+    else if (p.total_stock > 50) {
+        badge = 'Best Seller';
+        badgeVariant = 'warning';
+        badgeSource = 'heuristic';
+    } else if (p.total_stock > 20) {
+        badge = 'Popular';
+        badgeVariant = 'ink';
+        badgeSource = 'heuristic';
+    }
+
+    // ── Generate detailed tooltip text ──
+    let badgeTooltip = '';
+    if (badgeSource === 'tag' && badge) {
+        // Show which tags triggered the badge
+        const relevantTags = tags.filter(t => ['coming_soon', 'new_arrival', 'best_seller'].includes(t));
+        badgeTooltip = 'Tagged: ' + relevantTags.join(', ');
+        if (p.created_at) {
+            const days = Math.floor((Date.now() - new Date(p.created_at)) / (1000 * 60 * 60 * 24));
+            badgeTooltip += ` · ${days}d ago`;
+        }
+    } else if (badgeSource === 'heuristic') {
+        if (badge === 'New') {
+            const days = Math.floor((Date.now() - new Date(p.created_at)) / (1000 * 60 * 60 * 24));
+            badgeTooltip = `Auto: created ${days}d ago`;
+        } else if (badge === 'Best Seller') {
+            badgeTooltip = `Auto: ${p.total_stock} in stock`;
+        } else if (badge === 'Popular') {
+            badgeTooltip = `Auto: ${p.total_stock} in stock`;
+        }
+    }
+
+    // Use a placeholder or thumbnail image
+    const image = p.thumbnail || `https://placehold.co/600x400/e4e4e7/a1a1aa?text=${encodeURIComponent(p.product_name?.slice(0, 2) || 'P')}`;
+
+    return {
+        id: p.product_id,
+        name: p.product_name,
+        price: parseFloat(p.base_price),
+        category: p.category_name || 'General',
+        tags: [p.category_name || 'general'],
+        description: p.descriptions || '',
+        image: image,
+        badge: badge,
+        badgeVariant: badgeVariant,
+        badgeSource: badgeSource,
+        badgeTooltip: badgeTooltip,
+        href: `/product/${p.product_id}`,
+        product_status: p.product_status,
+        total_stock: p.total_stock,
+        created_at: p.created_at,
+    };
+}
+
+// ── Fetch all sections on mount ──
+onMounted(async () => {
+    loadingSections.value = true;
+    loadingProducts.value = true;
+
+    try {
+        // Fetch all sections in parallel
+        const [featuredRes, newRes, bestRes, comingRes, allRes] = await Promise.all([
+            productStore.fetchFeaturedProducts(8),
+            productStore.fetchNewArrivals(8),
+            productStore.fetchBestSellers(8),
+            productStore.fetchComingSoon(8),
+            productStore.fetchAllProducts(),
+        ]);
+
+        featuredProducts.value = (featuredRes.data || []).map(mapProduct);
+        newArrivals.value = (newRes.data || []).map(mapProduct);
+        bestSellers.value = (bestRes.data || []).map(mapProduct);
+        comingSoon.value = (comingRes.data || []).map(mapProduct);
+
+        // Map all products for the filter/grid section
+        const raw = productStore.products || [];
+        allProducts.value = raw.map(mapProduct);
+
+    } catch (err) {
+        console.error('Failed to load homepage data:', err);
+        toast.error('Failed to load products. Please refresh the page.');
+    } finally {
+        loadingSections.value = false;
+        loadingProducts.value = false;
+    }
+});
+
+// ── Filters & Pagination (apply to allProducts) ──
 const filters = ref({ q: '', category: '', tag: '', minPrice: null, maxPrice: null, sort: 'new' });
 const view = ref('grid');
 const page = ref(1);
 const perPage = ref(9);
-const products = ref(rawProducts);
 const showFilters = ref(false);
 
-const categories = computed(() => [...new Set(products.value.map((p) => p.category))]);
-const tags = computed(() => [...new Set(products.value.flatMap((p) => p.tags))]);
+const categories = computed(() => [...new Set(allProducts.value.map((p) => p.category))]);
+const tags = computed(() => [...new Set(allProducts.value.flatMap((p) => p.tags))]);
 
 function toggleTag(t) {
     filters.value.tag = filters.value.tag === t ? '' : t;
@@ -63,7 +202,7 @@ function resetFilters() {
 }
 
 const filtered = computed(() => {
-    let list = products.value.slice();
+    let list = allProducts.value.slice();
     const f = filters.value;
     if (f.q) {
         const q = f.q.toLowerCase();
@@ -97,11 +236,47 @@ function addToCart(p) {
 }
 
 const promises = [
-    { icon: Truck, title: 'Free shipping', desc: 'On orders over ' + ('$') + '50' },
+    { icon: Truck, title: 'Free shipping', desc: 'On orders over $50' },
     { icon: RotateCcw, title: '7-day returns', desc: 'Hassle-free refunds' },
     { icon: ShieldCheck, title: 'Secure checkout', desc: '256-bit SSL encryption' },
     { icon: Headphones, title: '24/7 support', desc: 'Real humans, real help' },
 ];
+
+// ── Section helper: carousel sections config ──
+const carouselSections = computed(() => [
+    {
+        key: 'featured',
+        label: 'Hand-picked',
+        title: 'Featured this week',
+        icon: Sparkles,
+        products: featuredProducts.value,
+        emptyMsg: 'No featured products available yet.',
+    },
+    {
+        key: 'new-arrivals',
+        label: 'Just landed',
+        title: 'New Arrivals',
+        icon: Clock,
+        products: newArrivals.value,
+        emptyMsg: 'No new arrivals at the moment.',
+    },
+    {
+        key: 'best-sellers',
+        label: 'Trending now',
+        title: 'Best Sellers',
+        icon: TrendingUp,
+        products: bestSellers.value,
+        emptyMsg: 'No best sellers data yet.',
+    },
+    {
+        key: 'coming-soon',
+        label: 'Coming up',
+        title: 'Coming Soon',
+        icon: Zap,
+        products: comingSoon.value,
+        emptyMsg: 'No upcoming products right now.',
+    },
+]);
 </script>
 
 <template>
@@ -114,7 +289,11 @@ const promises = [
         <!-- Promise strip -->
         <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 sm:mt-12">
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-                <div v-for="p in promises" :key="p.title" class="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-paper border border-neutral-200 rounded-2xl hover:border-ink transition-colors group">
+                <div
+                    v-for="p in promises"
+                    :key="p.title"
+                    class="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-paper border border-neutral-200 rounded-2xl hover:border-ink transition-colors group"
+                >
                     <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-neutral-100 group-hover:bg-accent group-hover:text-white flex items-center justify-center transition-colors shrink-0">
                         <component :is="p.icon" class="w-4 h-4 text-ink group-hover:text-white transition-colors" />
                     </div>
@@ -126,25 +305,34 @@ const promises = [
             </div>
         </section>
 
-        <!-- Featured carousel -->
+        <!-- ── Tabbed Product Carousel ── -->
         <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 sm:mt-16">
             <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
                 <div>
                     <span class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-accent mb-2">
                         <Sparkles class="w-3.5 h-3.5" />
-                        Hand-picked
+                        Discover
                     </span>
-                    <h2 class="text-2xl sm:text-3xl md:text-4xl font-elegant font-bold text-ink">Featured this week</h2>
+                    <h2 class="text-2xl sm:text-3xl md:text-4xl font-elegant font-bold text-ink">
+                        Curated Collections
+                    </h2>
                 </div>
-                <RouterLink to="/product" class="hidden md:inline-flex items-center gap-2 text-sm font-bold text-ink hover:text-accent transition-colors">
+                <RouterLink
+                    to="/product"
+                    class="hidden md:inline-flex items-center gap-2 text-sm font-bold text-ink hover:text-accent transition-colors"
+                >
                     View all
                     <ArrowRight class="w-4 h-4" />
                 </RouterLink>
             </div>
-            <ProductCarousel :products="rawProducts.slice(0, 6)" />
+
+            <TabbedProductCarousel
+                :sections="carouselSections"
+                :loading="loadingSections"
+            />
         </section>
 
-        <!-- Filters + Products -->
+        <!-- ── Filters + Products ── -->
         <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 sm:mt-20">
             <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-8 gap-4 flex-wrap">
                 <div>
@@ -245,58 +433,114 @@ const promises = [
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Price range</label>
                             <div class="flex items-center gap-2">
-                                <input type="number" v-model.number="filters.minPrice" class="w-1/2 px-3 py-2.5 rounded-xl bg-neutral-50 border border-neutral-200 focus:border-ink focus:bg-paper focus:outline-none transition-all text-sm" placeholder="Min" aria-label="Minimum price" />
+                                <input
+                                    type="number"
+                                    v-model.number="filters.minPrice"
+                                    class="w-1/2 px-3 py-2.5 rounded-xl bg-neutral-50 border border-neutral-200 focus:border-ink focus:bg-paper focus:outline-none transition-all text-sm"
+                                    placeholder="Min"
+                                    aria-label="Minimum price"
+                                />
                                 <span class="text-neutral-400">–</span>
-                                <input type="number" v-model.number="filters.maxPrice" class="w-1/2 px-3 py-2.5 rounded-xl bg-neutral-50 border border-neutral-200 focus:border-ink focus:bg-paper focus:outline-none transition-all text-sm" placeholder="Max" aria-label="Maximum price" />
+                                <input
+                                    type="number"
+                                    v-model.number="filters.maxPrice"
+                                    class="w-1/2 px-3 py-2.5 rounded-xl bg-neutral-50 border border-neutral-200 focus:border-ink focus:bg-paper focus:outline-none transition-all text-sm"
+                                    placeholder="Max"
+                                    aria-label="Maximum price"
+                                />
                             </div>
                         </div>
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Sort by</label>
-                            <select v-model="filters.sort" class="w-full px-3 py-2.5 rounded-xl bg-neutral-50 border border-neutral-200 focus:border-ink focus:bg-paper focus:outline-none transition-all text-sm" aria-label="Sort products by">
+                            <select
+                                v-model="filters.sort"
+                                class="w-full px-3 py-2.5 rounded-xl bg-neutral-50 border border-neutral-200 focus:border-ink focus:bg-paper focus:outline-none transition-all text-sm"
+                                aria-label="Sort products by"
+                            >
                                 <option value="new">Newest</option>
                                 <option value="price-asc">Price: Low to High</option>
                                 <option value="price-desc">Price: High to Low</option>
                             </select>
                         </div>
-                        <button @click="resetFilters" class="w-full mt-2 px-4 py-2.5 rounded-xl bg-neutral-100 hover:bg-ink hover:text-paper text-ink text-sm font-bold transition-all">
+                        <button
+                            @click="resetFilters"
+                            class="w-full mt-2 px-4 py-2.5 rounded-xl bg-neutral-100 hover:bg-ink hover:text-paper text-ink text-sm font-bold transition-all"
+                        >
                             Reset filters
                         </button>
                     </div>
                 </aside>
 
-                <!-- Grid -->
+                <!-- Grid / List -->
                 <section class="lg:col-span-3">
                     <div class="mb-5 space-y-3">
                         <div class="flex items-center justify-between">
                             <p class="text-sm text-neutral-600">
-                                Showing <span class="font-bold text-ink">{{ filtered.length }}</span> {{ filtered.length === 1 ? 'product' : 'products' }}
+                                Showing <span class="font-bold text-ink">{{ filtered.length }}</span>
+                                {{ filtered.length === 1 ? 'product' : 'products' }}
                             </p>
-                            <button v-if="page < totalPages" @click="nextPage"
-                                class="sm:hidden inline-flex items-center gap-1 text-xs font-bold text-accent hover:text-accent-600 transition-colors">
-                                Next
-                                <ChevronRight class="w-3.5 h-3.5" />
+                            <button
+                                v-if="page < totalPages"
+                                @click="nextPage"
+                                class="sm:hidden inline-flex items-center gap-1 text-xs font-bold text-accent hover:text-accent-600 transition-colors"
+                            >
+                                Next <ChevronRight class="w-3.5 h-3.5" />
                             </button>
                         </div>
+                        <!-- Badge source legend -->
+                        <div class="flex items-center gap-3 text-[11px] text-neutral-500">
+                            <span class="inline-flex items-center gap-1">
+                                <Tag class="w-3 h-3" />
+                                Tagged
+                            </span>
+                            <span class="text-neutral-300">·</span>
+                            <span class="inline-flex items-center gap-1">
+                                <Sparkles class="w-3 h-3" />
+                                Auto-detected
+                            </span>
+                            <span class="text-neutral-300">·</span>
+                            <span class="text-neutral-400">Hover badges for details</span>
+                        </div>
                         <!-- Active filter badges -->
-                        <div v-if="filters.category || filters.tag || filters.minPrice != null || filters.maxPrice != null || filters.q" class="flex flex-wrap items-center gap-1.5">
+                        <div
+                            v-if="filters.category || filters.tag || filters.minPrice != null || filters.maxPrice != null || filters.q"
+                            class="flex flex-wrap items-center gap-1.5"
+                        >
                             <span class="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mr-0.5">Active:</span>
-                            <span v-if="filters.q" class="inline-flex items-center gap-1 px-2 py-1 bg-neutral-100 rounded-full text-[10px] font-bold text-ink">
+                            <span
+                                v-if="filters.q"
+                                class="inline-flex items-center gap-1 px-2 py-1 bg-neutral-100 rounded-full text-[10px] font-bold text-ink"
+                            >
                                 "{{ filters.q }}"
                                 <button @click="filters.q = ''; page = 1" class="hover:text-accent transition-colors"><X class="w-3 h-3" /></button>
                             </span>
-                            <span v-if="filters.category" class="inline-flex items-center gap-1 px-2 py-1 bg-neutral-100 rounded-full text-[10px] font-bold text-ink">
+                            <span
+                                v-if="filters.category"
+                                class="inline-flex items-center gap-1 px-2 py-1 bg-neutral-100 rounded-full text-[10px] font-bold text-ink"
+                            >
                                 {{ filters.category }}
                                 <button @click="filters.category = ''; page = 1" class="hover:text-accent transition-colors"><X class="w-3 h-3" /></button>
                             </span>
-                            <span v-if="filters.tag" class="inline-flex items-center gap-1 px-2 py-1 bg-accent/10 rounded-full text-[10px] font-bold text-accent">
+                            <span
+                                v-if="filters.tag"
+                                class="inline-flex items-center gap-1 px-2 py-1 bg-accent/10 rounded-full text-[10px] font-bold text-accent"
+                            >
                                 #{{ filters.tag }}
                                 <button @click="filters.tag = ''; page = 1" class="hover:text-accent-600 transition-colors"><X class="w-3 h-3" /></button>
                             </span>
-                            <span v-if="filters.minPrice != null || filters.maxPrice != null" class="inline-flex items-center gap-1 px-2 py-1 bg-neutral-100 rounded-full text-[10px] font-bold text-ink">
+                            <span
+                                v-if="filters.minPrice != null || filters.maxPrice != null"
+                                class="inline-flex items-center gap-1 px-2 py-1 bg-neutral-100 rounded-full text-[10px] font-bold text-ink"
+                            >
                                 ${{ filters.minPrice ?? '0' }}–${{ filters.maxPrice ?? '∞' }}
                                 <button @click="filters.minPrice = null; filters.maxPrice = null; page = 1" class="hover:text-accent transition-colors"><X class="w-3 h-3" /></button>
                             </span>
-                            <button @click="resetFilters" class="text-[10px] font-bold text-neutral-400 hover:text-accent underline underline-offset-2 transition-colors ml-1">Clear all</button>
+                            <button
+                                @click="resetFilters"
+                                class="text-[10px] font-bold text-neutral-400 hover:text-accent underline underline-offset-2 transition-colors ml-1"
+                            >
+                                Clear all
+                            </button>
                         </div>
                     </div>
 
@@ -325,20 +569,22 @@ const promises = [
                         <p class="text-sm text-neutral-500 max-w-sm mx-auto">
                             Try adjusting your search, category, or price range to find what you're looking for.
                         </p>
-                        <button @click="resetFilters"
-                            class="mt-6 inline-flex items-center gap-2 px-5 py-2.5 bg-ink text-paper text-sm font-bold rounded-full hover:bg-neutral-800 transition-all duration-300">
+                        <button
+                            @click="resetFilters"
+                            class="mt-6 inline-flex items-center gap-2 px-5 py-2.5 bg-ink text-paper text-sm font-bold rounded-full hover:bg-neutral-800 transition-all duration-300"
+                        >
                             <RefreshCw class="w-4 h-4" />
                             Reset all filters
                         </button>
                     </div>
 
+                    <!-- Product Grid -->
                     <transition-group
                         v-else
                         name="list"
                         tag="div"
                         :class="view === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5' : 'flex flex-col gap-4'"
                     >
-                        <!-- GRID CARD -->
                         <article
                             v-for="p in paginated"
                             :key="p.id"
@@ -347,13 +593,31 @@ const promises = [
                         >
                             <RouterLink :to="'/product/' + p.id" class="block">
                                 <div class="relative h-48 sm:h-56 bg-neutral-100 overflow-hidden">
-                                    <LazyImage :src="p.image" :alt="p.name" wrapper-class="w-full h-full" img-class="group-hover/card:scale-110" />
-                                    <span v-if="p.badge" class="absolute top-3 left-3 badge-ink">{{ p.badge }}</span>
+                                    <LazyImage
+                                        :src="p.image"
+                                        :alt="p.name"
+                                        wrapper-class="w-full h-full"
+                                        img-class="group-hover/card:scale-110"
+                                    />
+                                    <ProductBadge
+                                        v-if="p.badge"
+                                        :label="p.badge"
+                                        :variant="p.badgeVariant"
+                                        :source="p.badgeSource"
+                                        :tooltip="p.badgeTooltip"
+                                        class="absolute top-3 left-3 z-10"
+                                    />
                                     <div class="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover/card:opacity-100 translate-y-1 group-hover/card:translate-y-0 transition-all duration-300">
-                                        <button class="w-9 h-9 rounded-full bg-paper text-ink flex items-center justify-center hover:bg-accent hover:text-white transition-colors shadow-md" @click.prevent>
+                                        <button
+                                            class="w-9 h-9 rounded-full bg-paper text-ink flex items-center justify-center hover:bg-accent hover:text-white transition-colors shadow-md"
+                                            @click.prevent
+                                        >
                                             <Heart class="w-4 h-4" />
                                         </button>
-                                        <button class="w-9 h-9 rounded-full bg-paper text-ink flex items-center justify-center hover:bg-ink hover:text-paper transition-colors shadow-md" @click.prevent="addToCart(p)">
+                                        <button
+                                            class="w-9 h-9 rounded-full bg-paper text-ink flex items-center justify-center hover:bg-ink hover:text-paper transition-colors shadow-md"
+                                            @click.prevent="addToCart(p)"
+                                        >
                                             <Plus class="w-4 h-4" />
                                         </button>
                                     </div>
@@ -363,17 +627,15 @@ const promises = [
                                     <h3 class="font-bold text-lg text-ink mt-1 group-hover/card:text-accent transition-colors">{{ p.name }}</h3>
                                     <p class="text-sm text-neutral-500 mt-1 line-clamp-2">{{ p.description }}</p>
                                     <div class="mt-4 flex items-center justify-between">
-                                        <span class="text-xl font-bold text-ink tabular-nums">{{ '$' }}{{ p.price }}</span>
+                                        <span class="text-xl font-bold text-ink tabular-nums">${{ p.price }}</span>
                                         <span class="inline-flex items-center gap-1 text-xs font-bold text-ink group-hover/card:text-accent transition-colors">
-                                            View
-                                            <ArrowRight class="w-3.5 h-3.5" />
+                                            View <ArrowRight class="w-3.5 h-3.5" />
                                         </span>
                                     </div>
                                 </div>
                             </RouterLink>
                         </article>
 
-                        <!-- LIST CARD -->
                         <article
                             v-for="p in paginated"
                             :key="'l-' + p.id"
@@ -382,18 +644,30 @@ const promises = [
                         >
                             <RouterLink :to="'/product/' + p.id" class="flex flex-col sm:flex-row">
                                 <div class="relative h-48 sm:h-auto sm:w-48 shrink-0 bg-neutral-100 overflow-hidden">
-                                    <LazyImage :src="p.image" :alt="p.name" wrapper-class="w-full h-full" img-class="group-hover/list:scale-110" />
-                                    <span v-if="p.badge" class="absolute top-2 left-2 badge-ink text-[10px]">{{ p.badge }}</span>
+                                    <LazyImage
+                                        :src="p.image"
+                                        :alt="p.name"
+                                        wrapper-class="w-full h-full"
+                                        img-class="group-hover/list:scale-110"
+                                    />
+                                    <ProductBadge
+                                        v-if="p.badge"
+                                        :label="p.badge"
+                                        :variant="p.badgeVariant"
+                                        :source="p.badgeSource"
+                                        :tooltip="p.badgeTooltip"
+                                        compact
+                                        class="absolute top-2 left-2 z-10"
+                                    />
                                 </div>
                                 <div class="p-5 flex-1 flex flex-col">
                                     <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-accent">{{ p.category }}</p>
                                     <h3 class="font-bold text-lg text-ink mt-1">{{ p.name }}</h3>
                                     <p class="text-sm text-neutral-500 mt-2 flex-1">{{ p.description }}</p>
                                     <div class="mt-4 flex items-center justify-between">
-                                        <span class="text-xl font-bold text-ink tabular-nums">{{ '$' }}{{ p.price }}</span>
+                                        <span class="text-xl font-bold text-ink tabular-nums">${{ p.price }}</span>
                                         <span class="inline-flex items-center gap-1 text-xs font-bold text-ink">
-                                            View
-                                            <ArrowRight class="w-3.5 h-3.5" />
+                                            View <ArrowRight class="w-3.5 h-3.5" />
                                         </span>
                                     </div>
                                 </div>
@@ -439,8 +713,7 @@ const promises = [
                     </p>
                     <div class="flex items-center gap-3 pt-2">
                         <RouterLink to="/checkout" class="btn-accent shine-effect">
-                            Redeem Offer
-                            <ArrowRight class="w-4 h-4" />
+                            Redeem Offer <ArrowRight class="w-4 h-4" />
                         </RouterLink>
                         <RouterLink to="/product" class="btn-outline border-neutral-700 text-paper hover:bg-paper hover:text-ink">
                             Browse Shop
@@ -454,33 +727,49 @@ const promises = [
                             <div class="space-y-3 pt-12">
                                 <div class="bg-paper rounded-2xl p-3 shadow-2xl">
                                     <div class="h-32 rounded-xl bg-neutral-100 overflow-hidden">
-                                        <LazyImage :src="rawProducts[0].image" alt="" wrapper-class="w-full h-32" />
+                                        <LazyImage
+                                            :src="featuredProducts[0]?.image || 'https://placehold.co/600x400/e4e4e7/a1a1aa?text=P'"
+                                            alt=""
+                                            wrapper-class="w-full h-32"
+                                        />
                                     </div>
-                                    <p class="mt-2 text-xs font-bold text-ink truncate">{{ rawProducts[0].name }}</p>
-                                    <p class="text-xs text-accent font-bold mt-1">{{ '$' }}{{ rawProducts[0].price }}</p>
+                                    <p class="mt-2 text-xs font-bold text-ink truncate">{{ featuredProducts[0]?.name || 'Product' }}</p>
+                                    <p class="text-xs text-accent font-bold mt-1">${{ featuredProducts[0]?.price || '00' }}</p>
                                 </div>
                                 <div class="bg-paper rounded-2xl p-3 shadow-2xl">
                                     <div class="h-32 rounded-xl bg-neutral-100 overflow-hidden">
-                                        <LazyImage :src="rawProducts[2].image" alt="" wrapper-class="w-full h-32" />
+                                        <LazyImage
+                                            :src="featuredProducts[2]?.image || 'https://placehold.co/600x400/e4e4e7/a1a1aa?text=P'"
+                                            alt=""
+                                            wrapper-class="w-full h-32"
+                                        />
                                     </div>
-                                    <p class="mt-2 text-xs font-bold text-ink truncate">{{ rawProducts[2].name }}</p>
-                                    <p class="text-xs text-accent font-bold mt-1">{{ '$' }}{{ rawProducts[2].price }}</p>
+                                    <p class="mt-2 text-xs font-bold text-ink truncate">{{ featuredProducts[2]?.name || 'Product' }}</p>
+                                    <p class="text-xs text-accent font-bold mt-1">${{ featuredProducts[2]?.price || '00' }}</p>
                                 </div>
                             </div>
                             <div class="space-y-3">
                                 <div class="bg-paper rounded-2xl p-3 shadow-2xl">
                                     <div class="h-32 rounded-xl bg-neutral-100 overflow-hidden">
-                                        <LazyImage :src="rawProducts[1].image" alt="" wrapper-class="w-full h-32" />
+                                        <LazyImage
+                                            :src="featuredProducts[1]?.image || 'https://placehold.co/600x400/e4e4e7/a1a1aa?text=P'"
+                                            alt=""
+                                            wrapper-class="w-full h-32"
+                                        />
                                     </div>
-                                    <p class="mt-2 text-xs font-bold text-ink truncate">{{ rawProducts[1].name }}</p>
-                                    <p class="text-xs text-accent font-bold mt-1">{{ '$' }}{{ rawProducts[1].price }}</p>
+                                    <p class="mt-2 text-xs font-bold text-ink truncate">{{ featuredProducts[1]?.name || 'Product' }}</p>
+                                    <p class="text-xs text-accent font-bold mt-1">${{ featuredProducts[1]?.price || '00' }}</p>
                                 </div>
                                 <div class="bg-paper rounded-2xl p-3 shadow-2xl">
                                     <div class="h-32 rounded-xl bg-neutral-100 overflow-hidden">
-                                        <LazyImage :src="rawProducts[3].image" alt="" wrapper-class="w-full h-32" />
+                                        <LazyImage
+                                            :src="featuredProducts[3]?.image || 'https://placehold.co/600x400/e4e4e7/a1a1aa?text=P'"
+                                            alt=""
+                                            wrapper-class="w-full h-32"
+                                        />
                                     </div>
-                                    <p class="mt-2 text-xs font-bold text-ink truncate">{{ rawProducts[3].name }}</p>
-                                    <p class="text-xs text-accent font-bold mt-1">{{ '$' }}{{ rawProducts[3].price }}</p>
+                                    <p class="mt-2 text-xs font-bold text-ink truncate">{{ featuredProducts[3]?.name || 'Product' }}</p>
+                                    <p class="text-xs text-accent font-bold mt-1">${{ featuredProducts[3]?.price || '00' }}</p>
                                 </div>
                             </div>
                         </div>

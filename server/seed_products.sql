@@ -46,7 +46,12 @@ CROSS JOIN LATERAL (VALUES
     ('Size',    'US 11'),
     ('Storage', '128GB'),
     ('Storage', '256GB'),
-    ('Storage', '512GB')
+    ('Storage', '512GB'),
+    ('Storage', '1TB'),
+    ('Color',   'Natural Titanium'),
+    ('Color',   'Desert Titanium'),
+    ('Color',   'White Titanium'),
+    ('Color',   'Black Titanium')
 ) AS v(attr, value)
 WHERE a.attributeName = v.attr
 ON CONFLICT (attributeId, value) DO NOTHING;
@@ -78,6 +83,7 @@ DECLARE
     prod3_id INTEGER;
     prod4_id INTEGER;
     prod5_id INTEGER;
+    prod6_id INTEGER;
 
     var_id INTEGER;
 BEGIN
@@ -246,6 +252,88 @@ BEGIN
     INSERT INTO stock (productsId, variantId, quantity, minStock)
     VALUES (prod5_id, NULL, 100, 20)
     ON CONFLICT (productsId, variantId) DO UPDATE SET quantity = EXCLUDED.quantity;
+
+    -- --------------------------------------------------------
+    -- Product 6: iPhone 16 Pro Max
+    -- --------------------------------------------------------
+    INSERT INTO products (categoriesId, productname, baseprice, description, status, tags)
+    VALUES (cat_smartphones_id, 'iPhone 16 Pro Max', 1199.00,
+            'Apple iPhone 16 Pro Max with A18 Pro chip, 48MP Fusion camera system, and all-day battery life.',
+            'active',
+            ARRAY['new_arrival', 'best_seller', 'premium'])
+    ON CONFLICT DO NOTHING
+    RETURNING productsId INTO prod6_id;
+
+    IF prod6_id IS NULL THEN
+        SELECT productsId INTO prod6_id FROM products WHERE productname = 'iPhone 16 Pro Max';
+    END IF;
+
+    INSERT INTO productImages (productsId, imageUrl, altText, isThumbnail, sortOrder)
+    VALUES
+        (prod6_id, '/images/products/iphone16promax-natural-titanium.svg',  'iPhone 16 Pro Max Natural Titanium',  TRUE,  1),
+        (prod6_id, '/images/products/iphone16promax-desert-titanium.svg',   'iPhone 16 Pro Max Desert Titanium',  FALSE, 2),
+        (prod6_id, '/images/products/iphone16promax-white-titanium.svg',     'iPhone 16 Pro Max White Titanium',   FALSE, 3)
+    ON CONFLICT DO NOTHING;
+
+    -- Variant: Natural Titanium / 256GB
+    INSERT INTO variants (productsId, sku) VALUES (prod6_id, 'IP16PM-NT-256') RETURNING variantId INTO var_id;
+    INSERT INTO variantOptionValue (variantId, valueId) VALUES
+        (var_id, get_value_id('Color',   'Natural Titanium')),
+        (var_id, get_value_id('Storage', '256GB'));
+    INSERT INTO stock (productsId, variantId, quantity, minStock) VALUES (prod6_id, var_id, 30, 5);
+
+    -- Variant: Natural Titanium / 512GB
+    INSERT INTO variants (productsId, sku) VALUES (prod6_id, 'IP16PM-NT-512') RETURNING variantId INTO var_id;
+    INSERT INTO variantOptionValue (variantId, valueId) VALUES
+        (var_id, get_value_id('Color',   'Natural Titanium')),
+        (var_id, get_value_id('Storage', '512GB'));
+    INSERT INTO stock (productsId, variantId, quantity, minStock) VALUES (prod6_id, var_id, 20, 5);
+
+    -- Variant: Natural Titanium / 1TB
+    INSERT INTO variants (productsId, sku) VALUES (prod6_id, 'IP16PM-NT-1T') RETURNING variantId INTO var_id;
+    INSERT INTO variantOptionValue (variantId, valueId) VALUES
+        (var_id, get_value_id('Color',   'Natural Titanium')),
+        (var_id, get_value_id('Storage', '1TB'));
+    INSERT INTO stock (productsId, variantId, quantity, minStock) VALUES (prod6_id, var_id, 10, 3);
+
+    -- Variant: Desert Titanium / 256GB
+    INSERT INTO variants (productsId, sku) VALUES (prod6_id, 'IP16PM-DT-256') RETURNING variantId INTO var_id;
+    INSERT INTO variantOptionValue (variantId, valueId) VALUES
+        (var_id, get_value_id('Color',   'Desert Titanium')),
+        (var_id, get_value_id('Storage', '256GB'));
+    INSERT INTO stock (productsId, variantId, quantity, minStock) VALUES (prod6_id, var_id, 25, 5);
+
+    -- Variant: Desert Titanium / 512GB
+    INSERT INTO variants (productsId, sku) VALUES (prod6_id, 'IP16PM-DT-512') RETURNING variantId INTO var_id;
+    INSERT INTO variantOptionValue (variantId, valueId) VALUES
+        (var_id, get_value_id('Color',   'Desert Titanium')),
+        (var_id, get_value_id('Storage', '512GB'));
+    INSERT INTO stock (productsId, variantId, quantity, minStock) VALUES (prod6_id, var_id, 15, 5);
+
+    -- Variant: Desert Titanium / 1TB
+    INSERT INTO variants (productsId, sku) VALUES (prod6_id, 'IP16PM-DT-1T') RETURNING variantId INTO var_id;
+    INSERT INTO variantOptionValue (variantId, valueId) VALUES
+        (var_id, get_value_id('Color',   'Desert Titanium')),
+        (var_id, get_value_id('Storage', '1TB'));
+    INSERT INTO stock (productsId, variantId, quantity, minStock) VALUES (prod6_id, var_id, 8, 3);
+
+    -- Variant: White Titanium / 256GB
+    INSERT INTO variants (productsId, sku) VALUES (prod6_id, 'IP16PM-WT-256') RETURNING variantId INTO var_id;
+    INSERT INTO variantOptionValue (variantId, valueId) VALUES
+        (var_id, get_value_id('Color',   'White Titanium')),
+        (var_id, get_value_id('Storage', '256GB'));
+    INSERT INTO stock (productsId, variantId, quantity, minStock) VALUES (prod6_id, var_id, 18, 5);
+
+    -- Variant: Black Titanium / 512GB
+    INSERT INTO variants (productsId, sku) VALUES (prod6_id, 'IP16PM-BT-512') RETURNING variantId INTO var_id;
+    INSERT INTO variantOptionValue (variantId, valueId) VALUES
+        (var_id, get_value_id('Color',   'Black Titanium')),
+        (var_id, get_value_id('Storage', '512GB'));
+    INSERT INTO stock (productsId, variantId, quantity, minStock) VALUES (prod6_id, var_id, 12, 5);
+
+    -- Discount example
+    INSERT INTO discounts (productsId, amounts, startDate, endDate)
+    VALUES (prod6_id, 100.00, NOW() - INTERVAL '1 day', NOW() + INTERVAL '14 days');
 
 END $$;
 

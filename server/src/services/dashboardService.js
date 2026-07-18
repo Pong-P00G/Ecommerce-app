@@ -1102,3 +1102,30 @@ export const notifyNewProduct = async (productName) => {
         console.error('Failed to create product notification:', err.message);
     }
 };
+
+/** Called when an order status is updated — notifies the customer */
+export const notifyOrderStatusChange = async (orderId, userId, username, email, newStatus) => {
+    try {
+        const statusLabels = {
+            pending: 'Pending',
+            confirmed: 'Confirmed',
+            shipped: 'Shipped',
+            delivered: 'Delivered',
+            cancelled: 'Cancelled'
+        };
+        const label = statusLabels[newStatus] || newStatus;
+
+        // Create notification to display in user's notification bell
+        await NotificationModel.createNotification({
+            type: 'order',
+            message: `Order #${orderId} status update: ${label}`,
+            link: `/userprofile?tab=orders`,
+        });
+
+        // Also register a user-specific notification
+        // (This is a separate table concept - for now, admin notifications work as a broadcast)
+        console.log(`[OrderNotification] User #${userId} (${username}, ${email}) notified: Order #${orderId} → ${label}`);
+    } catch (err) {
+        console.error('Failed to create order status notification:', err.message);
+    }
+};

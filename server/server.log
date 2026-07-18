@@ -1,93 +1,3 @@
-
-> backend@1.0.0 dev
-> node --watch --env-file=.env --experimental-strip-types --experimental-sqlite ./src/main.js
-
-[dotenv@17.2.1] injecting env (0) from .env -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
-==================================================
-🚀 Server is running on port 5001
-📡 API URL: http://localhost:5001
-🌐 Frontend URL: http://localhost:3001
-📝 Environment: development
-==================================================
-✅ Connected to PostgreSQL successfully
-✅ Permissions already seeded
-Completed running './src/main.js'. Waiting for file changes before restarting...
-Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
-==================================================
-🚀 Server is running on port 5001
-📡 API URL: http://localhost:5001
-🌐 Frontend URL: http://localhost:3001
-📝 Environment: development
-==================================================
-✅ Connected to PostgreSQL successfully
-✅ Permissions already seeded
-Completed running './src/main.js'. Waiting for file changes before restarting...
-Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
-==================================================
-🚀 Server is running on port 5001
-📡 API URL: http://localhost:5001
-🌐 Frontend URL: http://localhost:3001
-📝 Environment: development
-==================================================
-2026-07-14T09:48:57.868Z - GET /api/roles
-2026-07-14T09:48:57.878Z - GET /api/roles/permissions
-2026-07-14T09:48:57.881Z - GET /api/users
-✅ Connected to PostgreSQL successfully
-2026-07-14T09:48:58.010Z - GET /api/roles
-2026-07-14T09:48:58.013Z - GET /api/roles/permissions
-✅ Permissions already seeded
-2026-07-14T09:48:58.038Z - GET /api/users
-2026-07-14T09:48:58.040Z - GET /api/roles
-2026-07-14T09:48:58.041Z - GET /api/roles/permissions
-2026-07-14T09:48:58.046Z - GET /api/users
-2026-07-14T09:48:58.050Z - GET /api/dashboard/notifications
-2026-07-14T09:48:58.053Z - GET /api/roles/permissions
-2026-07-14T09:48:58.059Z - GET /api/users
-2026-07-14T09:48:58.062Z - GET /api/roles
-2026-07-14T09:49:12.966Z - GET /api/dashboard/notifications
-2026-07-14T09:49:26.132Z - GET /api/dashboard/notifications
-2026-07-14T09:49:43.021Z - GET /api/dashboard/notifications
-2026-07-14T09:49:56.132Z - GET /api/dashboard/notifications
-2026-07-14T09:50:26.132Z - GET /api/dashboard/notifications
-2026-07-14T09:50:52.959Z - GET /api/dashboard/notifications
-2026-07-14T09:50:56.124Z - GET /api/dashboard/notifications
-2026-07-14T09:51:26.129Z - GET /api/dashboard/notifications
-2026-07-14T09:51:29.144Z - GET /api/users
-2026-07-14T09:51:29.146Z - GET /api/roles
-2026-07-14T09:51:29.147Z - GET /api/roles/permissions
-2026-07-14T09:51:29.150Z - GET /api/users
-2026-07-14T09:51:29.153Z - GET /api/roles
-2026-07-14T09:51:29.154Z - GET /api/roles/permissions
-2026-07-14T09:51:52.955Z - GET /api/dashboard/notifications
-2026-07-14T09:51:56.133Z - GET /api/dashboard/notifications
-2026-07-14T09:52:26.134Z - GET /api/dashboard/notifications
-2026-07-14T09:52:52.948Z - GET /api/dashboard/notifications
-2026-07-14T09:52:56.141Z - GET /api/dashboard/notifications
-2026-07-14T09:53:10.885Z - GET /health
-2026-07-14T09:53:12.284Z - GET /api/dashboard/notifications
-2026-07-14T09:53:18.005Z - PUT /api/dashboard/notifications/3/read
-2026-07-14T09:53:19.232Z - PUT /api/dashboard/notifications/2/read
-2026-07-14T09:53:20.597Z - PUT /api/dashboard/notifications/1/read
-2026-07-14T09:53:26.133Z - GET /api/dashboard/notifications
-2026-07-14T09:53:42.953Z - GET /api/dashboard/notifications
-2026-07-14T09:53:56.130Z - GET /api/dashboard/notifications
-2026-07-14T09:54:12.959Z - GET /api/dashboard/notifications
-2026-07-14T09:54:26.128Z - GET /api/dashboard/notifications
-2026-07-14T09:54:52.952Z - GET /api/dashboard/notifications
-Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
-==================================================
-🚀 Server is running on port 5001
-📡 API URL: http://localhost:5001
-🌐 Frontend URL: http://localhost:3001
-📝 Environment: development
-==================================================
-✅ Connected to PostgreSQL successfully
-✅ Permissions already seeded
-Completed running './src/main.js'. Waiting for file changes before restarting...
-Restarting './src/main.js'
 [dotenv@17.2.1] injecting env (0) from .env -- tip: 📡 version env with Radar: https://dotenvx.com/radar
 ==================================================
 🚀 Server is running on port 5001
@@ -96,32 +6,9 @@ Restarting './src/main.js'
 📝 Environment: development
 ==================================================
 ✅ Connected to PostgreSQL successfully
-✅ Permissions already seeded
 Completed running './src/main.js'. Waiting for file changes before restarting...
-Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: 📡 observe env with Radar: https://dotenvx.com/radar
-==================================================
-🚀 Server is running on port 5001
-📡 API URL: http://localhost:5001
-🌐 Frontend URL: http://localhost:3001
-📝 Environment: development
-==================================================
-✅ Connected to PostgreSQL successfully
-✅ Permissions already seeded
-Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
-⚠️ Could not init audit log table: tableExists is not defined
-==================================================
-🚀 Server is running on port 5001
-📡 API URL: http://localhost:5001
-🌐 Frontend URL: http://localhost:3001
-📝 Environment: development
-==================================================
-✅ Connected to PostgreSQL successfully
-✅ Permissions already seeded
 Restarting './src/main.js'
 [dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
-⚠️ Could not init audit log table: tableExists is not defined
 ==================================================
 🚀 Server is running on port 5001
 📡 API URL: http://localhost:5001
@@ -129,76 +16,6 @@ Restarting './src/main.js'
 📝 Environment: development
 ==================================================
 ✅ Connected to PostgreSQL successfully
-✅ Permissions already seeded
-Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
-⚠️ Could not init audit log table: tableExists is not defined
-==================================================
-🚀 Server is running on port 5001
-📡 API URL: http://localhost:5001
-🌐 Frontend URL: http://localhost:3001
-📝 Environment: development
-==================================================
-✅ Connected to PostgreSQL successfully
-✅ Permissions already seeded
-Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
-⚠️ Could not init audit log table: tableExists is not defined
-==================================================
-🚀 Server is running on port 5001
-📡 API URL: http://localhost:5001
-🌐 Frontend URL: http://localhost:3001
-📝 Environment: development
-==================================================
-✅ Connected to PostgreSQL successfully
-✅ Permissions already seeded
-Completed running './src/main.js'. Waiting for file changes before restarting...
-Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: 📡 observe env with Radar: https://dotenvx.com/radar
-==================================================
-🚀 Server is running on port 5001
-📡 API URL: http://localhost:5001
-🌐 Frontend URL: http://localhost:3001
-📝 Environment: development
-==================================================
-✅ Connected to PostgreSQL successfully
-✅ Audit log table ready
-✅ Permissions already seeded
-Completed running './src/main.js'. Waiting for file changes before restarting...
-Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
-==================================================
-🚀 Server is running on port 5001
-📡 API URL: http://localhost:5001
-🌐 Frontend URL: http://localhost:3001
-📝 Environment: development
-==================================================
-✅ Connected to PostgreSQL successfully
-✅ Audit log table ready
-✅ Permissions already seeded
-Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
-==================================================
-🚀 Server is running on port 5001
-📡 API URL: http://localhost:5001
-🌐 Frontend URL: http://localhost:3001
-📝 Environment: development
-==================================================
-✅ Audit log table ready
-✅ Connected to PostgreSQL successfully
-✅ Permissions already seeded
-Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
-==================================================
-🚀 Server is running on port 5001
-📡 API URL: http://localhost:5001
-🌐 Frontend URL: http://localhost:3001
-📝 Environment: development
-==================================================
-✅ Audit log table ready
-✅ Permissions already seeded
-✅ Connected to PostgreSQL successfully
-2026-07-14T10:02:26.127Z - GET /api/dashboard/notifications
 Restarting './src/main.js'
 [dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
 ==================================================
@@ -208,12 +25,9 @@ Restarting './src/main.js'
 📝 Environment: development
 ==================================================
 ✅ Connected to PostgreSQL successfully
-✅ Audit log table ready
-✅ Roles level column ready
-✅ Permissions already seeded
-Completed running './src/main.js'. Waiting for file changes before restarting...
+2026-07-15T18:26:42.237Z - GET /api/dashboard/notifications
 Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
 ==================================================
 🚀 Server is running on port 5001
 📡 API URL: http://localhost:5001
@@ -221,12 +35,8 @@ Restarting './src/main.js'
 📝 Environment: development
 ==================================================
 ✅ Connected to PostgreSQL successfully
-✅ Audit log table ready
-✅ Roles level column ready
-✅ Permissions already seeded
-Completed running './src/main.js'. Waiting for file changes before restarting...
 Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
 ==================================================
 🚀 Server is running on port 5001
 📡 API URL: http://localhost:5001
@@ -234,21 +44,6 @@ Restarting './src/main.js'
 📝 Environment: development
 ==================================================
 ✅ Connected to PostgreSQL successfully
-✅ Roles level column ready
-✅ Audit log table ready
-✅ Permissions already seeded
-Completed running './src/main.js'. Waiting for file changes before restarting...
-Restarting './src/main.js'
-Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
-==================================================
-🚀 Server is running on port 5001
-📡 API URL: http://localhost:5001
-🌐 Frontend URL: http://localhost:3001
-📝 Environment: development
-==================================================
-❌ PostgreSQL connection error: Connection terminated due to connection timeout
-Failed running './src/main.js'. Waiting for file changes before restarting...
 Restarting './src/main.js'
 [dotenv@17.2.1] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
 ==================================================
@@ -257,56 +52,9 @@ Restarting './src/main.js'
 🌐 Frontend URL: http://localhost:3001
 📝 Environment: development
 ==================================================
-✅ Audit log table ready
-✅ Connected to PostgreSQL successfully
-✅ Roles level column ready
-✅ Permissions already seeded
-Completed running './src/main.js'. Waiting for file changes before restarting...
-Restarting './src/main.js'
-Restarting './src/main.js'
-Waiting for graceful termination...
-Gracefully restarted './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
-Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: 📡 observe env with Radar: https://dotenvx.com/radar
-==================================================
-🚀 Server is running on port 5001
-📡 API URL: http://localhost:5001
-🌐 Frontend URL: http://localhost:3001
-📝 Environment: development
-==================================================
-✅ Audit log table ready
-✅ Roles level column ready
-✅ Permissions already seeded
 ✅ Connected to PostgreSQL successfully
 Completed running './src/main.js'. Waiting for file changes before restarting...
 Restarting './src/main.js'
-Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
-==================================================
-🚀 Server is running on port 5001
-📡 API URL: http://localhost:5001
-🌐 Frontend URL: http://localhost:3001
-📝 Environment: development
-==================================================
-✅ Audit log table ready
-✅ Roles level column ready
-✅ Connected to PostgreSQL successfully
-✅ Permissions already seeded
-Completed running './src/main.js'. Waiting for file changes before restarting...
-Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
-==================================================
-🚀 Server is running on port 5001
-📡 API URL: http://localhost:5001
-🌐 Frontend URL: http://localhost:3001
-📝 Environment: development
-==================================================
-✅ Audit log table ready
-✅ Connected to PostgreSQL successfully
-✅ Roles level column ready
-✅ Permissions type column ready
-✅ Permissions already seeded
 Restarting './src/main.js'
 [dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
 ==================================================
@@ -316,23 +64,6 @@ Restarting './src/main.js'
 📝 Environment: development
 ==================================================
 ✅ Connected to PostgreSQL successfully
-✅ Audit log table ready
-✅ Roles level column ready
-✅ Permissions type column ready
-✅ Permissions already seeded
-Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: 📡 observe env with Radar: https://dotenvx.com/radar
-==================================================
-🚀 Server is running on port 5001
-📡 API URL: http://localhost:5001
-🌐 Frontend URL: http://localhost:3001
-📝 Environment: development
-==================================================
-✅ Roles level column ready
-✅ Connected to PostgreSQL successfully
-✅ Permissions type column ready
-✅ Audit log table ready
-✅ Permissions already seeded
 Restarting './src/main.js'
 [dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
 ==================================================
@@ -341,22 +72,16 @@ Restarting './src/main.js'
 🌐 Frontend URL: http://localhost:3001
 📝 Environment: development
 ==================================================
-✅ Audit log table ready
 ✅ Connected to PostgreSQL successfully
-✅ Permissions type column ready
-✅ Permissions already seeded
-✅ Roles level column ready
-Completed running './src/main.js'. Waiting for file changes before restarting...
- running on port 5001
+Restarting './src/main.js'
+[dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+==================================================
+🚀 Server is running on port 5001
 📡 API URL: http://localhost:5001
 🌐 Frontend URL: http://localhost:3001
 📝 Environment: development
 ==================================================
 ✅ Connected to PostgreSQL successfully
-✅ Roles level column ready
-✅ Audit log table ready
-✅ Permissions already seeded
-Completed running './src/main.js'. Waiting for file changes before restarting...
 Restarting './src/main.js'
 [dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
 ==================================================
@@ -365,84 +90,8 @@ Restarting './src/main.js'
 🌐 Frontend URL: http://localhost:3001
 📝 Environment: development
 ==================================================
-✅ Permissions already seeded
 ✅ Connected to PostgreSQL successfully
-✅ Audit log table ready
-✅ Roles level column ready
 Completed running './src/main.js'. Waiting for file changes before restarting...
-Restarting './src/main.js'
-Restarting './src/main.js'
-Waiting for graceful termination...
-Gracefully restarted './src/main.js'
-Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: 📡 observe env with Radar: https://dotenvx.com/radar
-==================================================
-🚀 Server is running on port 5001
-📡 API URL: http://localhost:5001
-🌐 Frontend URL: http://localhost:3001
-📝 Environment: development
-==================================================
-✅ Audit log table ready
-✅ Connected to PostgreSQL successfully
-✅ Permissions already seeded
-✅ Roles level column ready
-Completed running './src/main.js'. Waiting for file changes before restarting...
-Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
-==================================================
-🚀 Server is running on port 5001
-📡 API URL: http://localhost:5001
-🌐 Frontend URL: http://localhost:3001
-📝 Environment: development
-==================================================
-✅ Connected to PostgreSQL successfully
-✅ Roles level column ready
-✅ Permissions already seeded
-✅ Audit log table ready
-2026-07-14T12:13:27.148Z - GET /api/users
-2026-07-14T12:13:27.156Z - GET /api/roles
-2026-07-14T12:13:27.157Z - GET /api/roles/permissions
-2026-07-14T12:13:27.159Z - GET /api/dashboard/notifications
-2026-07-14T12:13:57.157Z - GET /api/dashboard/notifications
-2026-07-14T12:14:27.143Z - GET /api/dashboard/notifications
-Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
-==================================================
-🚀 Server is running on port 5001
-📡 API URL: http://localhost:5001
-🌐 Frontend URL: http://localhost:3001
-📝 Environment: development
-==================================================
-2026-07-14T12:14:54.409Z - POST /api/users
-✅ Connected to PostgreSQL successfully
-✅ Audit log table ready
-✅ Permissions already seeded
-✅ Roles level column ready
-Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
-==================================================
-🚀 Server is running on port 5001
-📡 API URL: http://localhost:5001
-🌐 Frontend URL: http://localhost:3001
-📝 Environment: development
-==================================================
-✅ Connected to PostgreSQL successfully
-✅ Audit log table ready
-✅ Roles level column ready
-✅ Permissions already seeded
-2026-07-14T12:14:57.156Z - GET /api/dashboard/notifications
-2026-07-14T12:15:08.155Z - POST /api/users
-2026-07-14T12:15:08.599Z - GET /api/users
-2026-07-14T12:15:27.161Z - GET /api/dashboard/notifications
-2026-07-14T12:15:57.145Z - GET /api/dashboard/notifications
-2026-07-14T12:16:27.958Z - GET /api/dashboard/notifications
-2026-07-14T12:16:57.958Z - GET /api/dashboard/notifications
-2026-07-14T12:17:52.955Z - GET /api/dashboard/notifications
-2026-07-14T12:18:52.956Z - GET /api/dashboard/notifications
-2026-07-14T12:19:52.956Z - GET /api/dashboard/notifications
-2026-07-14T12:20:21.363Z - GET /api/users
-2026-07-14T12:20:52.950Z - GET /api/dashboard/notifications
-2026-07-14T12:21:52.952Z - GET /api/dashboard/notifications
 Restarting './src/main.js'
 [dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
 ==================================================
@@ -452,10 +101,7 @@ Restarting './src/main.js'
 📝 Environment: development
 ==================================================
 ✅ Connected to PostgreSQL successfully
-✅ Roles level column ready
-✅ Audit log table ready
-✅ Permissions type column ready
-✅ Permissions already seeded
+Restarting './src/main.js'
 Restarting './src/main.js'
 [dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
 ==================================================
@@ -464,35 +110,5 @@ Restarting './src/main.js'
 🌐 Frontend URL: http://localhost:3001
 📝 Environment: development
 ==================================================
-✅ Audit log table ready
-✅ Roles level column ready
-✅ Permissions type column ready
 ✅ Connected to PostgreSQL successfully
-✅ Permissions already seeded
-Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
-==================================================
-🚀 Server is running on port 5001
-📡 API URL: http://localhost:5001
-🌐 Frontend URL: http://localhost:3001
-📝 Environment: development
-==================================================
-✅ Roles level column ready
-✅ Audit log table ready
-✅ Connected to PostgreSQL successfully
-✅ Permissions already seeded
-✅ Permissions type column ready
-Restarting './src/main.js'
-[dotenv@17.2.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
-==================================================
-🚀 Server is running on port 5001
-📡 API URL: http://localhost:5001
-🌐 Frontend URL: http://localhost:3001
-📝 Environment: development
-==================================================
-✅ Audit log table ready
-✅ Connected to PostgreSQL successfully
-✅ Permissions already seeded
-✅ Roles level column ready
-✅ Permissions type column ready
 Completed running './src/main.js'. Waiting for file changes before restarting...

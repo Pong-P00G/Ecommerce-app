@@ -1,7 +1,7 @@
 import db from '../database/dbpool.js';
 import * as CartModel from '../model/cartModel.js';
 import * as OrderModel from '../model/orderModel.js';
-import { notifyNewOrder } from './dashboardService.js';
+import { notifyNewOrder, notifyOrderStatusChange } from './dashboardService.js';
 
 // Status values enforced by the orders.status CHECK constraint.
 const ALLOWED_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
@@ -200,6 +200,10 @@ export const updateStatus = async (orderId, status, _userId, _roleId) => {
         err.status = 500;
         throw err;
     }
+
+    // Fire-and-forget: notify the customer about the status change
+    notifyOrderStatusChange(orderId, existing.userId, existing.username, existing.email, status).catch(() => {});
+
     return updated;
 };
 

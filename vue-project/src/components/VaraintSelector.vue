@@ -74,5 +74,27 @@ function select(part) {
                 </button>
             </div>
         </div>
+
+        <div v-if="variants.storage && variants.storage.length" class="space-y-2">
+            <div class="flex items-center justify-between">
+                <label class="text-xs font-bold uppercase tracking-[0.2em] text-ink">Storage</label>
+                <span v-if="selected.storage" class="text-xs text-neutral-500 font-medium">{{ selected.storage }}</span>
+            </div>
+            <div class="flex gap-2 flex-wrap">
+                <button
+                    v-for="s in variants.storage"
+                    :key="s"
+                    @click="select({ storage: s })"
+                    :class="[
+                        'min-w-[60px] h-10 px-3 rounded-xl border-2 text-sm font-semibold transition-all duration-200',
+                        selected.storage === s
+                            ? 'bg-ink text-paper border-ink shadow-md'
+                            : 'bg-paper text-ink border-neutral-200 hover:border-ink'
+                    ]"
+                >
+                    {{ s }}
+                </button>
+            </div>
+        </div>
     </div>
 </template>

@@ -1,10 +1,16 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import { RouterLink } from 'vue-router';
-import { CheckCircle2, Package, Mail, ArrowRight, Sparkles, Truck, Calendar, Download } from 'lucide-vue-next';
+import { ref, computed, onMounted } from 'vue';
+import { useRoute, RouterLink } from 'vue-router';
+import { orderAPI } from '@/api/orderApi.js';
+import { CheckCircle2, Package, Mail, ArrowRight, Sparkles, Truck, Calendar, Download, Loader2 } from 'lucide-vue-next';
+
+const route = useRoute();
 
 const showContent = ref(false);
 const showConfetti = ref(false);
+const loadingOrder = ref(!!route.query.orderId);
+const order = ref(null);
+const error = ref(null);
 
 const confettiPieces = Array.from({ length: 24 }, (_, i) => ({
     id: i,
@@ -17,25 +23,94 @@ const confettiPieces = Array.from({ length: 24 }, (_, i) => ({
 }));
 
 const countUp = ref(0);
-const targetTotal = 148;
+const targetTotal = ref(0);
 
-onMounted(() => {
+// Get data from route query
+const orderId = computed(() => route.query.orderId || '');
+const totalAmount = computed(() => route.query.total || '0');
+const customerEmail = computed(() => route.query.email || 'your email');
+
+// Estimated delivery date (7-10 days from now)
+const estimatedDelivery = computed(() => {
+    const now = new Date();
+    const min = new Date(now);
+    min.setDate(min.getDate() + 7);
+    const max = new Date(now);
+    max.setDate(max.getDate() + 10);
+    const options = { month: 'short', day: 'numeric' };
+    return `${min.toLocaleDateString('en-US', options)} - ${max.toLocaleDateString('en-US', options)}`;
+});
+
+const itemCount = computed(() => order.value?.items?.length || 0);
+const orderStatus = computed(() => order.value?.status || 'pending');
+
+const statusBadgeClass = computed(() => {
+    const map = {
+        pending: 'bg-warning/10 text-warning border-warning/20',
+        confirmed: 'bg-info/10 text-info border-info/20',
+        shipped: 'bg-accent/10 text-accent border-accent/20',
+        delivered: 'bg-success/10 text-success border-success/20',
+        cancelled: 'bg-danger/10 text-danger border-danger/20',
+    };
+    return map[orderStatus.value] || 'bg-neutral-100 text-neutral-700';
+});
+
+// Load full order details
+const loadOrder = async () => {
+    if (!orderId.value) {
+        loadingOrder.value = false;
+        return;
+    }
+    try {
+        const res = await orderAPI.getOrder(orderId.value);
+        if (res.success) {
+            order.value = res.data;
+            targetTotal.value = parseFloat(res.data.totalAmount || totalAmount.value);
+        } else {
+            error.value = res.message || 'Could not load order details';
+        }
+    } catch (err) {
+        console.error('Failed to load order:', err);
+        error.value = err.response?.data?.message || 'Could not load order details';
+    } finally {
+        loadingOrder.value = false;
+    }
+};
+
+onMounted(async () => {
     showConfetti.value = true;
+
+    if (loadingOrder.value) {
+        await loadOrder();
+    }
+
+    targetTotal.value = parseFloat(totalAmount.value || '0');
+
     setTimeout(() => { showContent.value = true; }, 100);
+
     // Animate count-up
     const steps = 30;
-    const increment = targetTotal / steps;
+    const increment = targetTotal.value / steps;
     let current = 0;
     const timer = setInterval(() => {
         current += increment;
-        if (current >= targetTotal) {
-            countUp.value = targetTotal;
+        if (current >= targetTotal.value) {
+            countUp.value = targetTotal.value;
             clearInterval(timer);
         } else {
             countUp.value = Math.round(current * 100) / 100;
         }
     }, 40);
 });
+
+const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    return new Date(dateStr).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+};
+
+const formatPrice = (p) => parseFloat(p || 0).toFixed(2);
 </script>
 
 <template>
@@ -60,102 +135,155 @@ onMounted(() => {
         </div>
 
         <div class="max-w-2xl w-full text-center relative">
-            <!-- Icon with staggered entrance -->
-            <transition name="fade-up-scale">
-                <div v-if="showContent" class="relative inline-block mb-8">
-                    <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-accent-50 flex items-center justify-center mx-auto">
-                        <CheckCircle2 class="w-10 h-10 sm:w-12 sm:h-12 text-accent" />
-                    </div>
-                    <span class="absolute inset-0 rounded-full ring-4 ring-accent/20"></span>
+            <!-- Loading State -->
+            <div v-if="loadingOrder" class="py-20">
+                <Loader2 class="w-10 h-10 animate-spin text-accent mx-auto mb-4" />
+                <p class="text-neutral-500">Loading order details...</p>
+            </div>
+
+            <!-- Error State -->
+            <div v-else-if="error" class="py-20">
+                <div class="w-20 h-20 rounded-full bg-danger/10 flex items-center justify-center mx-auto mb-6">
+                    <Package class="w-10 h-10 text-danger" />
                 </div>
-            </transition>
+                <h1 class="text-2xl font-bold text-ink mb-3">Order #{{ orderId }}</h1>
+                <p class="text-neutral-500 mb-6">{{ error }}</p>
+                <RouterLink to="/" class="btn-accent shine-effect inline-flex">
+                    Return Home
+                    <ArrowRight class="w-4 h-4" />
+                </RouterLink>
+            </div>
 
-            <transition name="fade-up">
-                <div v-if="showContent">
-                    <span class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-accent mb-3">
-                        <Sparkles class="w-4 h-4" />
-                        Order confirmed
-                    </span>
-                </div>
-            </transition>
-
-            <transition name="fade-up" appear>
-                <div v-if="showContent">
-                    <h1 class="text-3xl sm:text-4xl md:text-5xl font-elegant font-bold text-ink mb-4">Thank you for your order!</h1>
-                    <p class="text-lg text-neutral-500 font-light max-w-md mx-auto">
-                        Your order <span class="font-bold text-ink tabular-nums">#ALIE-2024-0218</span> has been placed successfully.
-                    </p>
-                </div>
-            </transition>
-
-            <!-- Order Details Card -->
-            <transition name="fade-up">
-                <div v-if="showContent" class="bg-paper border border-neutral-200 rounded-3xl p-5 sm:p-6 mt-8 sm:mt-10 text-left space-y-4 sm:space-y-5">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold uppercase tracking-[0.2em] text-neutral-500">Order details</span>
-                        <button class="inline-flex items-center gap-1.5 text-xs font-bold text-ink hover:text-accent transition-colors">
-                            <Download class="w-3.5 h-3.5" />
-                            Receipt
-                        </button>
+            <!-- Success Content -->
+            <template v-else>
+                <!-- Icon with staggered entrance -->
+                <transition name="fade-up-scale">
+                    <div v-if="showContent" class="relative inline-block mb-8">
+                        <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-accent/10 flex items-center justify-center mx-auto">
+                            <CheckCircle2 class="w-10 h-10 sm:w-12 sm:h-12 text-accent" />
+                        </div>
+                        <span class="absolute inset-0 rounded-full ring-4 ring-accent/20 animate-pulse"></span>
                     </div>
+                </transition>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                        <div class="flex items-start gap-3">
-                            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0">
-                                <Package class="w-4 h-4 text-ink" />
-                            </div>
-                            <div>
-                                <p class="text-xs text-neutral-500">Items</p>
-                                <p class="text-sm font-bold text-ink tabular-nums">3 products</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start gap-3">
-                            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0">
-                                <Truck class="w-4 h-4 text-ink" />
-                            </div>
-                            <div>
-                                <p class="text-xs text-neutral-500">Estimated arrival</p>
-                                <p class="text-sm font-bold text-ink">Mar 28 - Apr 02</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start gap-3">
-                            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0">
-                                <Calendar class="w-4 h-4 text-ink" />
-                            </div>
-                            <div>
-                                <p class="text-xs text-neutral-500">Total paid</p>
-                                <p class="text-sm font-bold text-accent tabular-nums">{{ '$' }}{{ countUp.toFixed(2) }}</p>
-                            </div>
-                        </div>
+                <transition name="fade-up">
+                    <div v-if="showContent">
+                        <span class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-accent mb-3">
+                            <Sparkles class="w-4 h-4" />
+                            Order confirmed
+                        </span>
                     </div>
+                </transition>
 
-                    <div class="border-t border-neutral-200 pt-4 flex items-center gap-3">
-                        <Mail class="w-4 h-4 text-neutral-400 shrink-0" />
-                        <p class="text-sm text-neutral-600">
-                            A confirmation email is on its way to <span class="font-bold text-ink">you@example.com</span>.
+                <transition name="fade-up" appear>
+                    <div v-if="showContent">
+                        <h1 class="text-3xl sm:text-4xl md:text-5xl font-elegant font-bold text-ink mb-4">Thank you for your order!</h1>
+                        <p class="text-lg text-neutral-500 font-light max-w-md mx-auto">
+                            Your order <span class="font-bold text-ink tabular-nums">#{{ orderId }}</span> has been placed successfully.
                         </p>
                     </div>
-                </div>
-            </transition>
+                </transition>
 
-            <!-- Action Buttons -->
-            <transition name="fade-up">
-                <div v-if="showContent" class="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-                    <RouterLink to="/product" class="btn-accent shine-effect">
-                        Continue shopping
-                        <ArrowRight class="w-4 h-4" />
-                    </RouterLink>
-                    <RouterLink to="/track-order" class="btn-outline">
-                        Track this order
-                    </RouterLink>
-                </div>
-            </transition>
+                <!-- Order Details Card -->
+                <transition name="fade-up">
+                    <div v-if="showContent" class="bg-paper border border-neutral-200 rounded-3xl p-5 sm:p-6 mt-8 sm:mt-10 text-left space-y-4 sm:space-y-5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold uppercase tracking-[0.2em] text-neutral-500">Order details</span>
+                            <div class="flex items-center gap-2">
+                                <span v-if="order" :class="['px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border', statusBadgeClass]">
+                                    {{ orderStatus }}
+                                </span>
+                                <button class="inline-flex items-center gap-1.5 text-xs font-bold text-ink hover:text-accent transition-colors">
+                                    <Download class="w-3.5 h-3.5" />
+                                    Receipt
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Order items list -->
+                        <div v-if="order?.items?.length > 0" class="space-y-2 max-h-40 overflow-y-auto">
+                            <div
+                                v-for="item in order.items"
+                                :key="item.orderItemId"
+                                class="flex items-center justify-between py-2 border-b border-neutral-100 last:border-0"
+                            >
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <div class="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center text-xs font-bold text-neutral-600 shrink-0">
+                                        {{ item.quantity }}
+                                    </div>
+                                    <span class="text-sm text-ink truncate">{{ item.productName || 'Product' }}</span>
+                                </div>
+                                <span class="text-sm font-semibold text-ink tabular-nums shrink-0 ml-2">
+                                    ${{ formatPrice(item.unitPrice) }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                            <div class="flex items-start gap-3">
+                                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0">
+                                    <Package class="w-4 h-4 text-ink" />
+                                </div>
+                                <div>
+                                    <p class="text-xs text-neutral-500">Items</p>
+                                    <p class="text-sm font-bold text-ink tabular-nums">
+                                        {{ itemCount || order?.items?.length || '-' }} products
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0">
+                                    <Truck class="w-4 h-4 text-ink" />
+                                </div>
+                                <div>
+                                    <p class="text-xs text-neutral-500">Estimated arrival</p>
+                                    <p class="text-sm font-bold text-ink">{{ estimatedDelivery }}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0">
+                                    <Calendar class="w-4 h-4 text-ink" />
+                                </div>
+                                <div>
+                                    <p class="text-xs text-neutral-500">Total paid</p>
+                                    <p class="text-sm font-bold text-accent tabular-nums">${{ countUp.toFixed(2) }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="order?.createdAt" class="border-t border-neutral-200 pt-3">
+                            <p class="text-xs text-neutral-500">
+                                Ordered on {{ formatDate(order.createdAt) }}
+                            </p>
+                        </div>
+
+                        <div class="border-t border-neutral-200 pt-4 flex items-center gap-3">
+                            <Mail class="w-4 h-4 text-neutral-400 shrink-0" />
+                            <p class="text-sm text-neutral-600">
+                                A confirmation email is on its way to <span class="font-bold text-ink">{{ customerEmail }}</span>.
+                            </p>
+                        </div>
+                    </div>
+                </transition>
+
+                <!-- Action Buttons -->
+                <transition name="fade-up">
+                    <div v-if="showContent" class="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+                        <RouterLink to="/product" class="btn-accent shine-effect">
+                            Continue shopping
+                            <ArrowRight class="w-4 h-4" />
+                        </RouterLink>
+                        <RouterLink to="/track-order" class="btn-outline">
+                            Track this order
+                        </RouterLink>
+                    </div>
+                </transition>
+            </template>
         </div>
     </div>
 </template>
 
 <style scoped>
-/* Staggered entrance animations */
 .fade-up-enter-active {
     transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -179,7 +307,6 @@ onMounted(() => {
     transform: scale(0.5);
 }
 
-/* Confetti falling animation */
 @keyframes confetti-fall {
     0% {
         transform: translateY(-10px) rotate(0deg);

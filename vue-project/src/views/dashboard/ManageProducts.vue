@@ -72,6 +72,63 @@ const expandedProducts = ref(new Set());
 const productVariants = ref({});
 const loadingVariants = ref(new Set());
 
+// Variant inline price editing
+const editingVariantPrice = ref(null); // { variantId, productId, value }
+const variantPriceInputRef = ref(null);
+
+const startEditingVariantPrice = (variant, productId) => {
+    editingVariantPrice.value = { variantId: variant.variant_id, productId, value: variant.variant_price || '' };
+    nextTick(() => {
+        variantPriceInputRef.value?.focus();
+        variantPriceInputRef.value?.select();
+    });
+};
+
+const cancelEditingVariantPrice = () => {
+    editingVariantPrice.value = null;
+};
+
+const saveVariantPrice = async () => {
+    if (!editingVariantPrice.value) return;
+    const { variantId, productId, value } = editingVariantPrice.value;
+    const variants = productVariants.value[productId];
+    if (!variants) { cancelEditingVariantPrice(); return; }
+    const variant = variants.find(v => v.variant_id === variantId);
+    if (!variant) { cancelEditingVariantPrice(); return; }
+
+    const num = parseFloat(value);
+    if (isNaN(num) || num < 0) {
+        toast.warning('Price must be a valid positive number');
+        cancelEditingVariantPrice();
+        return;
+    }
+    if (num === parseFloat(variant.variant_price || 0)) {
+        cancelEditingVariantPrice();
+        return;
+    }
+
+    try {
+        await variantAPI.upadateVariant(variantId, { variant_price: num });
+        variant.variant_price = num;
+        editingVariantPrice.value = null;
+        toast.success('Variant price updated');
+    } catch (err) {
+        console.error('Error updating variant price:', err);
+        toast.error(err.response?.data?.message || 'Failed to update variant price');
+        editingVariantPrice.value = null;
+    }
+};
+
+const handleVariantPriceKeydown = (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        saveVariantPrice();
+    } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelEditingVariantPrice();
+    }
+};
+
 const toggleExpandVariants = async (productId) => {
     if (expandedProducts.value.has(productId)) {
         expandedProducts.value.delete(productId);
@@ -264,10 +321,10 @@ const fetchProducts = async () => {
         const params = {
             page: currentPage.value,
             pageSize: pageSize.value,
-            search: searchQuery.value || undefined,
-            category: filterCategory.value !== 'all' ? filterCategory.value : undefined,
-            status: filterStatus.value !== 'all' ? filterStatus.value : undefined,
-            stockStatus: filterStock.value !== 'all' ? filterStock.value : undefined,
+            search: searchQuery.value || null,
+            category: filterCategory.value !== 'all' ? filterCategory.value : null,
+            status: filterStatus.value !== 'all' ? filterStatus.value : null,
+            stockStatus: filterStock.value !== 'all' ? filterStock.value : null,
             sortField: sortField.value,
             sortDirection: sortDirection.value,
         };
@@ -563,6 +620,80 @@ const truncateText = (text, length = 40) => {
     return text.length > length ? text.substring(0, length) + '...' : text;
 };
 
+// ── Tags Management ──────────────────────────────────────────────────────────
+const COMMON_TAGS = ['coming_soon', 'new_arrival', 'best_seller', 'sale', 'featured', 'eco_friendly', 'limited_edition', 'premium'];
+
+const editingTags = ref(null); // product_id being edited
+const editingTagsInput = ref('');
+const tagEditorRef = ref(null);
+const savingTags = ref(false);
+
+const getTags = (product) => product.tags || [];
+
+const toggleTag = (product, tag) => {
+    const currentTags = [...getTags(product)];
+    const idx = currentTags.indexOf(tag);
+    if (idx >= 0) {
+        currentTags.splice(idx, 1);
+    } else {
+        currentTags.push(tag);
+    }
+    product.tags = currentTags;
+};
+
+const addCustomTag = (product) => {
+    const tag = editingTagsInput.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+    if (!tag) return;
+    const currentTags = [...getTags(product)];
+    if (!currentTags.includes(tag)) {
+        currentTags.push(tag);
+        product.tags = currentTags;
+    }
+    editingTagsInput.value = '';
+};
+
+const openTagEditor = (product) => {
+    editingTags.value = product.product_id;
+    editingTagsInput.value = '';
+    // Ensure tags is an array
+    if (!Array.isArray(product.tags)) {
+        product.tags = [];
+    }
+    nextTick(() => {
+        tagEditorRef.value?.focus();
+    });
+};
+
+const closeTagEditor = () => {
+    editingTags.value = null;
+    editingTagsInput.value = '';
+};
+
+const saveTags = async (product) => {
+    const tags = getTags(product);
+    savingTags.value = true;
+    try {
+        await productAPI.updateProduct(product.product_id, { tags });
+        toast.success(`Tags updated for "${product.product_name}"`);
+        closeTagEditor();
+    } catch (err) {
+        console.error('Error saving tags:', err);
+        toast.error(err.response?.data?.message || 'Failed to save tags');
+    } finally {
+        savingTags.value = false;
+    }
+};
+
+const handleTagKeydown = (e, product) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        addCustomTag(product);
+    } else if (e.key === 'Escape') {
+        e.preventDefault();
+        closeTagEditor();
+    }
+};
+
 // ── Inline Editing ───────────────────────────────────────────────────────────
 const editingCell = ref(null); // { productId, field, value }
 const editInputRef = ref(null);
@@ -779,7 +910,7 @@ const pageSizeOptions = [10, 25, 50, 100];
 
 // ── Lifecycle ────────────────────────────────────────────────────────────────
 onMounted(() => {
-    fetchProducts();
+    // fetchProducts();
     fetchCategories();
 });
 </script>
@@ -1079,6 +1210,10 @@ onMounted(() => {
                                 <th class="px-4 sm:px-6 py-3.5 text-left text-[10px] font-bold text-neutral-500 uppercase tracking-[0.15em]">
                                     Stock
                                 </th>
+                                <!-- Tags -->
+                                <th class="px-4 sm:px-6 py-3.5 text-left text-[10px] font-bold text-neutral-500 uppercase tracking-[0.15em]">
+                                    Tags
+                                </th>
                                 <!-- Status -->
                                 <th class="px-4 sm:px-6 py-3.5 text-left">
                                     <button @click="toggleSort('product_status')" class="inline-flex items-center gap-1.5 text-[10px] font-bold text-neutral-500 uppercase tracking-[0.15em] hover:text-ink transition-colors">
@@ -1100,6 +1235,7 @@ onMounted(() => {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-neutral-200">
+                            <!-- eslint-disable-next-line vue/no-v-for-template-key -->
                             <template v-for="product in products" :key="product.product_id">
                             <!-- Product Row -->
                             <tr
@@ -1229,6 +1365,100 @@ onMounted(() => {
                                     </div>
                                 </td>
 
+                                <!-- Tags -->
+                                <td class="px-4 sm:px-6 py-3 max-w-40" @click.stop>
+                                    <!-- Inline Tag Editor -->
+                                    <div v-if="editingTags === product.product_id" class="space-y-2 min-w-52">
+                                        <!-- Common tag toggles -->
+                                        <div class="flex flex-wrap gap-1">
+                                            <button
+                                                v-for="tag in COMMON_TAGS"
+                                                :key="tag"
+                                                @click="toggleTag(product, tag)"
+                                                class="px-2 py-0.5 rounded-full text-[10px] font-bold border transition-all duration-150"
+                                                :class="(getTags(product) || []).includes(tag)
+                                                    ? 'bg-accent text-white border-accent'
+                                                    : 'bg-paper text-neutral-500 border-neutral-200 hover:border-accent hover:text-accent'"
+                                            >
+                                                {{ tag }}
+                                            </button>
+                                        </div>
+                                        <!-- Custom tag input -->
+                                        <div class="flex items-center gap-1.5">
+                                            <input
+                                                ref="tagEditorRef"
+                                                v-model="editingTagsInput"
+                                                type="text"
+                                                placeholder="Add custom tag..."
+                                                class="flex-1 px-2 py-1 text-xs bg-paper border border-neutral-200 rounded-lg focus:border-accent focus:ring-1 focus:ring-accent/20 outline-none transition-all"
+                                                @keydown="handleTagKeydown($event, product)"
+                                            />
+                                            <button
+                                                @click="addCustomTag(product)"
+                                                class="px-2 py-1 bg-neutral-100 hover:bg-accent hover:text-white rounded-lg text-xs font-bold transition-all"
+                                                :disabled="!editingTagsInput.trim()"
+                                            >
+                                                Add
+                                            </button>
+                                        </div>
+                                        <!-- Current tags preview -->
+                                        <div v-if="(getTags(product) || []).length > 0" class="flex flex-wrap gap-1 pt-1">
+                                            <span
+                                                v-for="tag in (getTags(product) || [])"
+                                                :key="tag"
+                                                class="inline-flex items-center gap-1 px-2 py-0.5 bg-ink text-paper rounded-full text-[10px] font-bold"
+                                            >
+                                                {{ tag }}
+                                                <button @click="toggleTag(product, tag)" class="hover:text-danger transition-colors">
+                                                    <X class="w-2.5 h-2.5" />
+                                                </button>
+                                            </span>
+                                        </div>
+                                        <!-- Actions -->
+                                        <div class="flex gap-1.5 pt-1">
+                                            <button
+                                                @click="saveTags(product)"
+                                                :disabled="savingTags"
+                                                class="px-3 py-1 bg-accent text-white rounded-lg text-[10px] font-bold hover:bg-accent-600 transition-all disabled:opacity-50"
+                                            >
+                                                {{ savingTags ? 'Saving...' : 'Save' }}
+                                            </button>
+                                            <button
+                                                @click="closeTagEditor"
+                                                class="px-3 py-1 bg-neutral-100 text-neutral-600 rounded-lg text-[10px] font-bold hover:bg-neutral-200 transition-all"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <!-- Display tags as chips -->
+                                    <div v-else class="flex items-center gap-1.5 flex-wrap">
+                                        <template v-if="(getTags(product) || []).length > 0">
+                                            <span
+                                                v-for="tag in (getTags(product) || []).slice(0, 3)"
+                                                :key="tag"
+                                                class="px-2 py-0.5 bg-ink/10 text-ink rounded-full text-[10px] font-bold whitespace-nowrap"
+                                            >
+                                                {{ tag }}
+                                            </span>
+                                            <span
+                                                v-if="(getTags(product) || []).length > 3"
+                                                class="text-[10px] text-neutral-400 font-bold"
+                                            >
+                                                +{{ (getTags(product) || []).length - 3 }}
+                                            </span>
+                                        </template>
+                                        <span v-else class="text-xs text-neutral-300 italic">—</span>
+                                        <button
+                                            @click="openTagEditor(product)"
+                                            class="ml-0.5 p-0.5 rounded text-neutral-300 hover:text-accent hover:bg-accent/10 transition-all opacity-0 group-hover:opacity-100"
+                                            title="Edit tags"
+                                        >
+                                            <Pencil class="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                </td>
+
                                 <!-- Status (with quick toggle) -->
                                 <td class="px-4 sm:px-6 py-3">
                                     <select
@@ -1277,7 +1507,7 @@ onMounted(() => {
                             </tr>
                             <!-- Variant Rows (expandable) -->
                             <tr v-if="expandedProducts.has(product.product_id)" class="border-b border-neutral-200">
-                                <td colspan="9" class="px-4 sm:px-6 py-0 bg-neutral-50/50">
+                                <td colspan="10" class="px-4 sm:px-6 py-0 bg-neutral-50/50">
                                     <div class="py-4 pl-12 sm:pl-14">
                                         <!-- Loading variants -->
                                         <div v-if="loadingVariants.has(product.product_id)" class="flex items-center gap-3 text-sm text-neutral-500 py-3">
@@ -1295,6 +1525,7 @@ onMounted(() => {
                                                     <tr class="text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-500">
                                                         <th class="px-3 py-2 text-left">SKU</th>
                                                         <th class="px-3 py-2 text-left">Options</th>
+                                                        <th class="px-3 py-2 text-right">Price</th>
                                                         <th class="px-3 py-2 text-right">Stock</th>
                                                         <th class="px-3 py-2 text-right">Reorder Level</th>
                                                     </tr>
@@ -1312,6 +1543,35 @@ onMounted(() => {
                                                                 <span v-if="variant.variant_size" class="px-2 py-0.5 bg-neutral-100 rounded text-[10px] font-semibold text-neutral-700">
                                                                     {{ variant.variant_size }}
                                                                 </span>
+                                                                <span v-if="variant.variant_storage" class="px-2 py-0.5 bg-neutral-100 rounded text-[10px] font-semibold text-neutral-700">
+                                                                    {{ variant.variant_storage }}
+                                                                </span>
+                                                            </div>
+                                                        </td>
+                                                        <!-- Variant Price (Inline Edit) -->
+                                                        <td class="px-3 py-2.5 text-right">
+                                                            <div v-if="editingVariantPrice?.variantId === variant.variant_id" class="inline-flex items-center" @click.stop>
+                                                                <span class="text-sm font-bold text-ink mr-1">$</span>
+                                                                <input
+                                                                    ref="variantPriceInputRef"
+                                                                    v-model="editingVariantPrice.value"
+                                                                    type="number"
+                                                                    step="0.01"
+                                                                    min="0"
+                                                                    class="w-22 px-2 py-1 text-sm font-bold text-ink bg-paper border-2 border-accent rounded-lg outline-none tabular-nums"
+                                                                    @keydown="handleVariantPriceKeydown"
+                                                                    @blur="saveVariantPrice"
+                                                                    @click.stop
+                                                                />
+                                                            </div>
+                                                            <div v-else
+                                                                 class="group/price inline-flex items-center gap-1.5 cursor-pointer justify-end"
+                                                                 @click.stop="startEditingVariantPrice(variant, product.product_id)"
+                                                                 title="Click to edit variant price">
+                                                                <span class="text-sm font-bold text-ink tabular-nums">
+                                                                    {{ variant.variant_price != null && variant.variant_price !== '' ? '$' + formatPrice(variant.variant_price) : '—' }}
+                                                                </span>
+                                                                <Pencil class="w-3 h-3 text-neutral-300 opacity-0 group-hover/price:opacity-100 transition-opacity shrink-0" />
                                                             </div>
                                                         </td>
                                                         <td class="px-3 py-2.5 text-right">

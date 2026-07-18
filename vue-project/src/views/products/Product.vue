@@ -61,7 +61,7 @@ const filteredProducts = computed(() => {
     }
 
     result = result.filter(p => {
-        const price = parseFloat(p.final_price || 0);
+        const price = parseFloat(p.base_price || 0);
         return price >= priceRange.value[0] && price <= priceRange.value[1];
     });
 
@@ -78,10 +78,10 @@ const sortedProducts = computed(() => {
             result.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             break;
         case 'price-low':
-            result.sort((a, b) => parseFloat(a.final_price) - parseFloat(b.final_price));
+            result.sort((a, b) => parseFloat(a.base_price) - parseFloat(b.base_price));
             break;
         case 'price-high':
-            result.sort((a, b) => parseFloat(b.final_price) - parseFloat(a.final_price));
+            result.sort((a, b) => parseFloat(b.base_price) - parseFloat(a.base_price));
             break;
         case 'name-asc':
             result.sort((a, b) => a.product_name.localeCompare(b.product_name));
@@ -179,10 +179,9 @@ const viewProduct = (productId) => {
 const formatPrice = (price) => parseFloat(price || 0).toFixed(2);
 
 const getDiscountPercentage = (product) => {
-    if (!product.discount_amount) return 0;
-    const discount = parseFloat(product.discount_amount);
-    const basePrice = parseFloat(product.base_price);
-    return Math.round((discount / basePrice) * 100);
+    if (!product.base_price) return 0;
+    // No discount data from list endpoint; base_price is the current price
+    return 0;
 };
 
 watch(() => route.query.category, (newCategory) => {
@@ -367,22 +366,18 @@ onMounted(async () => {
                                 class="card-base overflow-hidden cursor-pointer group"
                             >
                                 <div class="relative aspect-square bg-neutral-100 overflow-hidden">
-                                    <div v-if="product.discount_amount > 0" class="absolute top-3 left-3 z-10">
-                                        <span class="badge-accent">-{{ getDiscountPercentage(product) }}%</span>
-                                    </div>
                                     <button
                                         @click.stop
                                         class="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-paper shadow-sm hover:bg-accent hover:text-white text-neutral-700 inline-flex items-center justify-center transition-all duration-200"
                                     >
                                         <Heart class="w-4 h-4" />
                                     </button>
-                                    <LazyImage
-                                        :src="product.main_image || 'https://via.placeholder.com/400'"
-                                        :alt="product.product_name"
-                                        wrapper-class="w-full h-full transition-transform duration-700 group-hover:scale-110"
-                                        img-class="w-full h-full object-cover"
-                                    />
-                                </div>
+                                    <LazyImage                                    :src="product.thumbnail || 'https://via.placeholder.com/400'"
+                                    :alt="product.product_name"
+                                    wrapper-class="w-full h-full transition-transform duration-700 group-hover:scale-110"
+                                    img-class="w-full h-full object-cover"
+                                />
+                            </div>
                                 <div class="p-4 sm:p-5 space-y-2 sm:space-y-2.5">
                                     <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-accent">
                                         {{ product.category_name || 'Uncategorized' }}
@@ -392,16 +387,13 @@ onMounted(async () => {
                                     </h3>
                                     <div class="flex items-baseline gap-2">
                                         <span class="text-xl font-bold text-ink tabular-nums">
-                                            {{ '$' }}{{ formatPrice(product.final_price) }}
-                                        </span>
-                                        <span v-if="product.discount_amount > 0" class="text-sm text-neutral-400 line-through tabular-nums">
                                             {{ '$' }}{{ formatPrice(product.base_price) }}
                                         </span>
                                     </div>
                                     <div class="flex items-center justify-between pt-2 border-t border-neutral-100">
-                                        <span class="inline-flex items-center gap-1.5 text-xs font-medium text-success">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-success pulse-dot"></span>
-                                            {{ product.stock_status }}
+                                        <span class="inline-flex items-center gap-1.5 text-xs font-medium" :class="(product.total_stock || 0) > 0 ? 'text-success' : 'text-danger'">
+                                            <span class="w-1.5 h-1.5 rounded-full" :class="(product.total_stock || 0) > 0 ? 'bg-success' : 'bg-danger'"></span>
+                                            {{ (product.total_stock || 0) > 0 ? 'In Stock' : 'Out of Stock' }}
                                         </span>
                                         <span class="inline-flex items-center gap-1 text-xs font-bold text-neutral-500 group-hover:text-accent transition-colors">
                                             View

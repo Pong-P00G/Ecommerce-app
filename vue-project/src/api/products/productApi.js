@@ -10,7 +10,7 @@ export const productAPI = {
 
     // Get paginated product
     async getPaginatedProduct(params = {}) {
-        const { page = 1, pageSize = 10, search, category, minPrice, maxPrice, status } = params;
+        const { page = 1, pageSize = 10, search, category, minPrice, maxPrice, status, stockStatus, sortField, sortDirection } = params;
     
         const queryParams = new URLSearchParams({
             page: page.toString(),
@@ -22,6 +22,9 @@ export const productAPI = {
         if (minPrice !== undefined) queryParams.append('minPrice', minPrice.toString());
         if (maxPrice !== undefined) queryParams.append('maxPrice', maxPrice.toString());
         if (status) queryParams.append('status', status);
+        if (stockStatus) queryParams.append('stockStatus', stockStatus);
+        if (sortField) queryParams.append('sortField', sortField);
+        if (sortDirection) queryParams.append('sortDirection', sortDirection);
         
         const { data } = await api.get(`/products/paginated?${queryParams}`);
         return data.data;
@@ -59,6 +62,30 @@ export const productAPI = {
     // Get featured products
     async getFeaturedProducts(limit = 10) {
         const { data } = await api.get(`/products/featured?limit=${limit}`);
+        return data;
+    },
+
+    // Get new arrivals
+    async getNewArrivals(limit = 10) {
+        const { data } = await api.get(`/products/new-arrivals?limit=${limit}`);
+        return data;
+    },
+
+    // Get coming soon products
+    async getComingSoon(limit = 10) {
+        const { data } = await api.get(`/products/coming-soon?limit=${limit}`);
+        return data;
+    },
+
+    // Get best sellers
+    async getBestSellers(limit = 10) {
+        const { data } = await api.get(`/products/best-sellers?limit=${limit}`);
+        return data;
+    },
+
+    // Get products by tag (e.g. 'coming_soon', 'new_arrival')
+    async getProductsByTag(tag, limit = 10) {
+        const { data } = await api.get(`/products/by-tag?tag=${encodeURIComponent(tag)}&limit=${limit}`);
         return data;
     },
 

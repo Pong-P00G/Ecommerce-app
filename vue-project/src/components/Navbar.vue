@@ -15,18 +15,90 @@ import {
     Sparkles,
     LogOut,
     LayoutDashboard,
-    ChevronDown
+    ChevronDown,
+    Bell
 } from 'lucide-vue-next';
 import { useAuthStore } from '../stores/auth.js';
+import { useShopStore } from '../stores/shop.js';
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+const shop = useShopStore();
 const isMenuOpen = ref(false);
 const isSearchOpen = ref(false);
 const scrolled = ref(false);
-const cartCount = ref(""); // Demo cart count
 const isDropdownOpen = ref(false);
+
+// Notification bell state
+const showNotifications = ref(false);
+const notifications = ref([]);
+const unreadCount = ref(0);
+const notifLoading = ref(false);
+
+const cartCount = computed(() => shop.cartCount || 0);
+
+const fetchNotifications = async () => {
+    // Fetch notifications - works for admin users; non-admins get empty state
+    if (!isAuthenticated.value) return;
+    try {
+        const { default: api } = await import('../api/api.js');
+        const { data } = await api.get('/dashboard/notifications?limit=5');
+        if (data.success) {
+            notifications.value = data.data?.notifications || [];
+            unreadCount.value = data.data?.unreadCount || 0;
+        }
+    } catch (err) {
+        // Notifications unavailable for this user role - show empty state
+        if (err.response?.status !== 403) {
+            console.debug('Notifications unavailable');
+        }
+    }
+};
+
+const markRead = async (id) => {
+    try {
+        const { default: api } = await import('../api/api.js');
+        await api.put(`/dashboard/notifications/${id}/read`);
+        const n = notifications.value.find(n => n.id === id);
+        if (n) { n.is_read = true; unreadCount.value = Math.max(0, unreadCount.value - 1); }
+    } catch { /* silent */ }
+};
+
+const toggleNotifications = () => {
+    showNotifications.value = !showNotifications.value;
+    if (showNotifications.value && isAuthenticated.value) {
+        fetchNotifications();
+    }
+};
+
+const timeAgo = (dateStr) => {
+    if (!dateStr) return '';
+    const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return Math.floor(diff / 60) + ' min ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    return Math.floor(diff / 86400) + 'd ago';
+};
+
+let notifInterval = null;
+
+onMounted(() => {
+    fetchNotifications();
+    // Poll every 60 seconds
+    notifInterval = setInterval(fetchNotifications, 60000);
+    document.addEventListener('keydown', handleEscapeKey);
+    document.addEventListener('click', handleClickOutside);
+    window.addEventListener('scroll', handleScroll);
+});
+
+onUnmounted(() => {
+    if (notifInterval) clearInterval(notifInterval);
+    document.removeEventListener('keydown', handleEscapeKey);
+    document.removeEventListener('click', handleClickOutside);
+    window.removeEventListener('scroll', handleScroll);
+    document.body.style.overflow = '';
+});
 
 const user = computed(() => authStore.user);
 const isAuthenticated = computed(() => authStore.isAuthenticated);
@@ -88,18 +160,7 @@ const handleEscapeKey = (event) => {
     }
 };
 
-onMounted(() => {
-    document.addEventListener('keydown', handleEscapeKey);
-    document.addEventListener('click', handleClickOutside);
-    window.addEventListener('scroll', handleScroll);
-});
 
-onUnmounted(() => {
-    document.removeEventListener('keydown', handleEscapeKey);
-    document.removeEventListener('click', handleClickOutside);
-    window.removeEventListener('scroll', handleScroll);
-    document.body.style.overflow = '';
-});
 
 const handleClickOutside = (event) => {
     const dropdown = document.getElementById('user-dropdown');
@@ -177,6 +238,57 @@ watch(route, () => {
                     >
                         <Search class="w-5 h-5" />
                     </button>
+
+                    <!-- Notification Bell -->
+                    <div class="relative" v-if="isAuthenticated">
+                        <button
+                            @click="toggleNotifications"
+                            class="relative w-10 h-10 rounded-full hover:bg-neutral-100 transition-all duration-300 text-ink flex items-center justify-center"
+                            aria-label="Notifications"
+                        >
+                            <Bell class="w-5 h-5" />
+                            <span
+                                v-if="unreadCount > 0"
+                                class="absolute -top-0.5 -right-0.5 min-w-5 h-5 px-1 bg-danger text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-paper animate-pulse"
+                            >
+                                {{ unreadCount > 9 ? '9+' : unreadCount }}
+                            </span>
+                        </button>
+
+                        <!-- Notification Dropdown -->
+                        <transition name="dropdown-fade">
+                            <div
+                                v-if="showNotifications"
+                                class="absolute right-0 top-full mt-2 w-80 bg-paper border border-neutral-200 rounded-2xl shadow-xl overflow-hidden z-50"
+                            >
+                                <div class="px-4 py-3 border-b border-neutral-100 flex items-center justify-between">
+                                    <p class="text-sm font-bold text-ink">Notifications</p>
+                                    <span v-if="unreadCount > 0" class="text-xs text-neutral-500 tabular-nums">{{ unreadCount }} new</span>
+                                </div>
+                                <div class="max-h-64 overflow-y-auto">
+                                    <div v-if="notifications.length === 0" class="px-4 py-8 text-center text-sm text-neutral-500">
+                                        <Bell class="w-6 h-6 mx-auto mb-2 text-neutral-300" />
+                                        No notifications yet
+                                    </div>
+                                    <div
+                                        v-for="n in notifications"
+                                        :key="n.id"
+                                        @click="markRead(n.id)"
+                                        class="px-4 py-3 hover:bg-neutral-50 transition-colors cursor-pointer border-b border-neutral-100 last:border-0"
+                                        :class="{ 'bg-accent/5': !n.is_read }"
+                                    >
+                                        <p class="text-sm text-ink" :class="{ 'font-semibold': !n.is_read }">{{ n.message }}</p>
+                                        <p class="text-xs text-neutral-400 mt-0.5">{{ timeAgo(n.created_at) }}</p>
+                                    </div>
+                                </div>
+                                <div class="px-4 py-2 border-t border-neutral-100 text-center">
+                                    <router-link to="/userprofile?tab=orders" @click="showNotifications = false" class="text-xs text-accent font-medium hover:underline">
+                                        View all notifications
+                                    </router-link>
+                                </div>
+                            </div>
+                        </transition>
+                    </div>
 
                     <RouterLink
                         to="/wishlist"
@@ -320,7 +432,7 @@ watch(route, () => {
                 aria-label="Mobile navigation"
                 role="region"
             >
-                <!-- Backdrop -->
+                <!-- Backdrop (fades in via parent transition) -->
                 <div
                     class="absolute inset-0 bg-ink/40 backdrop-blur-sm"
                     @click="closeMenu"
@@ -422,7 +534,16 @@ watch(route, () => {
                                 >{{ cartCount }}</span>
                             </RouterLink>
                         </div>
-                        <!-- Mobile User Area -->
+                        <button @click="toggleNotifications" class="flex items-center justify-center gap-2 p-3 rounded-xl bg-paper border border-neutral-200 hover:border-ink transition-colors w-full">
+                                <Bell class="w-4 h-4 text-ink" />
+                                <span class="text-xs font-bold uppercase tracking-wider text-ink">
+                                    Notifications
+                                    <span v-if="unreadCount > 0" class="ml-1 text-accent">({{ unreadCount }})</span>
+                                </span>
+                            </button>
+                        </div>
+                        <div class="space-y-2 mt-3">
+                            <!-- Mobile User Area -->
                         <template v-if="isAuthenticated && user">
                             <div class="space-y-2">
                                 <div class="flex items-center gap-3 px-3 py-2.5 bg-paper border border-neutral-200 rounded-xl">
@@ -497,5 +618,37 @@ header {
 .dropdown-fade-leave-to {
     opacity: 0;
     transform: translateY(-4px);
+}
+
+/* Mobile menu — sidebar slides in from right */
+.mobile-menu-enter-active {
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.mobile-menu-leave-active {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.mobile-menu-enter-from {
+    opacity: 0;
+}
+.mobile-menu-leave-to {
+    opacity: 0;
+}
+
+/* Mobile sidebar panel — slide from right with delay */
+.mobile-menu-enter-active > div:last-child {
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.mobile-menu-leave-active > div:last-child {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.mobile-menu-enter-from > div:last-child {
+    transform: translateX(100%);
+}
+.mobile-menu-leave-to > div:last-child {
+    transform: translateX(100%);
+}
+.mobile-menu-enter-to > div:last-child,
+.mobile-menu-leave-from > div:last-child {
+    transform: translateX(0);
 }
 </style>

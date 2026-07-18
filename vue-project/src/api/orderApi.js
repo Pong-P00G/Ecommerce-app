@@ -1,6 +1,12 @@
 import api from './api';
 
 export const orderAPI = {
+    // Create a new order from the current cart
+    async createOrder() {
+        const { data } = await api.post('/orders');
+        return data;
+    },
+
     // Get all orders (Admin: all; User: own)
     async getAllOrders() {
         const { data } = await api.get('/orders');

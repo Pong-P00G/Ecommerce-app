@@ -49,13 +49,15 @@ const productImages = computed(() => {
     if (!product.value) return [];
     const images = [];
 
-    if (product.value.main_image) {
-        images.push(product.value.main_image);
+    // Try thumbnail first, then fall back to main_image
+    const primaryImage = product.value.thumbnail || product.value.main_image;
+    if (primaryImage) {
+        images.push(primaryImage);
     }
 
     if (product.value.images && Array.isArray(product.value.images)) {
         product.value.images.forEach(img => {
-            if (img.image_url && img.image_url !== product.value.main_image) {
+            if (img.image_url && img.image_url !== primaryImage) {
                 images.push(img.image_url);
             }
         });
@@ -76,9 +78,9 @@ const hasVariants = computed(() => variants.value.length > 0);
 
 const currentPrice = computed(() => {
     if (selectedVariant.value) {
-        return parseFloat(selectedVariant.value.variant_price || 0);
+        return parseFloat(selectedVariant.value.variant_price || selectedVariant.value.unit_price || 0);
     }
-    return parseFloat(product.value?.final_price || 0);
+    return parseFloat(product.value?.base_price || 0);
 });
 
 const originalPrice = computed(() => {
@@ -88,8 +90,9 @@ const originalPrice = computed(() => {
     return parseFloat(product.value?.base_price || 0);
 });
 
+// Discount info: check for discount_id from getProductById response
 const hasDiscount = computed(() => {
-    return product.value?.discount_amount && parseFloat(product.value.discount_amount) > 0;
+    return product.value?.discount_id && parseFloat(product.value.discount_amount || 0) > 0;
 });
 
 const discountPercentage = computed(() => {
@@ -342,7 +345,8 @@ watch(() => route.params.id, async (newId) => {
 
 const productDescription = computed(() => {
     if (!product.value) return '';
-    return product.value.product_description?.substring(0, 200) || `Shop ${product.value.product_name} at AlieeShop`;
+    const desc = product.value.descriptions || product.value.product_description || '';
+    return desc.substring(0, 200) || `Shop ${product.value.product_name} at AlieeShop`;
 });
 
 // useHead with reactive getter functions — replaces entries automatically when refs change
@@ -429,7 +433,7 @@ onMounted(async () => {
                             img-class="w-full h-full object-cover"
                             @click="showImageModal = true"
                         />
-                        <div v-if="hasDiscount" class="absolute top-4 left-4">
+                        <div v-if="hasDiscount && discountPercentage > 0" class="absolute top-4 left-4">
                             <span class="badge-accent">-{{ discountPercentage }}% OFF</span>
                         </div>
                         <div class="absolute top-4 right-4 flex gap-2">
@@ -499,10 +503,10 @@ onMounted(async () => {
                         <span class="text-4xl font-bold text-ink tabular-nums">
                             {{ '$' }}{{ formatPrice(currentPrice) }}
                         </span>
-                        <span v-if="hasDiscount" class="text-base sm:text-xl text-neutral-400 line-through tabular-nums">
+                        <span v-if="hasDiscount && discountPercentage > 0" class="text-base sm:text-xl text-neutral-400 line-through tabular-nums">
                             {{ '$' }}{{ formatPrice(originalPrice) }}
                         </span>
-                        <span v-if="hasDiscount" class="badge-accent">
+                        <span v-if="hasDiscount && discountPercentage > 0" class="badge-accent">
                             Save {{ '$' }}{{ formatPrice(product.discount_amount) }}
                         </span>
                     </div>
@@ -517,8 +521,8 @@ onMounted(async () => {
                         </span>
                     </div>
 
-                    <p v-if="product.product_description" class="text-neutral-600 leading-relaxed">
-                        {{ product.product_description }}
+                    <p v-if="product.descriptions || product.product_description" class="text-neutral-600 leading-relaxed">
+                        {{ product.descriptions || product.product_description }}
                     </p>
 
                     <!-- Variants -->
@@ -530,13 +534,18 @@ onMounted(async () => {
                                 :key="variant.variant_id"
                                 @click="selectVariant(variant)"
                                 :class="[
-                                    'px-5 py-2.5 rounded-full border-2 text-sm font-semibold transition-all duration-200',
+                                    'group relative px-5 py-3 rounded-xl border-2 text-sm font-semibold transition-all duration-200 text-left',
                                     selectedVariant?.variant_id === variant.variant_id
                                         ? 'border-ink bg-ink text-paper'
                                         : 'border-neutral-300 text-ink hover:border-ink'
                                 ]"
                             >
-                                {{ variant.size || variant.color || `Option ${variant.variant_id}` }}
+                                <span class="block text-xs opacity-80">
+                                    {{ [variant.variant_storage, variant.variant_size, variant.variant_color].filter(Boolean).join(' / ') || `Option ${variant.variant_id}` }}
+                                </span>
+                                <span class="block text-sm font-bold mt-0.5" :class="selectedVariant?.variant_id === variant.variant_id ? 'text-paper' : 'text-ink'">
+                                    {{ variant.variant_price ? '$' + parseFloat(variant.variant_price).toFixed(2) : 'See price' }}
+                                </span>
                             </button>
                         </div>
                     </div>
@@ -661,9 +670,6 @@ onMounted(async () => {
                             </h3>
                             <div class="flex items-baseline gap-2 pt-1">
                                 <span class="text-base font-bold text-ink tabular-nums">
-                                    {{ '$' }}{{ formatPrice(relatedProduct.final_price) }}
-                                </span>
-                                <span v-if="relatedProduct.discount_amount > 0" class="text-xs text-neutral-400 line-through tabular-nums">
                                     {{ '$' }}{{ formatPrice(relatedProduct.base_price) }}
                                 </span>
                             </div>

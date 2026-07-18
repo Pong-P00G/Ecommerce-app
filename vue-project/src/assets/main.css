@@ -57,6 +57,7 @@
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -190,6 +191,30 @@ body {
     @apply inline-flex items-center gap-1 px-3 py-1
            bg-neutral-100 text-ink
            rounded-full text-xs font-medium;
+  }
+
+  .badge-success {
+    @apply inline-flex items-center gap-1 px-3 py-1
+           bg-success text-white
+           rounded-full text-xs font-bold uppercase tracking-wider;
+  }
+
+  .badge-warning {
+    @apply inline-flex items-center gap-1 px-3 py-1
+           bg-warning text-white
+           rounded-full text-xs font-bold uppercase tracking-wider;
+  }
+
+  .badge-danger {
+    @apply inline-flex items-center gap-1 px-3 py-1
+           bg-danger text-white
+           rounded-full text-xs font-bold uppercase tracking-wider;
+  }
+
+  .badge-info {
+    @apply inline-flex items-center gap-1 px-3 py-1
+           bg-info text-white
+           rounded-full text-xs font-bold uppercase tracking-wider;
   }
 
   /* --- Section --- */

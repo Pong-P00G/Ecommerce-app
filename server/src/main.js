@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
 import userRoutes from './routes/userRoutes.js'
 import authRoutes from './routes/authRoutes.js'
 import productRoutes from './routes/productRoutes.js'
@@ -14,22 +15,35 @@ import paymentRoutes from './routes/paymentRoutes.js'
 import newsletterRoutes from './routes/newsletterRoutes.js'
 import reviewRoutes from './routes/reviewRoutes.js'
 import roleRoutes from './routes/roleRoutes.js'
+import addressRoutes from './routes/addressRoutes.js'
+import shippingRoutes from './routes/shippingRoutes.js'
 
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const app = express();
 
 
-
-
-const app = express()
 // Middleware
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3001',
+    origin: (origin, callback) => {
+        const allowedOrigins = [
+            process.env.FRONTEND_URL,
+            'http://localhost:3001',
+            'http://localhost:5173',
+            'http://127.0.0.1:5173',
+        ].filter(Boolean);
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -51,6 +65,8 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/roles', roleRoutes);
+app.use('/api/addresses', addressRoutes);
+app.use('/api/shipping', shippingRoutes);
 
 // Serve static files from CDN
 app.use('/cdn', express.static(path.join(__dirname, '../../cdn')));
@@ -172,113 +188,18 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5001;
 
+// Prevent listen from running when imported for testing
+const isTestEnv = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
 
-// ── Startup bootstrap: ensure permissions & role_permissions tables exist ──
-(async () => {
-    try {
-        const db = (await import('./database/dbpool.js')).default;
-        const { tableExists } = await import('./model/roleModel.js');
-
-        // Create permissions table if it doesn't exist
-        const permExists = await tableExists('permissions');
-        if (!permExists) {
-            await db.query(`
-                CREATE TABLE permissions (
-                    permission_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                    permission_key VARCHAR(100) NOT NULL UNIQUE,
-                    permission_name VARCHAR(100) NOT NULL,
-                    module VARCHAR(50) NOT NULL,
-                    description VARCHAR(300)
-                )
-            `);
-            console.log('✅ Permissions table created');
-        }
-
-        // Create role_permissions junction table if it doesn't exist
-        const rpExists = await tableExists('role_permissions');
-        if (!rpExists) {
-            await db.query(`
-                CREATE TABLE role_permissions (
-                    role_id INTEGER NOT NULL REFERENCES roles(rolesId) ON DELETE CASCADE,
-                    permission_id INTEGER NOT NULL REFERENCES permissions(permission_id) ON DELETE CASCADE,
-                    PRIMARY KEY (role_id, permission_id)
-                )
-            `);
-            console.log('✅ role_permissions table created');
-        }
-
-        // Seed default permissions
-        const { seedDefaultPermissions } = await import('./services/roleService.js');
-        const seedResult = await seedDefaultPermissions();
-        if (seedResult.created) {
-            console.log(`✅ Default permissions seeded (${seedResult.count} permissions)`);
-        } else if (seedResult.reason === 'permissions already seeded') {
-            console.log('✅ Permissions already seeded');
-        }
-    } catch (err) {
-        console.warn('⚠️ Could not init permissions:', err.message);
-    }
-})();
-
-// ── Startup bootstrap: ensure audit_log table exists ──
-(async () => {
-    try {
-        const { ensureAuditTable } = await import('./model/notificationModel.js');
-        await ensureAuditTable();
-        console.log('✅ Audit log table ready');
-    } catch (err) {
-        console.warn('⚠️ Could not init audit log table:', err.message);
-    }
-})();
-
-// ── Migrate: add level column to roles table ──
-(async () => {
-    try {
-        const db = (await import('./database/dbpool.js')).default;
-        await db.query(`ALTER TABLE roles ADD COLUMN IF NOT EXISTS level INTEGER DEFAULT 3`);
-        // Set default levels for system roles
-        await db.query(`UPDATE roles SET level = 1 WHERE rolesid = 1 AND level IS DISTINCT FROM 1`);
-        await db.query(`UPDATE roles SET level = 2 WHERE rolesid = 2 AND level IS DISTINCT FROM 2`);
-        await db.query(`UPDATE roles SET level = 3 WHERE rolesid = 3 AND level IS DISTINCT FROM 3`);
-        console.log('✅ Roles level column ready');
-    } catch (err) {
-        console.warn('⚠️ Could not migrate roles level:', err.message);
-    }
-})();
-
-// ── Migrate: add type column to permissions table ──
-(async () => {
-    try {
-        const db = (await import('./database/dbpool.js')).default;
-        const { tableExists } = await import('./model/roleModel.js');
-        const permExists = await tableExists('permissions');
-        if (permExists) {
-            await db.query(`ALTER TABLE permissions ADD COLUMN IF NOT EXISTS type VARCHAR(20) NOT NULL DEFAULT 'backend'`);
-            // Update existing permissions with correct type based on module
-            await db.query(`UPDATE permissions SET type = 'frontend' WHERE module IN ('dashboard', 'settings')`);
-            console.log('✅ Permissions type column ready');
-        }
-    } catch (err) {
-        console.warn('⚠️ Could not migrate permissions type:', err.message);
-    }
-})();
-
-app.listen(PORT, () => {
-    console.log('='.repeat(50));
-    console.log(`🚀 Server is running on port ${PORT}`);
-    console.log(`📡 API URL: http://localhost:${PORT}`);
-    console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3001'}`);
-    console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log('='.repeat(50));
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-    process.exit(0);
-});
-process.on('SIGINT', () => {
-    process.exit(0);
-});
-
+if (!isTestEnv) {
+    app.listen(PORT, () => {
+        console.log('='.repeat(50));
+        console.log(`🚀 Server is running on port ${PORT}`);
+        console.log(`📡 API URL: http://localhost:${PORT}`);
+        console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3001'}`);
+        console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log('='.repeat(50));
+    });
+}
 
 export default app;

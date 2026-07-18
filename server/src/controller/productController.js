@@ -190,6 +190,85 @@ export const getFeaturedProducts = async (req, res) => {
     }
 };
 
+export const getNewArrivals = async (req, res) => {
+    try {
+        const limit = req.query.limit ? parseInt(req.query.limit) : 10;
+        const products = await productService.getNewArrivals(limit);
+        
+        res.json({
+            success: true,
+            count: products.length,
+            data: products
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+export const getComingSoon = async (req, res) => {
+    try {
+        const limit = req.query.limit ? parseInt(req.query.limit) : 10;
+        const products = await productService.getComingSoon(limit);
+        
+        res.json({
+            success: true,
+            count: products.length,
+            data: products
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+export const getBestSellers = async (req, res) => {
+    try {
+        const limit = req.query.limit ? parseInt(req.query.limit) : 10;
+        const products = await productService.getBestSellers(limit);
+        
+        res.json({
+            success: true,
+            count: products.length,
+            data: products
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+export const getProductsByTag = async (req, res) => {
+    try {
+        const tag = req.query.tag;
+        if (!tag) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tag query parameter is required'
+            });
+        }
+        const limit = req.query.limit ? parseInt(req.query.limit) : 10;
+        const products = await productService.getProductsByTag(tag, limit);
+        
+        res.json({
+            success: true,
+            count: products.length,
+            data: products
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
 export const createProduct = async (req, res) => {
     try {
         const product = await productService.createProduct(req.body);
@@ -233,10 +312,18 @@ export const deleteProduct = async (req, res) => {
             message: 'Product deleted successfully'
         });
     } catch (error) {
-        res.status(404).json({
-            success: false,
-            message: error.message
-        });
+        if (error.message === 'Product not found') {
+            res.status(404).json({
+                success: false,
+                message: error.message
+            });
+        } else {
+            console.error('Delete product error:', error.message);
+            res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
     }
 };
 

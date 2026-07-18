@@ -9,6 +9,7 @@ const PRODUCT_COLS = `
     baseprice   AS base_price,
     description AS descriptions,
     status      AS product_status,
+    tags,
     categoryname AS category_name,
     thumbnail,
     totalstock  AS total_stock,
@@ -28,8 +29,10 @@ const VARIANT_QUERY = `
         v.productsid  AS product_id,
         v.sku,
         v.createdat   AS created_at,
-        MAX(CASE WHEN va.attributename = 'Color' THEN vav.value END) AS variant_color,
-        MAX(CASE WHEN va.attributename = 'Size'  THEN vav.value END) AS variant_size,
+        MAX(CASE WHEN va.attributename = 'Color'   THEN vav.value END) AS variant_color,
+        MAX(CASE WHEN va.attributename = 'Size'    THEN vav.value END) AS variant_size,
+        MAX(CASE WHEN va.attributename = 'Storage' THEN vav.value END) AS variant_storage,
+        v.price       AS variant_price,
         COALESCE(s.quantity, 0)   AS quantity,
         COALESCE(s.minstock,  5)  AS reorder_level
     FROM variants v
@@ -165,30 +168,132 @@ export const getFeaturedProducts = async (limit = 10) => {
     return rows;
 };
 
-export const createProduct = async (productData) => {
-    const { category_id, product_name, base_price, descriptions, product_status } = productData;
+export const getNewArrivals = async (limit = 10) => {
     const { rows } = await db.query(
-        `INSERT INTO products (categoriesid, productname, baseprice, description, status)
-         VALUES ($1, $2, $3, $4, $5) RETURNING productsid`,
-        [category_id, product_name, base_price, descriptions, product_status]
+        `SELECT ${PRODUCT_COLS} FROM view_products
+         WHERE status = 'active'
+           AND ('new_arrival' = ANY(tags) OR createdat >= NOW() - INTERVAL '30 days')
+         ORDER BY
+           CASE WHEN 'new_arrival' = ANY(tags) THEN 0 ELSE 1 END,
+           createdat DESC
+         LIMIT $1`,
+        [limit]
+    );
+    return rows;
+};
+
+export const getComingSoon = async (limit = 10) => {
+    const { rows } = await db.query(
+        `SELECT ${PRODUCT_COLS} FROM view_products
+         WHERE 'coming_soon' = ANY(tags)
+         ORDER BY createdat DESC
+         LIMIT $1`,
+        [limit]
+    );
+    return rows;
+};
+
+export const getBestSellers = async (limit = 10) => {
+    const { rows } = await db.query(
+        `SELECT ${PRODUCT_COLS} FROM view_products
+         WHERE status = 'active'
+           AND ('best_seller' = ANY(tags) OR totalstock > 20)
+         ORDER BY
+           CASE WHEN 'best_seller' = ANY(tags) THEN 0 ELSE 1 END,
+           totalstock DESC
+         LIMIT $1`,
+        [limit]
+    );
+    return rows;
+};
+
+export const getProductsByTag = async (tag, limit = 10) => {
+    const { rows } = await db.query(
+        `SELECT ${PRODUCT_COLS} FROM view_products
+         WHERE $1 = ANY(tags)
+         ORDER BY createdat DESC
+         LIMIT $2`,
+        [tag, limit]
+    );
+    return rows;
+};
+
+export const createProduct = async (productData) => {
+    const { category_id, product_name, base_price, descriptions, product_status, tags } = productData;
+    const { rows } = await db.query(
+        `INSERT INTO products (categoriesid, productname, baseprice, description, status, tags)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING productsid`,
+        [category_id, product_name, base_price, descriptions, product_status, tags || []]
     );
     return rows[0].productsid;
 };
 
 export const updateProduct = async (productId, productData) => {
-    const { category_id, product_name, base_price, descriptions, product_status } = productData;
+    const { category_id, product_name, base_price, descriptions, product_status, tags } = productData;
     const result = await db.query(
         `UPDATE products
-         SET categoriesid = $1, productname = $2, baseprice = $3, description = $4, status = $5
-         WHERE productsid = $6`,
-        [category_id, product_name, base_price, descriptions, product_status, productId]
+         SET categoriesid = $1, productname = $2, baseprice = $3, description = $4, status = $5, tags = $6
+         WHERE productsid = $7`,
+        [category_id, product_name, base_price, descriptions, product_status, tags || [], productId]
     );
     return result.rowCount;
 };
 
 export const deleteProduct = async (productId) => {
-    const result = await db.query('DELETE FROM products WHERE productsid = $1', [productId]);
-    return result.rowCount > 0;
+    // Cascade-delete associated data in FK-safe order, then delete the product.
+    // Uses a transaction so a failure mid-way rolls everything back.
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Discounts (FK → products)
+        await client.query('DELETE FROM discounts WHERE productsid = $1', [productId]);
+
+        // 2. Stock log entries (FK → stock → products) — delete via stock IDs
+        await client.query(
+            `DELETE FROM stocklog WHERE stockid IN (
+                SELECT stockid FROM stock WHERE productsid = $1
+            )`,
+            [productId]
+        );
+
+        // 3. Stock records (FK → products, FK → variants)
+        await client.query('DELETE FROM stock WHERE productsid = $1', [productId]);
+
+        // 4. Variant option values (FK → variants → products)
+        await client.query(
+            `DELETE FROM variantoptionvalue WHERE variantid IN (
+                SELECT variantid FROM variants WHERE productsid = $1
+            )`,
+            [productId]
+        );
+
+        // 5. Variants (FK → products)
+        await client.query('DELETE FROM variants WHERE productsid = $1', [productId]);
+
+        // 6. Product images (FK → products)
+        await client.query('DELETE FROM productimages WHERE productsid = $1', [productId]);
+
+        // 7. Reviews (FK → products, ON DELETE CASCADE, but be explicit)
+        await client.query('DELETE FROM reviews WHERE productsid = $1', [productId]);
+
+        // 8. Cart items (FK → products)
+        await client.query('DELETE FROM cartitems WHERE productsid = $1', [productId]);
+
+        // 9. Order items (FK → products)
+        await client.query('DELETE FROM orderitems WHERE productsid = $1', [productId]);
+
+        // 10. Finally, the product itself
+        const result = await client.query('DELETE FROM products WHERE productsid = $1', [productId]);
+
+        await client.query('COMMIT');
+        return result.rowCount > 0;
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
 };
 
 export const productExists = async (productId) => {
@@ -258,19 +363,31 @@ export const getVariantById = async (variantId) => {
 };
 
 export const createVariant = async (variantData) => {
-    const { product_id, sku } = variantData;
+    const { product_id, sku, price } = variantData;
     const { rows } = await db.query(
-        `INSERT INTO variants (productsid, sku) VALUES ($1, $2) RETURNING variantid`,
-        [product_id, sku]
+        `INSERT INTO variants (productsid, sku, price) VALUES ($1, $2, $3) RETURNING variantid`,
+        [product_id, sku, price ?? null]
     );
     return rows[0].variantid;
 };
 
 export const updateVariant = async (variantId, variantData) => {
-    const { sku } = variantData;
+    const { sku, price } = variantData;
+    const updates = [];
+    const params = [];
+    if (sku !== undefined) {
+        updates.push(`sku = $${params.length + 1}`);
+        params.push(sku);
+    }
+    if (price !== undefined) {
+        updates.push(`price = $${params.length + 1}`);
+        params.push(price);
+    }
+    if (updates.length === 0) return 0;
+    params.push(variantId);
     const result = await db.query(
-        `UPDATE variants SET sku = $1 WHERE variantid = $2`,
-        [sku, variantId]
+        `UPDATE variants SET ${updates.join(', ')} WHERE variantid = $${params.length}`,
+        params
     );
     return result.rowCount;
 };
@@ -365,8 +482,9 @@ export const getVariantOptions = async (variantId) => {
     return {
         option_id: variantId,
         options,
-        variant_color: findValue('Color'),
-        variant_size: findValue('Size'),
+        variant_color:   findValue('Color'),
+        variant_size:    findValue('Size'),
+        variant_storage: findValue('Storage'),
     };
 };
 

@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { ChevronLeft, ChevronRight, ArrowUpRight } from 'lucide-vue-next';
 import { RouterLink } from 'vue-router';
 import LazyImage from './LazyImage.vue';
+import ProductBadge from './ProductBadge.vue';
 
 const props = defineProps({
     products: { type: Array, default: () => [] },
@@ -93,12 +94,14 @@ onUnmounted(() => {
                 <RouterLink :to="p.href" class="block">
                     <div class="relative rounded-xl overflow-hidden bg-neutral-100 h-64">
                         <LazyImage :src="p.image" :alt="p.name" wrapper-class="h-full w-full" img-class="group-hover/card:scale-110" />
-                        <span
+                        <ProductBadge
                             v-if="p.badge"
-                            class="absolute top-3 left-3 badge-ink"
-                        >
-                            {{ p.badge }}
-                        </span>
+                            :label="p.badge"
+                            :variant="p.badgeVariant || 'ink'"
+                            :source="p.badgeSource"
+                            :tooltip="p.badgeTooltip"
+                            class="absolute top-3 left-3 z-10"
+                        />
                         <span
                             class="absolute bottom-3 right-3 inline-flex items-center gap-1 px-3 py-1.5 bg-paper text-ink text-xs font-bold rounded-full opacity-0 translate-y-2 transition-all duration-300 group-hover/card:opacity-100 group-hover/card:translate-y-0"
                         >

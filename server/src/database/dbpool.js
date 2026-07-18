@@ -13,11 +13,15 @@ export const db = new Pool({
     ssl: process.env.DB_SSL === 'true'
 });
 
-db.query('SELECT 1')
-    .then(() => console.log('✅ Connected to PostgreSQL successfully'))
-    .catch(err => {
-        console.error('❌ PostgreSQL connection error:', err.message);
-        process.exit(1);
-    });
+// Skip startup checks during test runs — vitest may require this import
+// even when the database is not available (for mocked unit tests).
+if (process.env.VITEST !== 'true') {
+    db.query('SELECT 1')
+        .then(() => console.log('✅ Connected to PostgreSQL successfully'))
+        .catch(err => {
+            console.error('❌ PostgreSQL connection error:', err.message);
+            process.exit(1);
+        });
+}
 
 export default db;

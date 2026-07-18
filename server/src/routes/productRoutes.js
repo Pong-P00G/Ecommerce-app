@@ -66,6 +66,26 @@ router.get('/search', productController.searchProducts);
 // @access  Public
 router.get('/featured', productController.getFeaturedProducts);
 
+// @route   GET /api/products/new-arrivals
+// @desc    Get newest products
+// @access  Public
+router.get('/new-arrivals', productController.getNewArrivals);
+
+// @route   GET /api/products/coming-soon
+// @desc    Get upcoming products
+// @access  Public
+router.get('/coming-soon', productController.getComingSoon);
+
+// @route   GET /api/products/best-sellers
+// @desc    Get best-selling products
+// @access  Public
+router.get('/best-sellers', productController.getBestSellers);
+
+// @route   GET /api/products/by-tag
+// @desc    Get products by tag (e.g. ?tag=coming_soon&limit=10)
+// @access  Public
+router.get('/by-tag', productController.getProductsByTag);
+
 // @route   GET /api/products/category/:category
 // @desc    Get products by category
 // @access  Public
@@ -97,6 +117,12 @@ router.put('/categories/:id', protect, isAdmin, validateCategory, validate, prod
 // @desc    Delete category
 // @access  Private/Admin
 router.delete('/categories/:id', protect, isAdmin, productController.deleteCategory);
+
+// @route   GET /api/products/discounts
+// @desc    Get all discounts across all products with product info
+// @access  Private/Admin
+// NOTE: Must be defined BEFORE GET /:id to avoid route conflict
+router.get('/discounts', protect, isAdmin, productController.getAllDiscounts);
 
 // @route   GET /api/products/:id
 // @desc    Get product by ID
@@ -179,11 +205,6 @@ router.post('/:id/discount', protect, isAdmin, validateDiscount, validate, produ
 // @desc    Update discount
 // @access  Private/Admin
 router.put('/discount/:discountId', protect, isAdmin, validateDiscount, validate, productController.updateDiscount);
-
-// @route   GET /api/discounts
-// @desc    Get all discounts across all products with product info
-// @access  Private/Admin
-router.get('/discounts', protect, isAdmin, productController.getAllDiscounts);
 
 // @route   DELETE /api/products/discount/:discountId
 // @desc    Delete discount

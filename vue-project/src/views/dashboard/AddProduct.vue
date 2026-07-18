@@ -1,6 +1,6 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { useProductStore } from '../../stores/product.js';
 import { storeToRefs } from 'pinia';
 import { categoryAPI } from '../../api/products/categoryApi.js';
@@ -9,15 +9,52 @@ import api from '../../api/api.js';
 import {
     ArrowLeft, X, Plus, Image as ImageIcon, Sparkles,
     Upload, Check, CheckCircle2, Trash2, Loader2, Eye, EyeOff,
-    Settings2, Link2, Box,
-    Layers,
+    Settings2, Link2, Box, Sparkle,
+    Layers, Tag,
 } from 'lucide-vue-next';
 import { useToast } from '../../composables/useToast.js';
 
 const toast = useToast();
 const router = useRouter();
+const route = useRoute();
 const productStore = useProductStore();
 const { categories } = storeToRefs(productStore);
+
+// ── Edit Mode ────────────────────────────────────────────────────────────────
+const editingProductId = ref(null);
+const loadingProduct = ref(false);
+const isEditing = computed(() => !!editingProductId.value);
+
+// ── Tags ─────────────────────────────────────────────────────────────────────
+const COMMON_TAGS = ['coming_soon', 'new_arrival', 'best_seller', 'sale', 'featured', 'eco_friendly', 'limited_edition', 'premium'];
+const customTagInput = ref('');
+
+const toggleFormTag = (tag) => {
+    const idx = form.value.tags.indexOf(tag);
+    if (idx >= 0) {
+        form.value.tags.splice(idx, 1);
+    } else {
+        form.value.tags.push(tag);
+    }
+};
+
+const addCustomFormTag = () => {
+    const tag = customTagInput.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+    if (!tag || form.value.tags.includes(tag)) return;
+    form.value.tags.push(tag);
+    customTagInput.value = '';
+};
+
+const removeFormTag = (idx) => {
+    form.value.tags.splice(idx, 1);
+};
+
+const handleCustomTagKeydown = (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        addCustomFormTag();
+    }
+};
 
 // ── Form State ───────────────────────────────────────────────────────────────
 const form = ref({
@@ -26,6 +63,7 @@ const form = ref({
     category_id: null,
     base_price: '',
     product_status: 'active',
+    tags: [],
     main_image: '',
     selected_images: [],    // { url, filename } for additional images
     variants: [],
@@ -287,27 +325,100 @@ const regenerateVariants = () => {
     });
 };
 
-// ── Manual variant (non-attribute based) ─────────────────────────────────────
+// ── Auto-generate SKUs from product name + attribute values ──────────────
+const abbreviate = (str) => {
+    if (!str) return '';
+    // Common abbreviations lookup
+    const known = {
+        'black': 'BLK', 'white': 'WHT', 'blue': 'BLU', 'red': 'RED',
+        'green': 'GRN', 'yellow': 'YLW', 'purple': 'PRP', 'pink': 'PNK',
+        'orange': 'ORG', 'gray': 'GRY', 'grey': 'GRY',
+        'titanium': 'TI', 'natural titanium': 'NT', 'desert titanium': 'DT',
+        'white titanium': 'WT', 'black titanium': 'BT',
+        'small': 'S', 'medium': 'M', 'large': 'L',
+        'extra large': 'XL', 'x large': 'XL',
+    };
+    const lower = str.trim().toLowerCase();
+    if (known[lower]) return known[lower];
+    // For values ending in GB or TB, keep the number
+    if (/^(\d+)(gb|tb)$/i.test(lower)) return lower.replace(/\s/g, '').toUpperCase();
+    // Fallback: uppercase first letters of each word
+    return str.trim()
+        .split(/[\s_-]+/)
+        .map(w => w.charAt(0).toUpperCase())
+        .join('');
+};
+
+const getProductPrefix = () => {
+    const name = form.value.product_name.trim();
+    if (!name) return 'PROD';
+    // Extract meaningful prefix: uppercase first letters of each word, keep digits
+    return name
+        .split(/[\s_-]+/)
+        .map(w => {
+            // If word starts with a digit, keep the digit(s) + first letter
+            const digitMatch = w.match(/^(\d+)/);
+            if (digitMatch) return digitMatch[1] + (w.replace(/^\d+/, '')[0] || '').toUpperCase();
+            return w.charAt(0).toUpperCase();
+        })
+        .join('');
+};
+
+const generateSkus = () => {
+    const prefix = getProductPrefix();
+    if (generatedVariants.value.length === 0) {
+        toast.warning('No variants to generate SKUs for');
+        return;
+    }
+    generatedVariants.value = generatedVariants.value.map(v => {
+        const suffix = v.options
+            .map(o => abbreviate(o.value))
+            .filter(Boolean)
+            .join('-');
+        v.sku = suffix ? `${prefix}-${suffix}` : prefix;
+        return v;
+    });
+    toast.success(`Generated SKUs for ${generatedVariants.value.length} variant(s)`);
+};
+
+// ── Manual variant (supports multiple attribute options per variant) ─────
 const showManualVariant = ref(false);
-const manualVariant = ref({ name: '', value: '', price: '', stock: 0 });
+const manualVariantOptions = ref([{ name: '', value: '' }]);
+const manualVariantPrice = ref('');
+const manualVariantStock = ref(0);
+
+const addManualOptionField = () => {
+    manualVariantOptions.value.push({ name: '', value: '' });
+};
+
+const removeManualOptionField = (idx) => {
+    if (manualVariantOptions.value.length > 1) {
+        manualVariantOptions.value.splice(idx, 1);
+    }
+};
 
 const addManualVariant = () => {
-    if (!manualVariant.value.name.trim() || !manualVariant.value.value.trim()) {
-        toast.warning('Variant name and value are required');
+    const filledOptions = manualVariantOptions.value.filter(
+        o => o.name.trim() && o.value.trim()
+    );
+    if (filledOptions.length === 0) {
+        toast.warning('At least one attribute name and value are required');
         return;
     }
     const newVar = {
-        options: [{
-            attribute_name: manualVariant.value.name.trim(),
-            value: manualVariant.value.value.trim(),
-        }],
+        options: filledOptions.map(o => ({
+            attribute_name: o.name.trim(),
+            value: o.value.trim(),
+        })),
         sku: '',
-        variant_price: manualVariant.value.price || '',
-        stock_quantity: manualVariant.value.stock || 0,
+        variant_price: manualVariantPrice.value || '',
+        stock_quantity: manualVariantStock.value || 0,
     };
     if (!generatedVariants.value) generatedVariants.value = [];
     generatedVariants.value.push(newVar);
-    manualVariant.value = { name: '', value: '', price: '', stock: 0 };
+    manualVariantOptions.value = [{ name: '', value: '' }];
+    manualVariantPrice.value = '';
+    manualVariantStock.value = 0;
 };
 
 const removeGeneratedVariant = (index) => {
@@ -316,6 +427,68 @@ const removeGeneratedVariant = (index) => {
 
 const variantPreviewLabel = (variant) => {
     return variant.options.map(o => `${o.attribute_name}: ${o.value}`).join(' / ');
+};
+
+// ── Load Product for Editing ────────────────────────────────────────────────
+const loadProductForEdit = async (productId) => {
+    loadingProduct.value = true;
+    try {
+        const result = await productStore.fetchProductById(productId);
+        if (!result.success || !productStore.currentProduct) {
+            toast.error('Product not found');
+            router.push('/admin/manage-products');
+            return;
+        }
+
+        const product = productStore.currentProduct;
+
+        form.value.product_name = product.product_name || '';
+        form.value.product_description = product.descriptions || product.description || '';
+        form.value.base_price = product.base_price ? String(product.base_price) : '';
+        form.value.product_status = product.product_status || 'active';
+        form.value.tags = product.tags ? [...product.tags] : [];
+
+        // Map category_name from backend to category_id for the select dropdown
+        if (product.category_name && categories.value.length > 0) {
+            const matched = categories.value.find(
+                c => c.name?.toLowerCase() === product.category_name?.toLowerCase()
+            );
+            if (matched) {
+                form.value.category_id = matched.category_id;
+            }
+        }
+
+        // Images: use thumbnail as main image
+        if (product.thumbnail) {
+            form.value.main_image = product.thumbnail;
+            selectedMainImage.value = { url: product.thumbnail, filename: 'existing' };
+        }
+        if (product.images && product.images.length > 0) {
+            const extras = product.images.filter(img => img.image_url !== product.thumbnail);
+            form.value.selected_images = extras.map(img => ({ url: img.image_url, filename: img.image_url }));
+            selectedExtraImages.value = new Set(extras.map(img => img.image_url));
+        }
+
+        // Variants: map backend format to generated variant format
+        if (product.variants && product.variants.length > 0) {
+            generatedVariants.value = product.variants.map(v => ({
+                options: [
+                    ...(v.variant_color   ? [{ attribute_name: 'Color',   value: v.variant_color   }] : []),
+                    ...(v.variant_size    ? [{ attribute_name: 'Size',    value: v.variant_size    }] : []),
+                    ...(v.variant_storage ? [{ attribute_name: 'Storage', value: v.variant_storage }] : []),
+                ],
+                sku: v.sku || '',
+                variant_price: v.variant_price || '',
+                stock_quantity: v.quantity || 0,
+            }));
+        }
+    } catch (err) {
+        console.error('Error loading product for edit:', err);
+        toast.error(err.response?.data?.message || 'Failed to load product');
+        router.push('/admin/manage-products');
+    } finally {
+        loadingProduct.value = false;
+    }
 };
 
 // ── Submit ───────────────────────────────────────────────────────────────────
@@ -338,6 +511,7 @@ const handleSubmit = async () => {
         const variants = generatedVariants.value.map(v => ({
             sku: v.sku || null,
             options: v.options || [],
+            variant_price: v.variant_price || null,
             stock_quantity: v.stock_quantity != null ? v.stock_quantity : 0,
             reorder_level: 5,
         }));
@@ -348,30 +522,54 @@ const handleSubmit = async () => {
             category_id: form.value.category_id,
             base_price: parseFloat(form.value.base_price),
             product_status: form.value.product_status,
+            tags: form.value.tags,
             images,
             variants,
         };
 
-        const result = await productStore.createCompleteProduct(productData);
-        if (result.success) {
-            toast.success('Product created successfully!');
-            router.push('/admin/dashboard');
+        let result;
+        if (isEditing.value) {
+            result = await productStore.updateProduct(editingProductId.value, productData);
+            if (result.success) {
+                toast.success('Product updated successfully!');
+                router.push('/admin/manage-products');
+            } else {
+                toast.error(result.error || 'Failed to update product');
+            }
         } else {
-            toast.error(result.error || 'Failed to create product');
+            result = await productStore.createCompleteProduct(productData);
+            if (result.success) {
+                toast.success('Product created successfully!');
+                router.push('/admin/dashboard');
+            } else {
+                toast.error(result.error || 'Failed to create product');
+            }
         }
     } catch (error) {
-        console.error('Error creating product:', error);
-        toast.error(error.response?.data?.message || 'Error creating product');
+        console.error('Error saving product:', error);
+        toast.error(error.response?.data?.message || 'Error saving product');
     } finally {
         submitting.value = false;
     }
 };
 
-const cancel = () => router.push('/admin/dashboard');
+const cancel = () => {
+    if (isEditing.value) {
+        router.push('/admin/manage-products');
+    } else {
+        router.push('/admin/dashboard');
+    }
+};
 
 onMounted(async () => {
     await productStore.fetchCategories();
     fetchUploadedImages();
+
+    const editId = route.query.edit;
+    if (editId) {
+        editingProductId.value = parseInt(editId);
+        await loadProductForEdit(editId);
+    }
 });
 </script>
 
@@ -387,13 +585,21 @@ onMounted(async () => {
                 </button>
                 <span class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-accent mb-2">
                     <Sparkles class="w-3.5 h-3.5" />
-                    New inventory
+                    {{ isEditing ? 'Edit product' : 'New inventory' }}
                 </span>
-                <h1 class="heading-hero text-4xl text-ink">Add new product</h1>
-                <p class="text-neutral-500 mt-2">Create a new product with images, attributes, and variants.</p>
+                <h1 class="heading-hero text-4xl text-ink">{{ isEditing ? 'Edit product' : 'Add new product' }}</h1>
+                <p class="text-neutral-500 mt-2">{{ isEditing ? 'Update product details, images, attributes, and variants.' : 'Create a new product with images, attributes, and variants.' }}</p>
             </div>
 
-            <form @submit.prevent="handleSubmit" class="space-y-5">
+            <!-- Loading State -->
+            <div v-if="loadingProduct" class="flex items-center justify-center py-20">
+                <div class="text-center">
+                    <Loader2 class="w-10 h-10 text-accent animate-spin mx-auto mb-4" />
+                    <p class="text-neutral-500 text-sm font-medium">Loading product data...</p>
+                </div>
+            </div>
+
+            <form v-else @submit.prevent="handleSubmit" class="space-y-5">
 
                 <!-- ── Basic Information ────────────────────────────────────── -->
                 <div class="card-flat p-6 md:p-8">
@@ -494,6 +700,61 @@ onMounted(async () => {
                                     <input v-model="form.product_status" type="radio" value="inactive" class="hidden" />
                                     <span class="text-sm font-semibold">Inactive</span>
                                 </label>
+                            </div>
+                        </div>
+
+                        <!-- Tags -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-[0.2em] text-ink mb-3 flex items-center gap-2">
+                                <Tag class="w-3.5 h-3.5 text-accent" />
+                                Product tags
+                                <span class="text-xs font-normal text-neutral-400">(optional)</span>
+                            </label>
+                            <div class="flex flex-wrap gap-1.5 mb-3">
+                                <button
+                                    v-for="tag in COMMON_TAGS"
+                                    :key="tag"
+                                    type="button"
+                                    @click="toggleFormTag(tag)"
+                                    class="px-3 py-1.5 rounded-full text-xs font-bold border transition-all duration-150"
+                                    :class="form.tags.includes(tag)
+                                        ? 'bg-accent text-white border-accent shadow-sm'
+                                        : 'bg-paper text-neutral-500 border-neutral-200 hover:border-accent hover:text-accent'"
+                                >
+                                    {{ tag }}
+                                </button>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input
+                                    v-model="customTagInput"
+                                    type="text"
+                                    placeholder="Custom tag..."
+                                    class="input-base text-sm flex-1"
+                                    @keydown="handleCustomTagKeydown"
+                                    aria-label="Custom tag"
+                                />
+                                <button
+                                    type="button"
+                                    @click="addCustomFormTag"
+                                    class="btn-outline text-sm px-3 gap-1"
+                                    :disabled="!customTagInput.trim()"
+                                >
+                                    <Plus class="w-3.5 h-3.5" />
+                                    Add
+                                </button>
+                            </div>
+                            <!-- Selected tags preview -->
+                            <div v-if="form.tags.length > 0" class="flex flex-wrap gap-1.5 mt-3">
+                                <span
+                                    v-for="(tag, idx) in form.tags"
+                                    :key="idx"
+                                    class="inline-flex items-center gap-1 px-2.5 py-1 bg-ink text-paper rounded-full text-[10px] font-bold"
+                                >
+                                    {{ tag }}
+                                    <button type="button" @click="removeFormTag(idx)" class="hover:text-danger transition-colors p-0.5">
+                                        <X class="w-3 h-3" />
+                                    </button>
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -707,12 +968,18 @@ onMounted(async () => {
 
                     <!-- ── Generated Variants ────────────────────────────────── -->
                     <div v-if="generatedVariants.length > 0" class="mt-6 pt-6 border-t border-neutral-200">
-                        <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
                             <h3 class="text-sm font-bold text-ink flex items-center gap-2">
                                 <Box class="w-4 h-4 text-accent" />
                                 Generated variants
                                 <span class="text-xs font-normal text-neutral-500">({{ generatedVariants.length }})</span>
                             </h3>
+                            <button type="button" @click="generateSkus"
+                                class="btn-accent text-xs gap-1.5 px-3 py-1.5"
+                                :disabled="!form.product_name.trim() || generatedVariants.length === 0">
+                                <Sparkle class="w-3.5 h-3.5" />
+                                Generate SKUs
+                            </button>
                         </div>
 
                         <div class="overflow-x-auto">
@@ -772,21 +1039,49 @@ onMounted(async () => {
                             {{ showManualVariant ? 'Cancel' : 'Add single variant manually' }}
                         </button>
 
-                        <div v-if="showManualVariant"
-                            class="mt-3 grid grid-cols-1 sm:grid-cols-5 gap-2 animate-fade-in">
-                            <input v-model="manualVariant.name" type="text" placeholder="Name (e.g. Color)"
-                                class="input-base text-sm" aria-label="Variant attribute name" />
-                            <input v-model="manualVariant.value" type="text" placeholder="Value (e.g. Red)"
-                                class="input-base text-sm" aria-label="Variant attribute value" />
-                            <input v-model="manualVariant.price" type="number" step="0.01" placeholder="Price"
-                                class="input-base text-sm" aria-label="Variant price" />
-                            <input v-model.number="manualVariant.stock" type="number" min="0" placeholder="Stock"
-                                class="input-base text-sm" aria-label="Variant stock" />
-                            <button type="button" @click="addManualVariant"
-                                class="btn-primary text-sm py-2.5">
-                                <Plus class="w-4 h-4" />
-                                Add
-                            </button>
+                        <div v-if="showManualVariant" class="mt-3 animate-fade-in space-y-3">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-xs font-bold uppercase tracking-[0.15em] text-ink">Options</span>
+                                <button type="button" @click="addManualOptionField"
+                                    class="text-[10px] text-accent font-bold hover:underline">
+                                    + Add another option
+                                </button>
+                            </div>
+
+                            <div v-for="(opt, oIdx) in manualVariantOptions" :key="oIdx"
+                                :class="[
+                                    'grid grid-cols-1 gap-2',
+                                    oIdx === 0 ? 'sm:grid-cols-5' : 'sm:grid-cols-3'
+                                ]">
+                                <input v-model="opt.name" type="text"
+                                    placeholder="e.g. Color, Size, Storage"
+                                    class="input-base text-sm" aria-label="Attribute name" />
+                                <input v-model="opt.value" type="text"
+                                    placeholder="e.g. Natural Titanium, 256GB"
+                                    class="input-base text-sm" aria-label="Attribute value" />
+                                <button v-if="manualVariantOptions.length > 1" type="button"
+                                    @click="removeManualOptionField(oIdx)"
+                                    class="text-xs text-danger font-semibold hover:underline text-left sm:hidden">
+                                    Remove
+                                </button>
+                                <button v-if="manualVariantOptions.length > 1" type="button"
+                                    @click="removeManualOptionField(oIdx)"
+                                    class="hidden sm:flex items-center justify-center w-9 h-9 rounded-lg border border-neutral-200 text-neutral-400 hover:text-danger hover:border-danger transition-colors shrink-0"
+                                    title="Remove this option">
+                                    <X class="w-4 h-4" />
+                                </button>
+                                <input v-if="oIdx === 0" v-model="manualVariantPrice" type="number" step="0.01"
+                                    placeholder="Price (e.g. 999.00)"
+                                    class="input-base text-sm" aria-label="Variant price" />
+                                <input v-if="oIdx === 0" v-model.number="manualVariantStock" type="number" min="0"
+                                    placeholder="Stock"
+                                    class="input-base text-sm" aria-label="Variant stock" />
+                                <button v-if="oIdx === 0" type="button" @click="addManualVariant"
+                                    class="btn-primary text-sm py-2.5">
+                                    <Plus class="w-4 h-4" />
+                                    Add
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -799,7 +1094,10 @@ onMounted(async () => {
                     <button type="submit" :disabled="submitting"
                         class="btn-accent shine-effect flex-1 py-3.5 disabled:opacity-50">
                         <Loader2 v-if="submitting" class="w-4 h-4 animate-spin inline mr-2" />
-                        {{ submitting ? 'Creating product...' : 'Create product' }}
+                        {{ submitting
+                            ? (isEditing ? 'Saving changes...' : 'Creating product...')
+                            : (isEditing ? 'Save changes' : 'Create product')
+                        }}
                     </button>
                 </div>
             </form>

@@ -21,6 +21,7 @@ export const validateCompleteProduct = (req, res, next) => {
         base_price: Joi.number().positive().required(),
         descriptions: Joi.string().max(1000).allow('', null).optional(),
         product_status: Joi.string().valid('active', 'inactive', 'archived').optional().default('active'),
+        tags: Joi.array().items(Joi.string()).optional(),
 
         images: Joi.array().items(
             Joi.object({
@@ -36,6 +37,7 @@ export const validateCompleteProduct = (req, res, next) => {
                 sku: Joi.string().max(100).optional().allow('', null),
                 variant_color: Joi.string().max(200).optional().allow('', null),
                 variant_size: Joi.string().max(200).optional().allow('', null),
+                variant_storage: Joi.string().max(200).optional().allow('', null),
                 options: Joi.array().items(
                     Joi.object({
                         attribute_name: Joi.string().max(100).required(),
@@ -102,7 +104,8 @@ export const validateProduct = (req, res, next) => {
         product_name: Joi.string().min(1).max(150).required(),
         base_price: Joi.number().positive().required(),
         descriptions: Joi.string().max(1000).allow('', null).optional(),
-        product_status: Joi.string().valid('active', 'inactive', 'archived').required()
+        product_status: Joi.string().valid('active', 'inactive', 'archived').required(),
+        tags: Joi.array().items(Joi.string()).optional()
     });
 
     const { error } = schema.validate(req.body, { abortEarly: false });
@@ -144,6 +147,7 @@ export const validateVariant = (req, res, next) => {
         sku: Joi.string().max(100).optional().allow('', null),
         variant_color: Joi.string().max(200).optional().allow('', null),
         variant_size: Joi.string().max(200).optional().allow('', null),
+        variant_storage: Joi.string().max(200).optional().allow('', null),
         options: Joi.array().items(
             Joi.object({
                 attribute_name: Joi.string().max(100).required(),
@@ -171,7 +175,8 @@ export const validateStock = (req, res, next) => {
     const schema = Joi.object({
         quantity: Joi.number().integer().min(0).required(),
         reorder_level: Joi.number().integer().min(0).optional().default(5),
-        amount: Joi.number().integer().positive().optional()
+        amount: Joi.number().integer().positive().optional(),
+        reason: Joi.string().allow('', null).optional()
     });
 
     const { error } = schema.validate(req.body, { abortEarly: false });
@@ -218,6 +223,7 @@ export const validateBulkProducts = (req, res, next) => {
                 base_price: Joi.number().positive().required(),
                 descriptions: Joi.string().max(1000).allow('', null).optional(),
                 product_status: Joi.string().valid('active', 'inactive', 'archived').optional(),
+                tags: Joi.array().items(Joi.string()).optional(),
                 images: Joi.array().items(
                     Joi.object({
                         image_url: Joi.string().uri().required(),
@@ -231,6 +237,7 @@ export const validateBulkProducts = (req, res, next) => {
                         sku: Joi.string().max(100).optional().allow('', null),
                         variant_color: Joi.string().max(200).optional().allow('', null),
                         variant_size: Joi.string().max(200).optional().allow('', null),
+                        variant_storage: Joi.string().max(200).optional().allow('', null),
                         options: Joi.array().items(
                             Joi.object({
                                 attribute_name: Joi.string().max(100).required(),

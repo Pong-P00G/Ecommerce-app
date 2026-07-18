@@ -19,6 +19,9 @@ export const useProductStore = defineStore('product', {
             items: []
         },
         featuredProducts: [],
+        newArrivals: [],
+        comingSoon: [],
+        bestSellers: [],
         
         // Categories
         categories: [],
@@ -42,8 +45,12 @@ export const useProductStore = defineStore('product', {
     getters: {
         getProducts: (state) => state.products,
         getCurrentProduct: (state) => state.currentProduct,
+        getCompleteProduct: (state) => state.currentProduct,
         getPaginatedData: (state) => state.paginatedProducts,
         getFeaturedProducts: (state) => state.featuredProducts,
+        getNewArrivals: (state) => state.newArrivals,
+        getComingSoon: (state) => state.comingSoon,
+        getBestSellers: (state) => state.bestSellers,
         getCategories: (state) => state.categories,
         isLoading: (state) => state.loading,
         getError: (state) => state.error,
@@ -233,6 +240,78 @@ export const useProductStore = defineStore('product', {
                 return { success: false, error: errorMsg };
             } finally {
                 this.loading = false;
+            }
+        },
+
+        /**
+         * Fetch new arrivals
+         */
+        async fetchNewArrivals(limit = 10) {
+            try {
+                const response = await productAPI.getNewArrivals(limit);
+                
+                if (response.success && response.data) {
+                    this.newArrivals = response.data;
+                } else if (Array.isArray(response)) {
+                    this.newArrivals = response;
+                } else if (response.data && Array.isArray(response.data)) {
+                    this.newArrivals = response.data;
+                } else {
+                    this.newArrivals = [];
+                }
+                
+                return { success: true, data: this.newArrivals };
+            } catch (error) {
+                console.error('Fetch new arrivals error:', error);
+                return { success: false, error: error.message };
+            }
+        },
+
+        /**
+         * Fetch coming soon products
+         */
+        async fetchComingSoon(limit = 10) {
+            try {
+                const response = await productAPI.getComingSoon(limit);
+                
+                if (response.success && response.data) {
+                    this.comingSoon = response.data;
+                } else if (Array.isArray(response)) {
+                    this.comingSoon = response;
+                } else if (response.data && Array.isArray(response.data)) {
+                    this.comingSoon = response.data;
+                } else {
+                    this.comingSoon = [];
+                }
+                
+                return { success: true, data: this.comingSoon };
+            } catch (error) {
+                console.error('Fetch coming soon error:', error);
+                return { success: false, error: error.message };
+            }
+        },
+
+        /**
+         * Fetch best sellers
+         */
+        async fetchBestSellers(limit = 10) {
+            try {
+                const response = await productAPI.getBestSellers(limit);
+                
+                if (response.success && response.data) {
+                    this.bestSellers = response.data;
+                } else if (Array.isArray(response)) {
+                    this.bestSellers = response;
+                } else if (response.data && Array.isArray(response.data)) {
+                    this.bestSellers = response.data;
+                } else {
+                    this.bestSellers = [];
+                }
+                
+                return { success: true, data: this.bestSellers };
+            } catch (error) {
+                console.error('Fetch best sellers error:', error);
+                return { success: false, error: error.message };
             }
         },
         

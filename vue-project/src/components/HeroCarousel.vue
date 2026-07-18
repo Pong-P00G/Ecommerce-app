@@ -98,7 +98,7 @@ onUnmounted(() => stopAutoPlay());
         ref="heroRef"
         class="relative h-[420px] md:h-[520px] lg:h-[600px] overflow-hidden rounded-3xl bg-ink group"
         @mouseenter="stopAutoPlay"
-        @mouseleave="startAutoPlay"; resetParallax()
+        @mouseleave="startAutoPlay"
         @mousemove="handleMouseMove"
     >
         <!-- Slides -->
