@@ -2,6 +2,7 @@ import * as ProductModel from '../model/products/productModel.js';
 import * as CategoryModel from '../model/products/categoryModel.js';
 import { getStockHistoryForProduct } from '../model/products/stockLogModel.js';
 import { notifyNewProduct, notifyLowStock } from './dashboardService.js';
+import db from '../database/dbpool.js';
 
 // ==================== COMPLETE PRODUCT CREATION ====================
 
@@ -222,6 +223,225 @@ export const deleteProduct = async (productId) => {
         throw new Error('Product not found');
     }
     return true;
+};
+
+/**
+ * Update complete product with images, variants, options, and stock.
+ * All write operations are wrapped in a database transaction for atomicity.
+ * If any step fails, all changes are rolled back.
+ *
+ * Read operations (SELECTs for existing data) happen outside the transaction.
+ * Write operations (UPDATE, DELETE, INSERT) use a client-level transaction.
+ */
+export const updateCompleteProduct = async (productId, productData) => {
+    const {
+        category_id,
+        product_name,
+        base_price,
+        descriptions,
+        product_status = 'active',
+        tags = [],
+        images = [],
+        variants = []
+    } = productData;
+
+    // ── Pre-checks (outside transaction) ──────────────────────────────────────
+    const exists = await ProductModel.productExists(productId);
+    if (!exists) throw new Error('Product not found');
+
+    // Gather existing data before we start deleting
+    const existingVariants = await ProductModel.getProductVariants(productId);
+    const existingImages = await ProductModel.getProductImages(productId);
+    const stockLookup = {};
+    for (const v of existingVariants) {
+        const s = await ProductModel.getStock(v.variant_id);
+        if (s) stockLookup[v.variant_id] = s;
+    }
+
+    // ── Transaction: all writes go through a single client ────────────────────
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Update basic product info
+        const updateResult = await client.query(
+            `UPDATE products
+             SET categoriesid = COALESCE($1, categoriesid),
+                 productname = $2,
+                 baseprice = $3,
+                 description = $4,
+                 status = $5,
+                 tags = $6
+             WHERE productsid = $7`,
+            [category_id ?? null, product_name, base_price, descriptions, product_status, tags || [], productId]
+        );
+        if (updateResult.rowCount === 0) {
+            throw new Error('No changes made to product');
+        }
+
+        // 2. Delete existing variants in FK-safe order
+        for (const v of existingVariants) {
+            if (stockLookup[v.variant_id]?.stock_id) {
+                await client.query('DELETE FROM stocklog WHERE stockid = $1', [stockLookup[v.variant_id].stock_id]);
+            }
+            await client.query('DELETE FROM stock WHERE variantid = $1', [v.variant_id]);
+            await client.query('DELETE FROM variantoptionvalue WHERE variantid = $1', [v.variant_id]);
+            await client.query('DELETE FROM variants WHERE variantid = $1', [v.variant_id]);
+        }
+
+        // 3. Delete existing images
+        for (const img of existingImages) {
+            await client.query('DELETE FROM productimages WHERE imageid = $1', [img.image_id]);
+        }
+
+        // 4. Create new images
+        const createdImages = [];
+        if (images && images.length > 0) {
+            for (let i = 0; i < images.length; i++) {
+                const image = images[i];
+                const isMain = i === 0 || image.is_main === true;
+
+                if (isMain) {
+                    await client.query('UPDATE productimages SET isthumbnail = FALSE WHERE productsid = $1', [productId]);
+                }
+
+                const imgResult = await client.query(
+                    `INSERT INTO productimages (productsid, imageurl, alttext, isthumbnail, sortorder)
+                     VALUES ($1, $2, $3, $4, $5) RETURNING imageid`,
+                    [productId, image.image_url, image.alt_text || null, Boolean(isMain), image.sort_order ?? 0]
+                );
+                createdImages.push({
+                    image_id: imgResult.rows[0].imageid,
+                    image_url: image.image_url,
+                    is_main: isMain,
+                    alt_text: image.alt_text || null,
+                    sort_order: image.sort_order ?? 0
+                });
+            }
+        }
+
+        // 5. Create new variants
+        const createdVariants = [];
+        if (variants && variants.length > 0) {
+            for (const variant of variants) {
+                const {
+                    sku,
+                    variant_color,
+                    variant_size,
+                    variant_storage,
+                    options,
+                    variant_price,
+                    stock_quantity = 0,
+                    reorder_level = 5
+                } = variant;
+
+                // SKU uniqueness check (within the transaction)
+                if (sku) {
+                    const skuCheck = await client.query('SELECT variantid FROM variants WHERE sku = $1', [sku]);
+                    if (skuCheck.rows.length > 0) {
+                        throw new Error(`SKU '${sku}' already exists`);
+                    }
+                }
+
+                // Create variant
+                const varResult = await client.query(
+                    `INSERT INTO variants (productsid, sku, price) VALUES ($1, $2, $3) RETURNING variantid`,
+                    [productId, sku || null, variant_price || null]
+                );
+                const variantId = varResult.rows[0].variantid;
+
+                // Resolve options and add them
+                let resolvedOptions = [];
+                if (Array.isArray(options) && options.length > 0) {
+                    resolvedOptions = options;
+                } else if (variant_color || variant_size || variant_storage) {
+                    if (variant_color)   resolvedOptions.push({ attribute_name: 'Color',   value: variant_color });
+                    if (variant_size)    resolvedOptions.push({ attribute_name: 'Size',    value: variant_size  });
+                    if (variant_storage) resolvedOptions.push({ attribute_name: 'Storage', value: variant_storage });
+                }
+
+                for (const opt of resolvedOptions) {
+                    if (!opt || !opt.attribute_name || !opt.value) continue;
+                    // Upsert attribute
+                    const attrResult = await client.query(
+                        `INSERT INTO variantattribute (attributename) VALUES ($1)
+                         ON CONFLICT (attributename) DO UPDATE SET attributename = EXCLUDED.attributename
+                         RETURNING attributeid`,
+                        [String(opt.attribute_name)]
+                    );
+                    const attrId = attrResult.rows[0].attributeid;
+                    // Upsert attribute value
+                    const valResult = await client.query(
+                        `INSERT INTO variantattributevalue (attributeid, value) VALUES ($1, $2)
+                         ON CONFLICT (attributeid, value) DO UPDATE SET value = EXCLUDED.value
+                         RETURNING valueid`,
+                        [attrId, String(opt.value)]
+                    );
+                    // Link to variant
+                    await client.query(
+                        `INSERT INTO variantoptionvalue (variantid, valueid) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+                        [variantId, valResult.rows[0].valueid]
+                    );
+                }
+
+                // Set stock
+                if (stock_quantity >= 0) {
+                    const stockResult = await client.query(
+                        `INSERT INTO stock (productsid, variantid, quantity, minstock)
+                         VALUES ((SELECT productsid FROM variants WHERE variantid = $1), $1, $2, $3)
+                         ON CONFLICT (productsid, variantid)
+                         DO UPDATE SET quantity = $2, minstock = $3, updatedat = NOW()
+                         RETURNING stockid`,
+                        [variantId, stock_quantity, reorder_level]
+                    );
+                    // Create stock log entry
+                    const stockId = stockResult.rows[0]?.stockid;
+                    if (stockId) {
+                        await client.query(
+                            `INSERT INTO stocklog (stockid, usersid, changetype, quantity, reason)
+                             VALUES ($1, NULL, 'ADJUST', $2, 'Complete product update')`,
+                            [stockId, stock_quantity]
+                        );
+                    }
+                }
+
+                // Store variantId and known data — full details are fetched after COMMIT
+                createdVariants.push({
+                    variant_id: variantId,
+                    product_id: productId,
+                    sku: sku || null,
+                    variant_price: variant_price || null,
+                    quantity: stock_quantity,
+                    reorder_level
+                });
+            }
+        }
+
+        // ── Commit ────────────────────────────────────────────────────────────
+        await client.query('COMMIT');
+
+        // 6. Return the complete updated product (pool query, committed data is visible)
+        const completeProduct = await ProductModel.getProductById(productId);
+
+        // Enrich createdVariants with full details from the fresh read
+        const fullVariants = completeProduct?.variants || [];
+        const enrichedVariants = createdVariants.map(cv => {
+            const full = fullVariants.find(fv => fv.variant_id === cv.variant_id);
+            return full || cv;
+        });
+
+        return {
+            ...completeProduct,
+            images: createdImages,
+            variants: enrichedVariants
+        };
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
 };
 
 // ==================== CATEGORY SERVICES ====================

@@ -364,10 +364,25 @@ export const useProductStore = defineStore('product', {
                 
                 return { success: true, data: response.data || response };
             } catch (error) {
-                const errorMsg = error.response?.data?.message || error.message || 'Failed to create product';
+                const errorData = error.response?.data;
+                let errorMsg;
+                if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+                    // Validation errors from validateCompleteProduct et al.
+                    errorMsg = errorData.errors.map(e => e.message).join('; ');
+                } else if (errorData?.message) {
+                    errorMsg = errorData.message;
+                } else if (errorData?.error) {
+                    errorMsg = errorData.error;
+                } else {
+                    errorMsg = error.message || 'Failed to create product';
+                }
                 this.error = errorMsg;
                 console.error('Create complete product error:', error);
-                return { success: false, error: errorMsg };
+                return {
+                    success: false,
+                    error: errorMsg,
+                    fieldErrors: errorData?.errors || null
+                };
             } finally {
                 this.loading = false;
             }
@@ -401,10 +416,25 @@ export const useProductStore = defineStore('product', {
                 
                 return { success: true, data: updatedProduct };
             } catch (error) {
-                const errorMsg = error.response?.data?.message || error.message || 'Failed to update product';
+                const errorData = error.response?.data;
+                let errorMsg;
+                if (errorData?.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+                    // Validation errors from validateCompleteProduct et al.
+                    errorMsg = errorData.errors.map(e => e.message).join('; ');
+                } else if (errorData?.message) {
+                    errorMsg = errorData.message;
+                } else if (errorData?.error) {
+                    errorMsg = errorData.error;
+                } else {
+                    errorMsg = error.message || 'Failed to update product';
+                }
                 this.error = errorMsg;
                 console.error('Update product error:', error);
-                return { success: false, error: errorMsg };
+                return {
+                    success: false,
+                    error: errorMsg,
+                    fieldErrors: errorData?.errors || null
+                };
             } finally {
                 this.loading = false;
             }

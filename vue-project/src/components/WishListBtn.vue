@@ -27,13 +27,8 @@ const iconSize = computed(() => ({
 }[props.size] || 'w-5 h-5'));
 
 const handleToggle = () => {
-    if (isWishlisted.value) {
-        shop.toggleWishlist(props.item.id);
-        emit('removed', props.item);
-    } else {
-        shop.toggleWishlist(props.item.id);
-        emit('added', props.item);
-    }
+    shop.toggleWishlist(props.item);
+    emit(isWishlisted.value ? 'removed' : 'added', props.item);
 };
 </script>
 

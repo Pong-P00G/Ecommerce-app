@@ -20,13 +20,15 @@ import {
 } from 'lucide-vue-next';
 import { useAuthStore } from '../stores/auth.js';
 import { useShopStore } from '../stores/shop.js';
+import { useUIStore } from '../stores/ui.js';
+import ThemeToggle from './ThemeToggle.vue';
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const shop = useShopStore();
+const ui = useUIStore();
 const isMenuOpen = ref(false);
-const isSearchOpen = ref(false);
 const scrolled = ref(false);
 const isDropdownOpen = ref(false);
 
@@ -87,14 +89,14 @@ onMounted(() => {
     fetchNotifications();
     // Poll every 60 seconds
     notifInterval = setInterval(fetchNotifications, 60000);
-    document.addEventListener('keydown', handleEscapeKey);
+    document.addEventListener('keydown', handleKeydown);
     document.addEventListener('click', handleClickOutside);
     window.addEventListener('scroll', handleScroll);
 });
 
 onUnmounted(() => {
     if (notifInterval) clearInterval(notifInterval);
-    document.removeEventListener('keydown', handleEscapeKey);
+    document.removeEventListener('keydown', handleKeydown);
     document.removeEventListener('click', handleClickOutside);
     window.removeEventListener('scroll', handleScroll);
     document.body.style.overflow = '';
@@ -134,13 +136,14 @@ const closeMenu = () => {
     document.body.style.overflow = '';
 };
 
-const toggleSearch = () => {
-    isSearchOpen.value = !isSearchOpen.value;
+const openSearch = () => {
+    ui.openSearch();
 };
 
 const Navlinks = ref([
     { to: '/', label: 'Home', icon: Home, ariaLabel: 'Home' },
     { to: '/product', label: 'Product', icon: Package, ariaLabel: 'Browse Product' },
+    { to: '/blog', label: 'Journal', icon: Sparkles, ariaLabel: 'Blog' },
     { to: '/contact', label: 'Contact', icon: Phone, ariaLabel: 'Contact' },
     { to: '/about', label: 'About', icon: Info, ariaLabel: 'About' },
 ]);
@@ -153,10 +156,14 @@ const handleScroll = () => {
     scrolled.value = window.scrollY > 20;
 };
 
-const handleEscapeKey = (event) => {
+const handleKeydown = (event) => {
     if (event.key === 'Escape') {
         if (isMenuOpen.value) closeMenu();
-        if (isSearchOpen.value) isSearchOpen.value = false;
+    }
+    // Cmd+K or Ctrl+K — open search
+    if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+        event.preventDefault();
+        ui.openSearch();
     }
 };
 
@@ -231,10 +238,13 @@ watch(route, () => {
 
                 <!-- Desktop Actions -->
                 <div class="hidden lg:flex items-center gap-2">
+                    <!-- Theme Toggle -->
+                    <ThemeToggle />
+
                     <button
-                        @click="toggleSearch"
+                        @click="openSearch"
                         class="w-10 h-10 rounded-full hover:bg-neutral-100 transition-all duration-300 text-ink flex items-center justify-center"
-                        aria-label="Search"
+                        aria-label="Search (Cmd+K)"
                     >
                         <Search class="w-5 h-5" />
                     </button>
@@ -401,26 +411,7 @@ watch(route, () => {
                 </button>
             </div>
 
-            <!-- Search Bar (Desktop) -->
-            <transition name="slide-fade">
-                <div v-if="isSearchOpen" class="hidden lg:block mt-4">
-                    <div class="relative max-w-2xl mx-auto">
-                        <input
-                            type="text"
-                            placeholder="Search products, categories, brands..."
-                            class="w-full px-5 py-3 pl-12 pr-28 rounded-xl border border-neutral-300 focus:border-ink focus:outline-none transition-all bg-paper shadow-sm"
-                            autofocus
-                        />
-                        <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-                        <button
-                            class="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-1.5 px-4 py-1.5 bg-accent text-white text-sm font-semibold rounded-lg hover:bg-accent-600 transition-colors"
-                        >
-                            <Search class="w-3.5 h-3.5" />
-                            Search
-                        </button>
-                    </div>
-                </div>
-            </transition>
+
         </div>
 
         <!-- Mobile Menu -->
@@ -468,14 +459,18 @@ watch(route, () => {
 
                     <!-- Mobile Search -->
                     <div class="p-6 border-b border-neutral-200">
-                        <div class="relative">
-                            <input
-                                type="text"
-                                placeholder="Search products..."
-                                class="w-full px-4 py-3 pl-11 rounded-xl bg-neutral-100 border border-transparent focus:border-ink focus:bg-paper focus:outline-none transition-all"
-                            />
-                            <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                        </div>
+                        <button @click="openSearch" class="w-full text-left">
+                            <div class="relative">
+                                <input
+                                    type="text"
+                                    placeholder="Search products..."
+                                    class="w-full px-4 py-3 pl-11 rounded-xl bg-neutral-100 border border-transparent focus:border-ink focus:bg-paper focus:outline-none transition-all cursor-pointer"
+                                    readonly
+                                />
+                                <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                                <kbd class="absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded bg-paper border border-neutral-200 text-[10px] font-bold text-neutral-500">⌘K</kbd>
+                            </div>
+                        </button>
                     </div>
 
                     <!-- Navigation Links -->

@@ -96,7 +96,7 @@ onUnmounted(() => stopAutoPlay());
 <template>
     <section
         ref="heroRef"
-        class="relative h-[420px] md:h-[520px] lg:h-[600px] overflow-hidden rounded-3xl bg-ink group"
+        class="relative h-105 md:h-130 lg:h-150 overflow-hidden rounded-3xl bg-ink group"
         @mouseenter="stopAutoPlay"
         @mouseleave="startAutoPlay"
         @mousemove="handleMouseMove"
@@ -117,8 +117,8 @@ onUnmounted(() => stopAutoPlay());
                     :class="currentSlide === index ? 'scale-110' : 'scale-105'"
                     :style="currentSlide === index ? parallaxStyle : undefined"
                 />
-                <div class="absolute inset-0 bg-gradient-to-r from-ink via-ink/70 to-transparent"></div>
-                <div class="absolute inset-0 bg-gradient-to-t from-ink/40 to-transparent"></div>
+                <div class="absolute inset-0 bg-linear-to-r from-ink via-ink/70 to-transparent"></div>
+                <div class="absolute inset-0 bg-linear-to-t from-ink/40 to-transparent"></div>
             </div>
 
             <!-- Content -->
@@ -161,7 +161,7 @@ onUnmounted(() => stopAutoPlay());
                     >
                         <RouterLink
                             :to="slide.ctaLink"
-                            class="shine-effect inline-flex items-center gap-2 px-7 py-3.5 bg-accent text-white font-bold text-sm rounded-full shadow-[0_8px_24px_-6px_rgb(249_115_22_/_0.6)] hover:bg-accent-600 hover:-translate-y-0.5 transition-all duration-300 group/cta"
+                            class="shine-effect inline-flex items-center gap-2 px-7 py-3.5 bg-accent text-white font-bold text-sm rounded-full shadow-[0_8px_24px_-6px_rgb(249_115_22_/0.6)] hover:bg-accent-600 hover:-translate-y-0.5 transition-all duration-300 group/cta"
                         >
                             {{ slide.cta }}
                             <ArrowRight class="w-4 h-4 group-hover/cta:translate-x-1 transition-transform" />

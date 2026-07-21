@@ -10,7 +10,7 @@ import {
     ArrowLeft, X, Plus, Image as ImageIcon, Sparkles,
     Upload, Check, CheckCircle2, Trash2, Loader2, Eye, EyeOff,
     Settings2, Link2, Box, Sparkle,
-    Layers, Tag,
+    Layers, Tag, XCircle,
 } from 'lucide-vue-next';
 import { useToast } from '../../composables/useToast.js';
 
@@ -534,7 +534,7 @@ const handleSubmit = async () => {
                 toast.success('Product updated successfully!');
                 router.push('/admin/manage-products');
             } else {
-                toast.error(result.error || 'Failed to update product');
+                handleServerErrors(result);
             }
         } else {
             result = await productStore.createCompleteProduct(productData);
@@ -542,14 +542,47 @@ const handleSubmit = async () => {
                 toast.success('Product created successfully!');
                 router.push('/admin/dashboard');
             } else {
-                toast.error(result.error || 'Failed to create product');
+                handleServerErrors(result);
             }
         }
     } catch (error) {
         console.error('Error saving product:', error);
-        toast.error(error.response?.data?.message || 'Error saving product');
+        toast.error(error.response?.data?.message || 'Unexpected error saving product. Please try again.');
     } finally {
         submitting.value = false;
+    }
+};
+
+// ── Handle Server Errors (field-level + toast) ─────────────────────────
+const handleServerErrors = (result) => {
+    // Show toast with readable message
+    toast.error(result.error || 'Failed to save product');
+
+    // Map backend validation errors to form fields
+    if (result.fieldErrors && Array.isArray(result.fieldErrors)) {
+        for (const fe of result.fieldErrors) {
+            const fieldName = fe.field || '';
+            const message = fe.message || '';
+
+            // Map backend field paths to form field names
+            if (fieldName.startsWith('product_name')) {
+                errors.value.product_name = message;
+            } else if (fieldName.startsWith('base_price')) {
+                errors.value.base_price = message;
+            } else if (fieldName.startsWith('category_id')) {
+                errors.value.category_id = message;
+            } else if (fieldName.startsWith('variants')) {
+                // Show a general variants error — specific variant index errors
+                // are hard to pinpoint in the generated table, so summarise
+                if (!errors.value.variants) {
+                    errors.value.variants = 'Check variant details above';
+                }
+            } else if (fieldName.startsWith('images')) {
+                if (!errors.value.images) {
+                    errors.value.images = 'Check image details';
+                }
+            }
+        }
     }
 };
 
@@ -956,6 +989,13 @@ onMounted(async () => {
                             <Plus class="w-4 h-4" />
                             Add attribute
                         </button>
+
+                        <!-- Server-side variant errors -->
+                        <p v-if="errors.variants"
+                            class="mt-2 text-xs text-danger font-semibold flex items-center gap-1.5">
+                            <XCircle class="w-3.5 h-3.5" />
+                            {{ errors.variants }}
+                        </p>
 
                         <!-- No attributes state -->
                         <div v-if="attributeDefinitions.length === 0"

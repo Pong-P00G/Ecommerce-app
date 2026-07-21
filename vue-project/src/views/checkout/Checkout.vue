@@ -818,12 +818,12 @@ onMounted(async () => {
                                     <!-- Card Preview -->
                                     <transition name="step" mode="out-in">
                                         <div class="mb-6">
-                                            <div class="card-preview relative bg-gradient-to-br from-neutral-800 to-ink rounded-2xl p-5 sm:p-6 text-paper overflow-hidden">
+                                            <div class="card-preview relative bg-linear-to-br from-neutral-800 to-ink rounded-2xl p-5 sm:p-6 text-paper overflow-hidden">
                                                 <div class="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-white/5"></div>
                                                 <div class="absolute -bottom-8 -left-8 w-24 h-24 rounded-full bg-white/5"></div>
                                                 <div class="flex items-center justify-between mb-8">
                                                     <div class="flex items-center gap-2">
-                                                        <div class="w-10 h-7 rounded-md bg-gradient-to-r from-amber-300 to-amber-500 flex items-center justify-center text-[8px] font-bold text-ink">
+                                                        <div class="w-10 h-7 rounded-md bg-linear-to-r from-amber-300 to-amber-500 flex items-center justify-center text-[8px] font-bold text-ink">
                                                             <span v-if="cardBrand">{{ cardBrand }}</span>
                                                             <span v-else class="opacity-40">CRD</span>
                                                         </div>

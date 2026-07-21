@@ -303,6 +303,23 @@ export const updateProduct = async (req, res) => {
     }
 };
 
+export const updateCompleteProduct = async (req, res) => {
+    try {
+        const result = await productService.updateCompleteProduct(req.params.id, req.body);
+        
+        res.json({
+            success: true,
+            message: 'Product updated successfully with images, variants, and stock',
+            data: result
+        });
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
 export const deleteProduct = async (req, res) => {
     try {
         await productService.deleteProduct(req.params.id);

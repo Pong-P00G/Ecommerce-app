@@ -167,9 +167,9 @@ router.get('/:id/discount/active', productController.getActiveDiscount);
 router.post('/', protect, isAdmin, validateProduct, validate, productController.createProduct);
 
 // @route   PUT /api/products/:id
-// @desc    Update product (Basic - product info only)
+// @desc    Update complete product with images, variants, and stock
 // @access  Private/Admin
-router.put('/:id', protect, isAdmin, validateProduct, validate, productController.updateProduct);
+router.put('/:id', protect, isAdmin, validateCompleteProduct, productController.updateCompleteProduct);
 
 // @route   DELETE /api/products/:id
 // @desc    Delete product

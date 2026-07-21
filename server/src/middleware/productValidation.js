@@ -38,6 +38,7 @@ export const validateCompleteProduct = (req, res, next) => {
                 variant_color: Joi.string().max(200).optional().allow('', null),
                 variant_size: Joi.string().max(200).optional().allow('', null),
                 variant_storage: Joi.string().max(200).optional().allow('', null),
+                variant_price: Joi.number().min(0).optional().allow(null),
                 options: Joi.array().items(
                     Joi.object({
                         attribute_name: Joi.string().max(100).required(),
@@ -148,6 +149,7 @@ export const validateVariant = (req, res, next) => {
         variant_color: Joi.string().max(200).optional().allow('', null),
         variant_size: Joi.string().max(200).optional().allow('', null),
         variant_storage: Joi.string().max(200).optional().allow('', null),
+        variant_price: Joi.number().min(0).optional().allow(null),
         options: Joi.array().items(
             Joi.object({
                 attribute_name: Joi.string().max(100).required(),
@@ -238,6 +240,7 @@ export const validateBulkProducts = (req, res, next) => {
                         variant_color: Joi.string().max(200).optional().allow('', null),
                         variant_size: Joi.string().max(200).optional().allow('', null),
                         variant_storage: Joi.string().max(200).optional().allow('', null),
+                        variant_price: Joi.number().min(0).optional().allow(null),
                         options: Joi.array().items(
                             Joi.object({
                                 attribute_name: Joi.string().max(100).required(),

@@ -6,6 +6,10 @@ import HomeLayout from "../Layout/HomeLayout.vue";
 
 // ── Page meta descriptors for SEO ────────────────────────────────────────────
 
+// Default OG image used as a fallback on every page.
+// Replace with your actual brand image URL when ready.
+const DEFAULT_OG_IMAGE = 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=1200&h=630&fit=crop&crop=center';
+
 const PAGE_META = {
     home: {
         title: 'Welcome',
@@ -75,6 +79,31 @@ const PAGE_META = {
     press: {
         title: 'Press',
         description: 'AlieeShop press releases, media resources, and brand information.',
+    },
+    blog: {
+        title: 'Our Journal',
+        description: 'Read the latest stories, style guides, and company news from AlieeShop.',
+        keywords: 'blog, journal, style, fashion, AlieeShop',
+    },
+    blogPost: {
+        title: 'Article',
+        description: 'Read our latest journal entry at AlieeShop.',
+    },
+    privacy: {
+        title: 'Privacy Policy',
+        description: 'Learn how AlieeShop collects, uses, and protects your personal information.',
+    },
+    terms: {
+        title: 'Terms of Service',
+        description: 'Read the terms and conditions for using AlieeShop.',
+    },
+    compare: {
+        title: 'Product Comparison',
+        description: 'Compare products side by side to find the perfect fit at AlieeShop.',
+    },
+    sitemap: {
+        title: 'Sitemap',
+        description: 'Complete site index for AlieeShop. Find any page quickly.',
     },
     login: {
         title: 'Sign In',
@@ -201,6 +230,42 @@ const routes = [
                 path: '/press',
                 meta: { page: 'press' },
                 component: () => import("../views/pages/Press.vue"),
+            },
+            {
+                name: 'blog',
+                path: '/blog',
+                meta: { page: 'blog' },
+                component: () => import("../views/pages/Blog.vue"),
+            },
+            {
+                name: 'blogPost',
+                path: '/blog/:id',
+                meta: { page: 'blogPost' },
+                component: () => import("../views/pages/BlogPost.vue"),
+            },
+            {
+                name: 'privacy',
+                path: '/privacy',
+                meta: { page: 'privacy' },
+                component: () => import("../views/pages/PrivacyPolicy.vue"),
+            },
+            {
+                name: 'terms',
+                path: '/terms',
+                meta: { page: 'terms' },
+                component: () => import("../views/pages/TermsOfService.vue"),
+            },
+            {
+                name: 'compare',
+                path: '/compare',
+                meta: { page: 'compare' },
+                component: () => import("../views/pages/CompareProducts.vue"),
+            },
+            {
+                name: 'sitemap',
+                path: '/sitemap',
+                meta: { page: 'sitemap' },
+                component: () => import("../views/pages/Sitemap.vue"),
             },
         ]
     },
@@ -341,7 +406,7 @@ router.beforeEach((to, from, next) => {
 
 // ── SEO: Set page meta after each navigation ─────────────────────────────────
 // ProductDetail manages its own OG tags dynamically, so we skip it here.
-const SEO_SKIP_PAGES = ['ProductDetail'];
+const SEO_SKIP_PAGES = ['ProductDetail', 'blogPost'];
 
 let seoDisposer = null;
 
@@ -360,9 +425,16 @@ router.afterEach((to) => {
             { name: 'description', content: pageMeta.description },
             { property: 'og:title', content: `${pageMeta.title} | AlieeShop` },
             { property: 'og:description', content: pageMeta.description },
+            { property: 'og:image', content: DEFAULT_OG_IMAGE },
+            { property: 'og:image:width', content: '1200' },
+            { property: 'og:image:height', content: '630' },
+            { property: 'og:image:type', content: 'image/jpeg' },
             { property: 'og:url', content: `https://alieeshop.com${to.path}` },
+            { property: 'og:type', content: 'website' },
             { name: 'twitter:title', content: `${pageMeta.title} | AlieeShop` },
             { name: 'twitter:description', content: pageMeta.description },
+            { name: 'twitter:image', content: DEFAULT_OG_IMAGE },
+            { name: 'twitter:card', content: 'summary_large_image' },
         ];
         if (pageMeta.keywords) {
             meta.push({ name: 'keywords', content: pageMeta.keywords });

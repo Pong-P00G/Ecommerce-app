@@ -17,6 +17,7 @@ export const useUIStore = defineStore('ui', () => {
     const saved = load()
     const expanded = ref(saved.expanded ?? true)
     const sidebarVisible = ref(saved.sidebarVisible ?? false)
+    const searchOpen = ref(false)
 
     function persist() {
         try {
@@ -29,5 +30,13 @@ export const useUIStore = defineStore('ui', () => {
     function setExpanded(v) { expanded.value = v; persist() }
     function setSidebarVisible(v) { sidebarVisible.value = v; persist() }
 
-    return { expanded, sidebarVisible, toggleExpanded, toggleSidebarVisible, setExpanded, setSidebarVisible }
+    function openSearch() { searchOpen.value = true }
+    function closeSearch() { searchOpen.value = false }
+    function toggleSearch() { searchOpen.value = !searchOpen.value }
+
+    return {
+        expanded, sidebarVisible, searchOpen,
+        toggleExpanded, toggleSidebarVisible, setExpanded, setSidebarVisible,
+        openSearch, closeSearch, toggleSearch,
+    }
 })

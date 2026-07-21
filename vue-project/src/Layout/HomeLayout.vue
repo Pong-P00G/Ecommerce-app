@@ -1,6 +1,7 @@
 <script setup>
 import Navbar from '../components/Navbar.vue'
 import Footer from '../components/Footer.vue'
+import NewsletterPopup from '../components/NewsletterPopup.vue'
 </script>
 
 <template>
@@ -12,5 +13,6 @@ import Footer from '../components/Footer.vue'
             </div>
         </main>
         <Footer />
+        <NewsletterPopup />
     </div>
 </template>

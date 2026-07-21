@@ -27,7 +27,7 @@ const { products, loading, error, categories } = storeToRefs(productStore);
 const searchQuery = ref('');
 const selectedCategory = ref(null);
 const selectedSort = ref('featured');
-const priceRange = ref([0, 1000]);
+const priceRange = ref([0, 5000]);
 const showFilters = ref(false);
 
 // Pagination
@@ -118,7 +118,7 @@ const hasActiveFilters = computed(() => {
     return searchQuery.value ||
         selectedCategory.value ||
         priceRange.value[0] > 0 ||
-        priceRange.value[1] < 1000;
+        priceRange.value[1] < 5000;
 });
 
 const visiblePages = computed(() => {
@@ -161,7 +161,7 @@ const selectCategory = (categoryName) => {
 const clearFilters = () => {
     searchQuery.value = '';
     selectedCategory.value = null;
-    priceRange.value = [0, 1000];
+    priceRange.value = [0, 5000];
     currentPage.value = 1;
 };
 
@@ -278,8 +278,8 @@ onMounted(async () => {
                                     @change="currentPage = 1"
                                     type="range"
                                     min="0"
-                                    max="1000"
-                                    step="10"
+                                    max="5000"
+                                    step="50"
                                     class="w-full accent-accent"
                                     aria-label="Minimum price"
                                 />
@@ -288,8 +288,8 @@ onMounted(async () => {
                                     @change="currentPage = 1"
                                     type="range"
                                     min="0"
-                                    max="1000"
-                                    step="10"
+                                    max="5000"
+                                    step="50"
                                     class="w-full accent-accent"
                                     aria-label="Maximum price"
                                 />
@@ -519,8 +519,8 @@ onMounted(async () => {
                     <div>
                         <h4 class="text-xs font-bold uppercase tracking-[0.2em] text-ink mb-3">Price Range</h4>
                         <div class="space-y-3">
-                            <input v-model.number="priceRange[0]" type="range" min="0" max="1000" step="10" class="w-full accent-accent" aria-label="Minimum price" />
-                            <input v-model.number="priceRange[1]" type="range" min="0" max="1000" step="10" class="w-full accent-accent" aria-label="Maximum price" />
+                            <input v-model.number="priceRange[0]" type="range" min="0" max="5000" step="50" class="w-full accent-accent" aria-label="Minimum price" />
+                            <input v-model.number="priceRange[1]" type="range" min="0" max="5000" step="50" class="w-full accent-accent" aria-label="Maximum price" />
                             <div class="flex justify-between text-sm text-neutral-600 tabular-nums">
                                 <span>{{ '$' }}{{ priceRange[0] }}</span>
                                 <span>{{ '$' }}{{ priceRange[1] }}</span>

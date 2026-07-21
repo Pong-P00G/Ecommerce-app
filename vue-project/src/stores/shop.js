@@ -4,7 +4,7 @@ import { cartAPI } from '../api/cartApi.js'
 
 export const useShopStore = defineStore('shop', () => {
     const cart = ref([]) // {id, title, price, qty, variant, image}
-    const wishlist = ref([]) // array of product id
+    const wishlist = ref([]) // array of product objects {id, name, price, image, category}
     const cartSynced = ref(false)
 
     const cartOpen = ref(false)
@@ -47,15 +47,20 @@ export const useShopStore = defineStore('shop', () => {
         persistCart()
     }
 
-    function toggleWishlist(id) {
-        const i = wishlist.value.indexOf(id)
-        if (i === -1) wishlist.value.push(id)
+    function toggleWishlist(item) {
+        const i = wishlist.value.findIndex(w => w.id === item.id)
+        if (i === -1) wishlist.value.push({ ...item })
         else wishlist.value.splice(i, 1)
         persistWishlist()
     }
 
     function inWishlist(id) {
-        return wishlist.value.includes(id)
+        return wishlist.value.some(w => w.id === id)
+    }
+
+    function clearWishlist() {
+        wishlist.value = []
+        persistWishlist()
     }
 
     // ── Persistence ────────────────────────────────────────────
@@ -118,7 +123,7 @@ export const useShopStore = defineStore('shop', () => {
         cartTotal, cartCount,
         openCart, closeCart, toggleCart,
         addToCart, removeFromCart, updateQuantity, clearCart,
-        toggleWishlist, inWishlist,
+        toggleWishlist, inWishlist, clearWishlist,
         syncCartToBackend, loadPersisted
     }
 })

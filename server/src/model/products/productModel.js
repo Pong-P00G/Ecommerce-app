@@ -232,9 +232,14 @@ export const updateProduct = async (productId, productData) => {
     const { category_id, product_name, base_price, descriptions, product_status, tags } = productData;
     const result = await db.query(
         `UPDATE products
-         SET categoriesid = $1, productname = $2, baseprice = $3, description = $4, status = $5, tags = $6
+         SET categoriesid = COALESCE($1, categoriesid),
+             productname = $2,
+             baseprice = $3,
+             description = $4,
+             status = $5,
+             tags = $6
          WHERE productsid = $7`,
-        [category_id, product_name, base_price, descriptions, product_status, tags || [], productId]
+        [category_id ?? null, product_name, base_price, descriptions, product_status, tags || [], productId]
     );
     return result.rowCount;
 };

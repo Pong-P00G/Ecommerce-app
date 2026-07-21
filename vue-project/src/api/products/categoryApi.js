@@ -9,7 +9,7 @@ export const categoryAPI = {
     },
 
     // Get category by ID
-    async getCategoryByIdasync (categoryId) {
+    async getCategoryById (categoryId) {
         const { data } = await api.get(`/products/categories/${categoryId}`);
         return data;
     },

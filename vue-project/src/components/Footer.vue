@@ -60,8 +60,8 @@ const footerLinks = {
     shop: [
         { name: 'New Arrivals', to: '/product?filter=new' },
         { name: 'Best Sellers', to: '/product?filter=bestsellers' },
-        { name: 'Sale', to: '/product?filter=sale' },
         { name: 'Gift Cards', to: '/gift-cards' },
+        { name: 'Compare Products', to: '/compare' },
     ],
     help: [
         { name: 'Track Order', to: '/track-order' },
@@ -72,8 +72,10 @@ const footerLinks = {
     company: [
         { name: 'About Us', to: '/about' },
         { name: 'Contact', to: '/contact' },
+        { name: 'Our Journal', to: '/blog' },
         { name: 'Careers', to: '/careers' },
         { name: 'Press', to: '/press' },
+        { name: 'Sitemap', to: '/sitemap' },
     ],
 };
 
@@ -264,9 +266,9 @@ const perks = [
                     </p>
 
                     <div class="flex items-center gap-6">
-                        <a href="#" class="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-paper transition-colors">Privacy</a>
-                        <a href="#" class="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-paper transition-colors">Terms</a>
-                        <a href="#" class="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-paper transition-colors">Cookies</a>
+                        <RouterLink to="/privacy" class="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-paper transition-colors">Privacy</RouterLink>
+                        <RouterLink to="/terms" class="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-paper transition-colors">Terms</RouterLink>
+                        <RouterLink to="/sitemap" class="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-paper transition-colors">Sitemap</RouterLink>
                     </div>
 
                     <button
