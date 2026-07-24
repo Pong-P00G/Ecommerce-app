@@ -6,6 +6,7 @@ import { useShopStore } from '@/stores/shop';
 import { orderAPI } from '@/api/orderApi.js';
 import { paymentAPI } from '@/api/paymentApi.js';
 import { addressAPI } from '@/api/addressApi.js';
+import { settingsAPI } from '@/api/settingsApi.js';
 import LazyImage from '../../components/LazyImage.vue';
 import { useToast } from '../../composables/useToast.js';
 import { shippingAPI } from '@/api/shippingApi.js';
@@ -13,7 +14,8 @@ import {
     CreditCard, Lock, CheckCircle, Truck, MapPin,
     Sparkles, ArrowRight, ChevronRight, Loader2,
     Plus, Trash2, Home, Phone, Mail, User,
-    AlertCircle, ShoppingBag, RefreshCw
+    AlertCircle, ShoppingBag, RefreshCw,
+    DollarSign, Info
 } from 'lucide-vue-next';
 
 const router = useRouter();
@@ -192,6 +194,19 @@ const paymentInfo = ref({
     cardName: ''
 });
 
+// ── COD Detection ───────────────────────────────────────────────
+const isCOD = computed(() => {
+    if (!selectedPayment.value || paymentMethods.value.length === 0) return false;
+    const method = paymentMethods.value.find(m => m.methodId === selectedPayment.value);
+    return method?.methodName === 'Cash on Delivery';
+});
+
+const codFee = computed(() => {
+    if (!isCOD.value || paymentMethods.value.length === 0) return 0;
+    const method = paymentMethods.value.find(m => m.methodId === selectedPayment.value);
+    return Number(method?.fee) || 0;
+});
+
 const cardBrand = computed(() => {
     const num = paymentInfo.value.cardNumber.replace(/\D/g, '');
     if (num.startsWith('4')) return 'Visa';
@@ -235,8 +250,33 @@ const promoCode = ref('');
 const promoApplied = ref(false);
 const discount = ref(0);
 
+// ── Store Settings ────────────────────────────────────────────
+const storeSettings = ref({});
+
+const taxRate = computed(() => {
+    return Number(storeSettings.value.tax_rate) || 8;
+});
+
+const taxLabel = computed(() => {
+    return storeSettings.value.order_tax_label?.replace('{rate}', String(taxRate.value)) || `Tax (${taxRate.value}%)`;
+});
+
+const loadStoreSettings = async () => {
+    try {
+        const res = await settingsAPI.getSettings();
+        if (res.success && res.data) {
+            storeSettings.value = res.data;
+        }
+    } catch (err) {
+        console.error('Failed to load store settings:', err);
+    }
+};
+
 // ── Loading state for initial data fetch ──────────────────────
 const pageLoading = ref(true);
+
+// ── Auth gate ─────────────────────────────────────────────────
+const needsAuth = computed(() => !isLoggedIn.value);
 
 // ── Processing ────────────────────────────────────────────────
 const processing = ref(false);
@@ -253,11 +293,13 @@ const shippingCost = computed(() => {
 });
 
 const tax = computed(() => {
-    return (subtotal.value + shippingCost.value - discount.value) * 0.08;
+    const rate = taxRate.value / 100;
+    return (subtotal.value + shippingCost.value - discount.value) * rate;
 });
 
 const orderTotal = computed(() => {
-    return subtotal.value + shippingCost.value + tax.value - discount.value;
+    const base = subtotal.value + shippingCost.value + tax.value - discount.value;
+    return isCOD.value ? base + codFee.value : base;
 });
 
 const firstNameValid = computed(() => shippingInfo.value.firstName.length >= 1);
@@ -277,6 +319,8 @@ const shippingValid = computed(() =>
 
 const paymentFormValid = computed(() => {
     if (selectedPayment.value === null) return false;
+    // For COD, no card details needed — just a valid shipping address
+    if (isCOD.value) return true;
     // Card-specific validation
     return paymentInfo.value.cardNumber.length >= 13 &&
            paymentInfo.value.expiry.length === 5 &&
@@ -335,11 +379,14 @@ const handleSubmit = async () => {
             await saveAddressToBackend();
         }
 
-        // Step 4: Record payment
-        processingStep.value = 'Processing payment...';
+        // Step 4: Record payment (include COD fee in amount)
+        processingStep.value = isCOD.value ? 'Placing your order...' : 'Processing payment...';
+        // Use the frontend-computed total which includes any COD fee
+        // (order.totalAmount from the backend does not include the COD surcharge)
+        const paymentAmount = orderTotal.value;
         const paymentRes = await paymentAPI.recordPayment(order.orderId, {
             method_id: selectedPayment.value,
-            amount: order.totalAmount || orderTotal.value
+            amount: paymentAmount
         });
         if (!paymentRes.success) {
             throw new Error(paymentRes.message || 'Payment failed');
@@ -385,7 +432,8 @@ watch(
 onMounted(async () => {
     await Promise.all([
         loadAddresses(),
-        loadPaymentMethods()
+        loadPaymentMethods(),
+        loadStoreSettings()
     ]);
     // Pre-fill email from user profile
     if (currentUser.value?.email) {
@@ -463,8 +511,34 @@ onMounted(async () => {
                 </div>
             </div>
 
+            <!-- Auth Gate -->
+            <div v-if="!pageLoading && hasItems && needsAuth" class="bg-paper rounded-2xl shadow-sm p-6 sm:p-8 text-center max-w-lg mx-auto">
+                <div class="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-4">
+                    <Lock class="w-7 h-7 text-accent" />
+                </div>
+                <h2 class="text-xl font-bold text-ink mb-2">Sign in to continue</h2>
+                <p class="text-sm text-neutral-500 mb-6 max-w-sm mx-auto">
+                    You'll need to be signed in to complete your purchase. Your cart items will be saved.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                    <router-link
+                        :to="{ name: 'login', query: { redirect: $route.fullPath } }"
+                        class="btn-accent shine-effect"
+                    >
+                        Sign in
+                        <ArrowRight class="w-4 h-4" />
+                    </router-link>
+                    <router-link
+                        :to="{ name: 'register', query: { redirect: $route.fullPath } }"
+                        class="btn-outline"
+                    >
+                        Create account
+                    </router-link>
+                </div>
+            </div>
+
             <!-- Main Checkout Content -->
-            <div v-if="!pageLoading && hasItems">
+            <div v-if="!pageLoading && hasItems && !needsAuth">
                 <!-- Progress Steps -->
                 <div class="mb-8">
                     <div class="flex items-center justify-between">
@@ -666,6 +740,7 @@ onMounted(async () => {
                                                 aria-label="Country"
                                             >
                                                 <option value="">Select Country</option>
+                                                <option value="CAM">Cambodia</option>
                                                 <option value="US">United States</option>
                                                 <option value="CA">Canada</option>
                                                 <option value="UK">United Kingdom</option>
@@ -801,9 +876,17 @@ onMounted(async () => {
                                                 :value="method.methodId"
                                                 class="w-4 h-4 text-ink border-neutral-300 focus:ring-neutral-400"
                                             />
-                                            <div class="ml-4 flex items-center gap-3">
-                                                <CreditCard class="w-5 h-5 text-neutral-600" />
-                                                <span class="font-medium text-ink">{{ method.methodName }}</span>
+                                            <div class="ml-4 flex-1 flex items-center gap-3">
+                                                <component :is="method.methodName === 'Cash on Delivery' ? 'DollarSign' : 'CreditCard'" class="w-5 h-5 text-neutral-600 shrink-0" />
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="font-medium text-ink">{{ method.methodName }}</span>
+                                                        <span v-if="Number(method.fee) > 0" class="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded shrink-0">
+                                                            +${{ Number(method.fee).toFixed(2) }} fee
+                                                        </span>
+                                                    </div>
+                                                    <p v-if="method.description" class="text-xs text-neutral-500 mt-0.5">{{ method.description }}</p>
+                                                </div>
                                             </div>
                                         </label>
 
@@ -815,9 +898,52 @@ onMounted(async () => {
                                     </div>
                                     </div>
 
-                                    <!-- Card Preview -->
+                                    <!-- Cash on Delivery Info Card -->
                                     <transition name="step" mode="out-in">
-                                        <div class="mb-6">
+                                        <div v-if="isCOD" class="mb-6">
+                                            <div class="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-6">
+                                                <div class="flex items-center gap-3 mb-4">
+                                                    <div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                                                        <DollarSign class="w-6 h-6 text-emerald-700" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 class="font-bold text-emerald-900 text-lg">Cash on Delivery</h3>
+                                                        <p class="text-sm text-emerald-700">Pay when you receive</p>
+                                                    </div>
+                                                </div>
+                                                <ul class="space-y-2">
+                                                    <li class="flex items-start gap-2 text-sm text-emerald-800">
+                                                        <CheckCircle class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                                                        <span>No online payment required — simply pay with cash when your order arrives at your doorstep.</span>
+                                                    </li>
+                                                    <li class="flex items-start gap-2 text-sm text-emerald-800">
+                                                        <CheckCircle class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                                                        <span>Our delivery personnel will bring a receipt and accept your payment on delivery.</span>
+                                                    </li>
+                                                    <li class="flex items-start gap-2 text-sm text-emerald-800">
+                                                        <CheckCircle class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                                                        <span>Your order will be shipped after confirmation. No upfront payment needed.</span>
+                                                    </li>
+                                                </ul>
+                                                <div v-if="codFee > 0" class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                                                    <p class="text-xs text-amber-800 flex items-center gap-1.5 font-medium">
+                                                        <Info class="w-3.5 h-3.5 shrink-0" />
+                                                        A service fee of <strong>${{ codFee.toFixed(2) }}</strong> applies for Cash on Delivery.
+                                                    </p>
+                                                </div>
+                                                <div class="mt-3 p-3 bg-white/60 rounded-xl">
+                                                    <p class="text-xs text-emerald-700 flex items-center gap-1.5">
+                                                        <Info class="w-3.5 h-3.5" />
+                                                        Please have the exact amount ready. Delivery personnel may carry limited change.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </transition>
+
+                                    <!-- Card Preview (only for non-COD) -->
+                                    <transition name="step" mode="out-in">
+                                        <div v-if="!isCOD" class="mb-6">
                                             <div class="card-preview relative bg-linear-to-br from-neutral-800 to-ink rounded-2xl p-5 sm:p-6 text-paper overflow-hidden">
                                                 <div class="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-white/5"></div>
                                                 <div class="absolute -bottom-8 -left-8 w-24 h-24 rounded-full bg-white/5"></div>
@@ -853,8 +979,8 @@ onMounted(async () => {
                                         </div>
                                     </transition>
 
-                                    <!-- Credit Card Form -->
-                                    <form @submit.prevent="handleSubmit" class="space-y-4">
+                                    <!-- Credit Card Form (only for non-COD) -->
+                                    <form v-if="!isCOD" @submit.prevent="handleSubmit" class="space-y-4">
                                         <div>
                                             <label class="block text-sm font-medium text-neutral-700 mb-2">Card Number *</label>
                                             <div class="relative">
@@ -929,6 +1055,53 @@ onMounted(async () => {
                                                 <Loader2 v-if="processing" class="w-4 h-4 animate-spin" />
                                                 <Lock v-else class="w-4 h-4" />
                                                 {{ processing ? processingStep : `Pay $${orderTotal.toFixed(2)}` }}
+                                            </button>
+                                        </div>
+                                    </form>
+
+                                    <!-- COD Order Form (no card info needed) -->
+                                    <form v-if="isCOD" @submit.prevent="handleSubmit" class="space-y-4">
+                                        <div class="p-4 bg-neutral-50 rounded-xl">
+                                            <h4 class="text-sm font-semibold text-ink mb-2">Order Summary</h4>
+                                            <div class="flex justify-between text-sm">
+                                                <span class="text-neutral-600">Items ({{ cartItems.length }})</span>
+                                                <span class="font-medium">${{ subtotal.toFixed(2) }}</span>
+                                            </div>
+                                            <div class="flex justify-between text-sm mt-1">
+                                                <span class="text-neutral-600">Shipping</span>
+                                                <span class="font-medium">{{ shippingCost === 0 ? 'Free' : `$${shippingCost.toFixed(2)}` }}</span>
+                                            </div>
+                                            <div class="flex justify-between text-sm mt-1">
+                                                <span class="text-neutral-600">Tax</span>
+                                                <span class="font-medium">${{ tax.toFixed(2) }}</span>
+                                            </div>
+                                            <div v-if="codFee > 0" class="flex justify-between text-sm mt-1 text-amber-700">
+                                                <span>COD Service Fee</span>
+                                                <span class="font-medium">+${{ codFee.toFixed(2) }}</span>
+                                            </div>
+                                            <div class="flex justify-between font-bold text-ink mt-3 pt-3 border-t border-neutral-200">
+                                                <span>Total due on delivery</span>
+                                                <span>${{ orderTotal.toFixed(2) }}</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex gap-4 mt-6">
+                                            <button
+                                                type="button"
+                                                @click="goToStep(2)"
+                                                class="flex-1 py-3 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-50 transition-colors font-medium"
+                                                :disabled="processing"
+                                            >
+                                                Back
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                :disabled="processing"
+                                                class="flex-1 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                            >
+                                                <Loader2 v-if="processing" class="w-4 h-4 animate-spin" />
+                                                <DollarSign v-else class="w-4 h-4" />
+                                                {{ processing ? processingStep : `Place Order — $${orderTotal.toFixed(2)}` }}
                                             </button>
                                         </div>
                                     </form>
@@ -1010,8 +1183,12 @@ onMounted(async () => {
                                     <span>-${{ discount.toFixed(2) }}</span>
                                 </div>
                                 <div class="flex justify-between text-sm">
-                                    <span class="text-neutral-600">Tax (8%)</span>
+                                    <span class="text-neutral-600">{{ taxLabel }}</span>
                                     <span class="font-medium text-ink">${{ tax.toFixed(2) }}</span>
+                                </div>
+                                <div v-if="codFee > 0" class="flex justify-between text-sm text-amber-700">
+                                    <span>COD Service Fee</span>
+                                    <span class="font-medium">+${{ codFee.toFixed(2) }}</span>
                                 </div>
                             </div>
 

@@ -13,19 +13,41 @@ export function useToast() {
             id,
             message,
             type: opts.type || 'info', // 'success' | 'error' | 'warning' | 'info'
-            duration: opts.duration ?? 3000
+            duration: opts.duration ?? 3000,
+            // Optional action (e.g. { label: 'Undo', handler: () => {...} })
+            action: opts.action || null,
         }
 
         state.toasts.push(toast)
 
         // Auto-remove after timeout
-        setTimeout(() => remove(id), toast.duration)
+        const timer = setTimeout(() => remove(id), toast.duration)
+
+        // Store the timer so we can clear it if the user clicks the action
+        toast._timer = timer
     }
 
-    // ✅ Remove a toast manually
+    // ✅ Remove a toast manually (and clear its auto-remove timer)
     function remove(id) {
         const index = state.toasts.findIndex(t => t.id === id)
-        if (index !== -1) state.toasts.splice(index, 1)
+        if (index !== -1) {
+            const toast = state.toasts[index]
+            if (toast._timer) clearTimeout(toast._timer)
+            state.toasts.splice(index, 1)
+        }
+    }
+
+    // ✅ Execute a toast's action handler (if any), then dismiss the toast
+    function executeAction(id) {
+        const index = state.toasts.findIndex(t => t.id === id)
+        if (index !== -1) {
+            try {
+                state.toasts[index].action?.handler?.()
+            } catch (e) {
+                console.error('Toast action failed:', e)
+            }
+        }
+        remove(id)
     }
 
     // ✅ Shortcut methods for convenience
@@ -45,5 +67,5 @@ export function useToast() {
         push(message, { ...opts, type: 'warning' })
     }
 
-    return { toasts: state.toasts, push, remove, success, error, info, warning }
+    return { toasts: state.toasts, push, remove, executeAction, success, error, info, warning }
 }

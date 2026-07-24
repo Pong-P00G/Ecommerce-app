@@ -167,9 +167,10 @@ router.get('/:id/discount/active', productController.getActiveDiscount);
 router.post('/', protect, isAdmin, validateProduct, validate, productController.createProduct);
 
 // @route   PUT /api/products/:id
-// @desc    Update complete product with images, variants, and stock
+// @desc    Update product basic fields (name, price, status, description, tags, category)
+//         Does NOT touch images, variants, or stock.
 // @access  Private/Admin
-router.put('/:id', protect, isAdmin, validateCompleteProduct, productController.updateCompleteProduct);
+router.put('/:id', protect, isAdmin, validateProduct, validate, productController.updateProduct);
 
 // @route   DELETE /api/products/:id
 // @desc    Delete product
@@ -265,6 +266,7 @@ router.get('/stock/low', protect, isAdmin, productController.getLowStockProducts
 
 // @route   GET /api/products/:id/stock/history
 // @desc    Get stock change history for a product
+// @desc    IMPORTANT: must be defined AFTER /variants/:variantId/stock to avoid route conflict
 // @access  Private/Admin
 router.get('/:id/stock/history', protect, isAdmin, productController.getStockHistory);
 

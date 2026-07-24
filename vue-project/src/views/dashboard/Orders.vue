@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { orderAPI } from '../../api/orderApi.js';
+import { paymentAPI } from '../../api/paymentApi.js';
 import { useToast } from '../../composables/useToast.js';
 import {
     ShoppingBag,
@@ -13,6 +14,8 @@ import {
     User as UserIcon,
     Mail,
     Calendar,
+    DollarSign,
+    CheckCircle,
 } from 'lucide-vue-next';
 
 const toast = useToast();
@@ -25,6 +28,7 @@ const statusFilter = ref("all");
 const showDetailModal = ref(false);
 const selectedOrder = ref(null);
 const updatingId = ref(null);
+const markingPaidId = ref(null);
 
 const statuses = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
 
@@ -119,6 +123,36 @@ const updateStatus = async (orderId, newStatus) => {
         toast.error(err.response?.data?.message || 'Failed to update status');
     } finally {
         updatingId.value = null;
+    }
+};
+
+const isCODPending = (order) =>
+    order.paymentMethod === 'Cash on Delivery' && order.paymentStatus === 'pending';
+
+const markAsPaid = async (order) => {
+    markingPaidId.value = order.orderId;
+    try {
+        const response = await paymentAPI.markPaymentAsPaid(order.orderId);
+        if (response.success) {
+            toast.success('Order #' + order.orderId + ' marked as paid');
+            // Update local state
+            const idx = orders.value.findIndex(o => o.orderId === order.orderId);
+            if (idx !== -1) {
+                orders.value[idx].paymentStatus = 'paid';
+                orders.value[idx].status = 'confirmed';
+            }
+            if (selectedOrder.value?.orderId === order.orderId) {
+                selectedOrder.value.paymentStatus = 'paid';
+                selectedOrder.value.status = 'confirmed';
+            }
+        } else {
+            toast.error(response.message || 'Failed to mark payment as paid');
+        }
+    } catch (err) {
+        console.error('Error marking payment as paid:', err);
+        toast.error(err.response?.data?.message || 'Failed to mark payment as paid');
+    } finally {
+        markingPaidId.value = null;
     }
 };
 
@@ -247,10 +281,23 @@ onMounted(fetchOrders);
                                 </td>
                                 <td class="px-6 py-4"><span class="text-sm text-neutral-600">{{ formatDate(order.createdAt) }}</span></td>
                                 <td class="px-6 py-4 text-right">
-                                    <button @click="openDetail(order)" class="btn-ghost text-xs gap-1.5">
-                                        <Eye class="w-3.5 h-3.5" />
-                                        View
-                                    </button>
+                                    <div class="flex items-center justify-end gap-2">
+                                        <button v-if="isCODPending(order)"
+                                            @click="markAsPaid(order)"
+                                            :disabled="markingPaidId === order.orderId"
+                                            class="btn-ghost text-xs gap-1.5 text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 disabled:opacity-50">
+                                            <CheckCircle v-if="markingPaidId !== order.orderId" class="w-3.5 h-3.5" />
+                                            <svg v-else class="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                            </svg>
+                                            Mark Paid
+                                        </button>
+                                        <button @click="openDetail(order)" class="btn-ghost text-xs gap-1.5">
+                                            <Eye class="w-3.5 h-3.5" />
+                                            View
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
@@ -329,6 +376,32 @@ onMounted(fetchOrders);
                         <button v-for="s in statuses" :key="s" @click="updateStatus(selectedOrder.orderId, s)" :disabled="updatingId === selectedOrder.orderId || selectedOrder.status === s" :class="['px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all', selectedOrder.status === s ? (statusStyles[s] || 'bg-neutral-100 text-neutral-700') + ' ring-2 ring-offset-1' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 hover:text-ink']">
                             {{ s }}
                         </button>
+                    </div>
+
+                    <!-- COD: Mark as Paid -->
+                    <div v-if="isCODPending(selectedOrder)" class="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                        <div class="flex items-center gap-3">
+                            <DollarSign class="w-5 h-5 text-emerald-600 shrink-0" />
+                            <div class="flex-1 min-w-0">
+                                <p class="font-bold text-sm text-emerald-800">Cash on Delivery</p>
+                                <p class="text-xs text-emerald-600 mt-0.5">This order is awaiting cash payment. Mark as paid once the customer pays on delivery.</p>
+                            </div>
+                            <button @click="markAsPaid(selectedOrder)"
+                                :disabled="markingPaidId === selectedOrder.orderId"
+                                class="shrink-0 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors">
+                                <span v-if="markingPaidId !== selectedOrder.orderId" class="flex items-center gap-1.5">
+                                    <CheckCircle class="w-3.5 h-3.5" />
+                                    Mark as Paid
+                                </span>
+                                <span v-else class="flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                    </svg>
+                                    Processing...
+                                </span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

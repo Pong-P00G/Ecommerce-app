@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -17,9 +17,9 @@ import reviewRoutes from './routes/reviewRoutes.js'
 import roleRoutes from './routes/roleRoutes.js'
 import addressRoutes from './routes/addressRoutes.js'
 import shippingRoutes from './routes/shippingRoutes.js'
-
-
-dotenv.config();
+import wishlistRoutes from './routes/wishlistRoutes.js'
+import settingsRoutes from './routes/settingsRoutes.js'
+import userNotificationRoutes from './routes/userNotificationRoutes.js'
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,6 +46,7 @@ app.use(cors({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Request logging middleware (optional)
 app.use((req, res, next) => {
@@ -67,6 +68,9 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/shipping', shippingRoutes);
+app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/notifications', userNotificationRoutes);
 
 // Serve static files from CDN
 app.use('/cdn', express.static(path.join(__dirname, '../../cdn')));
@@ -199,6 +203,33 @@ if (!isTestEnv) {
         console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3001'}`);
         console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
         console.log('='.repeat(50));
+
+        // ── Scheduled Low-Stock Checker ────────────────────────────────
+        // Runs every 30 minutes to automatically check for products
+        // below their reorder level and create admin notifications.
+        const STOCK_CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
+
+        // Also run once shortly after startup (60s delay to let DB warm up)
+        setTimeout(async () => {
+            try {
+                const { checkAndNotifyLowStock } = await import('./services/dashboardService.js');
+                console.log('🔄 Running initial low-stock check...');
+                await checkAndNotifyLowStock();
+            } catch (err) {
+                console.error('❌ Initial low-stock check failed:', err.message);
+            }
+        }, 60_000);
+
+        setInterval(async () => {
+            try {
+                const { checkAndNotifyLowStock } = await import('./services/dashboardService.js');
+                await checkAndNotifyLowStock();
+            } catch (err) {
+                console.error('❌ Scheduled low-stock check failed:', err.message);
+            }
+        }, STOCK_CHECK_INTERVAL_MS);
+
+        console.log(`⏰ Low-stock checker scheduled every ${STOCK_CHECK_INTERVAL_MS / 60000} minutes`);
     });
 }
 

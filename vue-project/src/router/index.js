@@ -4,10 +4,6 @@ import { headInstance } from "../head.js";
 import DashboardLayout from "../Layout/DashboardLayout.vue";
 import HomeLayout from "../Layout/HomeLayout.vue";
 
-// ── Page meta descriptors for SEO ────────────────────────────────────────────
-
-// Default OG image used as a fallback on every page.
-// Replace with your actual brand image URL when ready.
 const DEFAULT_OG_IMAGE = 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=1200&h=630&fit=crop&crop=center';
 
 const PAGE_META = {
@@ -47,6 +43,10 @@ const PAGE_META = {
     userprofile: {
         title: 'My Profile',
         description: 'Manage your AlieeShop account profile and settings.',
+    },
+    userNotifications: {
+        title: 'Notifications',
+        description: 'View and manage your personal notifications.',
     },
     wishlist: {
         title: 'My Wishlist',
@@ -120,6 +120,18 @@ const PAGE_META = {
     notFound: {
         title: 'Page Not Found',
         description: 'The page you are looking for does not exist. Return to AlieeShop homepage.',
+    },
+    config: {
+        title: 'Store Config',
+        description: 'Manage your store configuration, payment options, and service fees.',
+    },
+    managePaymentMethods: {
+        title: 'Payment Methods',
+        description: 'Manage payment methods, fees, and availability.',
+    },
+    manageCategories: {
+        title: 'Categories',
+        description: 'Organise products by creating and managing categories.',
     },
 };
 
@@ -267,6 +279,12 @@ const routes = [
                 meta: { page: 'sitemap' },
                 component: () => import("../views/pages/Sitemap.vue"),
             },
+            {
+                name: 'userNotifications',
+                path: '/notifications',
+                meta: { page: 'userNotifications', requiresAuth: true },
+                component: () => import('../views/UserNotifications.vue'),
+            },
         ]
     },
     {
@@ -340,6 +358,24 @@ const routes = [
                 meta: { page: 'manageReviews' },
                 component: () => import('../views/dashboard/ManageReviews.vue')
             },
+            {
+                path: '/admin/payment-methods',
+                name: 'managePaymentMethods',
+                meta: { page: 'managePaymentMethods' },
+                component: () => import('../views/dashboard/ManagePaymentMethods.vue')
+            },
+            {
+                path: '/admin/manage-categories',
+                name: 'manageCategories',
+                meta: { page: 'manageCategories' },
+                component: () => import('../views/dashboard/ManageCategories.vue')
+            },
+            {
+                path: '/admin/config',
+                name: 'config',
+                meta: { page: 'config' },
+                component: () => import('../views/dashboard/Config.vue')
+            },
         ],
     },
     {
@@ -378,6 +414,15 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
     const authStore = useAuthStore();
+
+    // ── Defer auth checks until init completes ──────────────────────────
+    // The auth loading overlay in App.vue hides all content until init
+    // finishes. If we redirect here before init, the redirect persists
+    // even after the user is authenticated, leaving them on the login page.
+    if (!authStore.initialized) {
+        return next();
+    }
+
     const isAuthenticated = authStore.isAuthenticated;
     const user = authStore.user;
     const isAdmin = Number(user?.role_id) === 1;

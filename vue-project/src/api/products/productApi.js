@@ -115,8 +115,10 @@ export const productAPI = {
 
     // Delete product (Admin only)
 
-    async deleteProduct(productId) {
-        const { data } = await api.delete(`/products/${productId}`);
+    async deleteProduct(productId, force = false) {
+        const { data } = await api.delete(`/products/${productId}`, {
+            params: { force: force ? 'true' : 'false' }
+        });
         return data;
     },
 

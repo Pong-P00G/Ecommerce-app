@@ -14,6 +14,7 @@ export const getActivePaymentMethods = async () => {
         `SELECT methodsid   AS "methodId",
                 methodname  AS "methodName",
                 description,
+                fee,
                 isactive    AS "isActive"
          FROM paymentmethod
          WHERE isactive = TRUE
@@ -26,17 +27,68 @@ export const getActivePaymentMethods = async () => {
  * Insert a new payment method. The DB enforces uniqueness on methodName,
  * so a duplicate surfaces as a unique-violation error from the driver.
  */
-export const createPaymentMethod = async ({ method_name, description, is_active }) => {
+export const createPaymentMethod = async ({ method_name, description, is_active, fee }) => {
     const { rows } = await db.query(
-        `INSERT INTO paymentmethod (methodname, description, isactive)
-         VALUES ($1, $2, $3)
+        `INSERT INTO paymentmethod (methodname, description, isactive, fee)
+         VALUES ($1, $2, $3, $4)
          RETURNING methodsid   AS "methodId",
                    methodname  AS "methodName",
                    description,
+                   fee,
                    isactive    AS "isActive"`,
-        [method_name, description ?? null, is_active ?? true]
+        [method_name, description ?? null, is_active ?? true, fee ?? 0.00]
     );
     return rows[0];
+};
+
+/**
+ * Return ALL payment methods (active + inactive), ordered by name.
+ * Used by admin management UI.
+ */
+export const getAllPaymentMethods = async () => {
+    const { rows } = await db.query(
+        `SELECT methodsid   AS "methodId",
+                methodname  AS "methodName",
+                description,
+                fee,
+                isactive    AS "isActive"
+         FROM paymentmethod
+         ORDER BY methodname ASC`
+    );
+    return rows;
+};
+
+/**
+ * Update a payment method's fields.
+ * Only non-null fields are updated.
+ */
+export const updatePaymentMethod = async (methodId, { method_name, description, fee, is_active }) => {
+    const { rows } = await db.query(
+        `UPDATE paymentmethod
+         SET methodname  = COALESCE($1, methodname),
+             description = COALESCE($2, description),
+             fee         = COALESCE($3, fee),
+             isactive    = COALESCE($4, isactive)
+         WHERE methodsid = $5
+         RETURNING methodsid   AS "methodId",
+                   methodname  AS "methodName",
+                   description,
+                   fee,
+                   isactive    AS "isActive"`,
+        [method_name ?? null, description ?? null, fee != null ? Number(fee) : null, is_active ?? null, methodId]
+    );
+    return rows[0] || null;
+};
+
+/**
+ * Delete a payment method. Throws if referenced by payments.
+ */
+export const deletePaymentMethod = async (methodId) => {
+    const { rowCount } = await db.query(
+        `DELETE FROM paymentmethod WHERE methodsid = $1`,
+        [methodId]
+    );
+    return rowCount > 0;
 };
 
 /**
@@ -48,6 +100,7 @@ export const getPaymentMethodById = async (methodId) => {
         `SELECT methodsid   AS "methodId",
                 methodname  AS "methodName",
                 description,
+                fee,
                 isactive    AS "isActive"
          FROM paymentmethod
          WHERE methodsid = $1`,
@@ -101,6 +154,33 @@ export const getPaymentsByOrderId = async (orderId) => {
         [orderId]
     );
     return rows;
+};
+
+/**
+ * Update a payment's status and paidAt timestamp.
+ * Only transitions to 'paid' will set paidAt = NOW();
+ * other statuses leave paidAt as NULL.
+ */
+export const updatePaymentStatus = async (paymentId, status, client = null) => {
+    const runner = exec(client);
+    const paidAtExpr = status === 'paid' ? 'NOW()' : 'NULL';
+    const { rows } = await runner.query(
+        `UPDATE payments
+         SET status  = $1,
+             paidat  = ${paidAtExpr},
+             updatedat = NOW()
+         WHERE paymentsid = $2
+         RETURNING paymentsid  AS "paymentId",
+                   ordersid    AS "orderId",
+                   methodsid   AS "methodId",
+                   discountsid AS "discountId",
+                   amount,
+                   status,
+                   paidat      AS "paidAt",
+                   updatedat   AS "updatedAt"`,
+        [status, paymentId]
+    );
+    return rows[0] || null;
 };
 
 /**

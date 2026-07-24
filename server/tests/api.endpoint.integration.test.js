@@ -152,48 +152,79 @@ afterAll(async () => {
             [TEST_MARKER]
         );
 
-        // 5. Variant option values
+        // 5. Order items (RESTRICT on variants — must delete before variants)
+        await db.query(
+            `DELETE FROM orderitems WHERE productsid IN (
+                SELECT productsid FROM products WHERE $1 = ANY(tags)
+            )`,
+            [TEST_MARKER]
+        );
+
+        // 6. Payments referencing test orders
+        await db.query(
+            `DELETE FROM payments WHERE ordersid IN (
+                SELECT ordersid FROM orders WHERE usersid IN (
+                    SELECT usersid FROM users WHERE email LIKE 'endpoint_test_%'
+                )
+            )`
+        );
+
+        // 7. Orders referencing test users
+        await db.query(
+            `DELETE FROM orders WHERE usersid IN (
+                SELECT usersid FROM users WHERE email LIKE 'endpoint_test_%'
+            )`
+        );
+
+        // 8. Variant option values
         await db.query(
             'DELETE FROM variantoptionvalue WHERE variantid IN (SELECT variantid FROM variants WHERE productsid IN (SELECT productsid FROM products WHERE $1 = ANY(tags)))',
             [TEST_MARKER]
         );
 
-        // 6. Variants (RESTRICT on products)
+        // 9. Variants (RESTRICT on products)
         await db.query(
             'DELETE FROM variants WHERE productsid IN (SELECT productsid FROM products WHERE $1 = ANY(tags))',
             [TEST_MARKER]
         );
 
-        // 7. Product images
+        // 10. Product images
         await db.query(
             'DELETE FROM productimages WHERE productsid IN (SELECT productsid FROM products WHERE $1 = ANY(tags))',
             [TEST_MARKER]
         );
 
-        // 8. Reviews
+        // 11. Reviews
         await db.query(
             'DELETE FROM reviews WHERE productsid IN (SELECT productsid FROM products WHERE $1 = ANY(tags))',
             [TEST_MARKER]
         );
 
-        // 9. Products
+        // 12. Wishlist items (RESTRICT / CASCADE on products — be explicit)
+        await db.query(
+            'DELETE FROM wishlist_items WHERE productsid IN (SELECT productsid FROM products WHERE $1 = ANY(tags))',
+            [TEST_MARKER]
+        );
+
+        // 13. Products
         await db.query(
             'DELETE FROM products WHERE $1 = ANY(tags)',
             [TEST_MARKER]
         );
 
-        // 10. Test category
+        // 12. Test category
         if (testCategoryId) {
             await db.query('DELETE FROM category WHERE categoriesid = $1', [testCategoryId]);
         }
 
-        // 11. Test users created during register/cart tests
+        // 13. Test users created during register/cart tests
         await db.query(
             "DELETE FROM users WHERE email LIKE 'endpoint_test_%'",
             []
         );
     } finally {
-        await db.end();
+        // Don't close the pool — other test files may still need it
+        // Pool is managed by the test runner's lifecycle
     }
 });
 
@@ -722,6 +753,45 @@ describe('DELETE /api/products/:id — admin', () => {
     it('returns 404 for non-existent product', async () => {
         const res = await adminReq.delete(`/api/products/${NONEXISTENT_ID}`);
         expect(res.status).toBe(404);
+    });
+
+    it('force-deletes a complete product with variants via ?force=true', async () => {
+        // Create a complete product with variants (which normally can't be deleted)
+        const createRes = await adminReq
+            .post('/api/products/complete')
+            .send({
+                category_id: testCategoryId,
+                product_name: `Force Delete Test ${TEST_MARKER}`,
+                base_price: 29.99,
+                descriptions: 'Will be force-deleted',
+                product_status: 'active',
+                tags: [TEST_MARKER, 'force_delete_test'],
+                images: [
+                    { image_url: 'https://example.com/force-delete.jpg', is_main: true, sort_order: 0 },
+                ],
+                variants: [
+                    {
+                        sku: `FORCE-EP-${Date.now()}`,
+                        options: [{ attribute_name: 'Color', value: 'Blue' }],
+                        stock_quantity: 50,
+                        reorder_level: 5,
+                    },
+                ],
+            });
+
+        if (!createRes.body.success || !createRes.body.data?.product_id) return;
+
+        const pid = createRes.body.data.product_id;
+
+        // Force delete with ?force=true
+        const res = await adminReq.delete(`/api/products/${pid}?force=true`);
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+        expect(res.body.message).toContain('force-deleted');
+
+        // Verify it's actually gone
+        const getRes = await request(app).get(`/api/products/${pid}`);
+        expect(getRes.status).toBe(404);
     });
 });
 
@@ -1404,8 +1474,27 @@ describe('GET /api/payments/methods', () => {
 
 describe('POST /api/payments/orders/:id/pay — record payment', () => {
     let orderId;
+    let paymentMethodId;
 
     beforeAll(async () => {
+        // Create a non-COD payment method for testing (COD has a fee that changes expected total)
+        const pmRes = await adminReq.post('/api/payments/methods').send({
+            method_name: `Bank Transfer ${Date.now()}`,
+            description: 'Test payment method',
+            is_active: true,
+        });
+        if (pmRes.body.success) {
+            paymentMethodId = pmRes.body.data.methodId;
+        } else {
+            // Fallback: try creating via direct SQL
+            const { rows } = await db.query(
+                `INSERT INTO paymentmethod (methodname, description, isactive, fee)
+                 VALUES ($1, $2, TRUE, 0.00) RETURNING methodsid`,
+                [`Test Card ${Date.now()}`, 'Test payment method via SQL']
+            );
+            paymentMethodId = rows[0].methodsid;
+        }
+
         if (regularUserToken && testProductId && testVariantId) {
             await userReq.post('/api/cart/items').send({
                 product_id: testProductId,
@@ -1420,13 +1509,17 @@ describe('POST /api/payments/orders/:id/pay — record payment', () => {
     });
 
     it('records a payment for an order', async () => {
-        if (!regularUserToken || !orderId) return;
+        if (!regularUserToken || !orderId || !paymentMethodId) return;
+
+        // Use the order's actual total amount (may have changed due to previous tests)
+        const orderDetail = await userReq.get(`/api/orders/${orderId}`);
+        const orderTotal = orderDetail.body?.data?.totalAmount || 49.99;
 
         const res = await userReq
-            .post(`/api/payments/orders/${orderId}/pay`)
+            .post(`/api/orders/${orderId}/pay`)
             .send({
-                method_id: 1,
-                amount: 49.99,
+                method_id: paymentMethodId,
+                amount: Number(orderTotal),
             });
 
         expect(res.status).toBe(201);
@@ -1437,7 +1530,7 @@ describe('POST /api/payments/orders/:id/pay — record payment', () => {
     it('returns 401 without token', async () => {
         if (!orderId) return;
 
-        const res = await request(app).post(`/api/payments/orders/${orderId}/pay`).send({ method_id: 1, amount: 10 });
+        const res = await request(app).post(`/api/orders/${orderId}/pay`).send({ method_id: 1, amount: 10 });
         expect(res.status).toBe(401);
     });
 });

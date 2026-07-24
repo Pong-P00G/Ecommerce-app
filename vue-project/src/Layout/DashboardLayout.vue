@@ -19,6 +19,7 @@ import {
     Menu,
     X,
     ShoppingBag,
+    DollarSign,
     Tag,
     Activity,
     MessageSquare,
@@ -201,6 +202,9 @@ const navigation = [
     { label: 'Notifications', to: '/admin/notifications', icon: Bell, permission: 'dashboard.view' },
     { label: 'Activity', to: '/admin/activity-log', icon: Activity, permission: 'dashboard.view' },
     { label: 'Reviews', to: '/admin/reviews', icon: MessageSquare, permission: 'reviews.moderate' },
+    { label: 'Categories', to: '/admin/manage-categories', icon: Tag, permission: 'dashboard.view' },
+    { label: 'Payments', to: '/admin/payment-methods', icon: DollarSign, permission: 'dashboard.view' },
+    { label: 'Config', to: '/admin/config', icon: Settings, permission: 'dashboard.view' },
     { label: 'Reports', to: '/admin/report', icon: FileText, permission: 'reports.view' }
 ];
 
@@ -546,12 +550,19 @@ const toggleSidebar = () => {
                                     </div>
                                 </div>
                                 <div class="p-3 border-t border-neutral-200 flex gap-2">
+                                    <router-link
+                                        to="/admin/notifications"
+                                        @click.stop="showNotifications = false"
+                                        class="flex-1 text-center text-sm font-bold text-accent hover:text-accent-600 transition-colors"
+                                    >
+                                        View all notifications
+                                    </router-link>
                                     <button
                                         v-if="unreadCount > 0"
                                         @click.stop="handleMarkAllRead"
-                                        class="flex-1 text-center text-sm font-bold text-accent hover:text-accent-600 transition-colors"
+                                        class="flex-1 text-center text-sm font-bold text-neutral-600 hover:text-ink transition-colors"
                                     >
-                                        Mark all as read
+                                        Mark all read
                                     </button>
                                 </div>
                             </div>

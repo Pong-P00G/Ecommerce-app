@@ -217,8 +217,8 @@ export const updateProduct = async (productId, productData) => {
     return await getProductById(productId);
 };
 
-export const deleteProduct = async (productId) => {
-    const deleted = await ProductModel.deleteProduct(productId);
+export const deleteProduct = async (productId, forceDelete = false) => {
+    const deleted = await ProductModel.deleteProduct(productId, forceDelete);
     if (!deleted) {
         throw new Error('Product not found');
     }
@@ -639,7 +639,16 @@ export const updateStock = async (variantId, quantity, reorderLevel = 5, userId 
     }
 
     await ProductModel.updateStock(variantId, quantity, reorderLevel, userId, reason);
-    return await getStock(variantId);
+    const updated = await getStock(variantId);
+
+    // Fire-and-forget: notify if below threshold (but not out of stock)
+    if (updated.quantity > 0 && updated.quantity < (updated.reorder_level || 5)) {
+        const variant = await ProductModel.getVariantById(variantId).catch(() => null);
+        const productName = variant ? `Product #${variant.product_id}` : `Item #${variantId}`;
+        notifyLowStock(productName, updated.quantity, variant?.sku || null).catch(() => {});
+    }
+
+    return updated;
 };
 
 export const incrementStock = async (variantId, amount, userId = null, reason = null) => {
@@ -695,7 +704,16 @@ export const updateProductStock = async (productId, quantity, reorderLevel = 5, 
     }
 
     await ProductModel.updateProductStock(productId, quantity, reorderLevel, userId, reason);
-    return await getProductStock(productId);
+    const updated = await getProductStock(productId);
+
+    // Fire-and-forget: check if still low and notify
+    if (updated.quantity > 0 && updated.quantity < (updated.reorder_level || 5)) {
+        const product = await ProductModel.getProductById(productId).catch(() => null);
+        const productName = product?.product_name || `Product #${productId}`;
+        notifyLowStock(productName, updated.quantity, null).catch(() => {});
+    }
+
+    return updated;
 };
 
 export const getLowStockProducts = async () => {

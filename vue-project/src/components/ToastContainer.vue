@@ -1,6 +1,6 @@
 <script setup>
 import { useToast } from '@/composables/useToast.js';
-const { toasts, remove } = useToast();
+const { toasts, remove, executeAction } = useToast();
 
 function toastType(type) {
     switch (type) {
@@ -33,6 +33,19 @@ function toastType(type) {
                     </svg>
                 </span>
                 <p class="flex-1 text-sm font-medium text-ink leading-snug">{{ t.message }}</p>
+
+                <!-- Action button (e.g. Undo) -->
+                <button
+                    v-if="t.action"
+                    @click="executeAction(t.id)"
+                    class="shrink-0 px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-200"
+                    :class="t.type === 'error'
+                        ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                        : 'bg-accent/10 text-accent hover:bg-accent/20'"
+                >
+                    {{ t.action.label }}
+                </button>
+
                 <button
                     @click="remove(t.id)"
                     class="shrink-0 w-6 h-6 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-400 hover:text-ink transition-colors"

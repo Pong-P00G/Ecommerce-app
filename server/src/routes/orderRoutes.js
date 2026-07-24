@@ -11,5 +11,6 @@ router.get('/:id', protect, orderController.getOrder);
 router.post('/:id/pay', protect, paymentController.recordPayment);
 router.get('/:id/payments', protect, paymentController.getOrderPayments);
 router.put('/:id/status', protect, isAdmin, orderController.updateStatus);
+router.put('/:id/mark-paid', protect, isAdmin, paymentController.markPaymentAsPaid);
 
 export default router;

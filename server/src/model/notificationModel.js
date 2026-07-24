@@ -13,6 +13,7 @@ export const ensureTable = async () => {
     await db.query(`
         CREATE TABLE IF NOT EXISTS notifications (
             notificationid INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            userid         INTEGER REFERENCES users(usersid) ON DELETE CASCADE,
             type           VARCHAR(50)  NOT NULL DEFAULT 'system'
                             CHECK (type IN ('order', 'user', 'stock', 'system', 'product')),
             message        TEXT         NOT NULL,
@@ -21,7 +22,14 @@ export const ensureTable = async () => {
             createdat      TIMESTAMPTZ  DEFAULT NOW()
         );
         CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(isread, createdat DESC);
+        CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(userid, createdat DESC);
     `);
+
+    // Add userid column if upgrading from existing table
+    try {
+        await db.query(`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS userid INTEGER REFERENCES users(usersid) ON DELETE CASCADE`);
+        await db.query(`CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(userid, createdat DESC)`);
+    } catch { /* column already exists */ }
 };
 
 export const getAllNotifications = async (page = 1, pageSize = 20, type = null) => {
@@ -77,14 +85,98 @@ export const getUnreadCount = async () => {
     return row ? row.count : 0;
 };
 
-export const createNotification = async ({ type, message, link = null }) => {
+export const createNotification = async ({ type, message, link = null, userId = null }) => {
     const { rows } = await db.query(
-        `INSERT INTO notifications (type, message, link)
-         VALUES ($1, $2, $3)
+        `INSERT INTO notifications (type, message, link, userid)
+         VALUES ($1, $2, $3, $4)
          RETURNING notificationid AS id, type, message, link, isread AS is_read, createdat AS created_at`,
-        [type, message, link]
+        [type, message, link, userId]
     );
     return rows[0];
+};
+
+// ── USER-SPECIFIC NOTIFICATIONS ──────────────────────────────────────────────
+
+export const getUserNotifications = async (userId, page = 1, pageSize = 20, type = null) => {
+    const offset = (page - 1) * pageSize;
+    const params = [userId];
+    let whereClause = 'WHERE n.userid = $1';
+
+    if (type && type !== 'all') {
+        params.push(type);
+        whereClause += ` AND n.type = $${params.length}`;
+    }
+
+    const countResult = await db.query(
+        `SELECT COUNT(*)::int AS total FROM notifications n ${whereClause}`,
+        params
+    );
+    const totalItems = countResult.rows[0]?.total || 0;
+    const totalPages = Math.ceil(totalItems / pageSize);
+
+    params.push(pageSize);
+    const limitP = `$${params.length}`;
+    params.push(offset);
+    const offsetP = `$${params.length}`;
+
+    const { rows } = await db.query(
+        `SELECT ${NOTIFICATION_COLS}
+         FROM notifications n
+         ${whereClause}
+         ORDER BY n.createdat DESC
+         LIMIT ${limitP} OFFSET ${offsetP}`,
+        params
+    );
+
+    return { page, pageSize, totalItems, totalPages, items: rows };
+};
+
+export const getUserRecentNotifications = async (userId, limit = 10) => {
+    const { rows } = await db.query(
+        `SELECT ${NOTIFICATION_COLS}
+         FROM notifications n
+         WHERE n.userid = $1
+         ORDER BY n.isread ASC, n.createdat DESC
+         LIMIT $2`,
+        [userId, limit]
+    );
+    return rows;
+};
+
+export const getUserUnreadCount = async (userId) => {
+    const { rows: [row] } = await db.query(
+        `SELECT COUNT(*)::int AS count FROM notifications WHERE userid = $1 AND isread = FALSE`,
+        [userId]
+    );
+    return row ? row.count : 0;
+};
+
+export const getUserNotificationById = async (userId, notificationId) => {
+    const { rows } = await db.query(
+        `SELECT ${NOTIFICATION_COLS}
+         FROM notifications n
+         WHERE n.userid = $1 AND n.notificationid = $2`,
+        [userId, notificationId]
+    );
+    return rows[0] || null;
+};
+
+export const markUserNotificationAsRead = async (userId, notificationId) => {
+    const { rows } = await db.query(
+        `UPDATE notifications SET isread = TRUE
+         WHERE notificationid = $1 AND userid = $2
+         RETURNING notificationid AS id`,
+        [notificationId, userId]
+    );
+    return rows[0] ? true : false;
+};
+
+export const markAllUserNotificationsAsRead = async (userId) => {
+    await db.query(
+        `UPDATE notifications SET isread = TRUE WHERE userid = $1 AND isread = FALSE`,
+        [userId]
+    );
+    return true;
 };
 
 export const markAsRead = async (notificationId) => {

@@ -1,14 +1,10 @@
 import api from './api.js';
 
 export const authAPI = {
-  // Register
+  // Register — token is set as httpOnly cookie by the server
   async register(userData) {
     try {
       const { data } = await api.post('/auth/register', userData);
-      if (data.token) {
-        localStorage.setItem('auth_token', data.token);
-        localStorage.setItem('auth_user', JSON.stringify(data.user));
-      }
       return data;
     } catch (err) {
       console.error('Register API error:', err);
@@ -16,22 +12,41 @@ export const authAPI = {
     }
   },
 
-  // Login
-  async login(identifier, password) {
+  // Login — token is set as httpOnly cookie by the server
+  async login(identifier, password, rememberMe = false) {
     try {
       const { data } = await api.post('/auth/login', {
         identifier,
-        password
+        password,
+        rememberMe
       });
-      if (data.token) {
-        localStorage.setItem('auth_token', data.token);
-        localStorage.setItem('auth_user', JSON.stringify(data.user));
-      }
       return data;
     } catch (err) {
       console.error('Login API error full response:', err.response);
       console.error('Login API error message:', err.response?.data?.message || err.message);
       throw err;
+    }
+  },
+
+  // Logout — tells the server to clear the httpOnly cookie
+  async logout() {
+    try {
+      const { data } = await api.post('/auth/logout');
+      return data;
+    } catch (err) {
+      console.error('Logout API error:', err);
+      throw err;
+    }
+  },
+
+  // Get current user from server (via httpOnly cookie)
+  async getMe() {
+    try {
+      const { data } = await api.get('/auth/me');
+      return data;
+    } catch (err) {
+      // 401 means cookie is expired or missing — expected on first load if not logged in
+      return null;
     }
   },
 
@@ -57,28 +72,6 @@ export const authAPI = {
     }
   },
 
-  // Logout
-  logout() {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('auth_user');
-  },
-
-  // Get current logged-in user from storage
-  getCurrentUser() {
-    const userStr = localStorage.getItem('auth_user');
-    return userStr ? JSON.parse(userStr) : null;
-  },
-
-  // Get authentication token from storage
-  getToken() {
-    return localStorage.getItem('auth_token');
-  },
-
-  // Check if user is authenticated
-  isAuthenticated() {
-    return !!this.getToken();
-  },
-
   // Fetch current user's permissions from the server
   async getUserPermissions() {
     try {
@@ -90,19 +83,23 @@ export const authAPI = {
     }
   },
 
-  // Get stored permissions from localStorage
-  getStoredPermissions() {
-    const perms = localStorage.getItem('auth_permissions');
-    return perms ? JSON.parse(perms) : [];
-  },
-
-  // Store permissions in localStorage
+  // Store permissions in sessionStorage (not sensitive, not a token)
   storePermissions(permissions) {
-    localStorage.setItem('auth_permissions', JSON.stringify(permissions));
+    try {
+      sessionStorage.setItem('auth_permissions', JSON.stringify(permissions));
+    } catch { /* ignore */ }
   },
 
-  // Clear permissions from storage
+  getStoredPermissions() {
+    try {
+      const perms = sessionStorage.getItem('auth_permissions');
+      return perms ? JSON.parse(perms) : [];
+    } catch { return []; }
+  },
+
   clearPermissions() {
-    localStorage.removeItem('auth_permissions');
+    try {
+      sessionStorage.removeItem('auth_permissions');
+    } catch { /* ignore */ }
   }
 };

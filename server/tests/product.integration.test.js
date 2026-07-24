@@ -48,47 +48,68 @@ beforeAll(async () => {
 afterAll(async () => {
     try {
         // Must delete in FK-safe order due to ON DELETE RESTRICT constraints
-        // 1. Discounts (RESTRICT on products)
+        // 0. Order items (RESTRICT on products) — any leftovers from force-delete tests
+        await db.query(
+            'DELETE FROM orderitems WHERE productsid IN (SELECT productsid FROM products WHERE $1 = ANY(tags))',
+            [TEST_MARKER]
+        );
+        // 1. Cart items (RESTRICT on products via cartitems_productsid_fkey)
+        await db.query(
+            'DELETE FROM cartitems WHERE productsid IN (SELECT productsid FROM products WHERE $1 = ANY(tags))',
+            [TEST_MARKER]
+        );
+        // 2. Discounts (RESTRICT on products)
         await db.query(
             'DELETE FROM discounts WHERE productsid IN (SELECT productsid FROM products WHERE $1 = ANY(tags))',
             [TEST_MARKER]
         );
-        // 2. Stock logs (RESTRICT on stock)
+        // 3. Stock logs (RESTRICT on stock)
         await db.query(
             'DELETE FROM stocklog WHERE stockid IN (SELECT stockid FROM stock WHERE productsid IN (SELECT productsid FROM products WHERE $1 = ANY(tags)))',
             [TEST_MARKER]
         );
-        // 3. Stock
+        // 4. Stock
         await db.query(
             'DELETE FROM stock WHERE productsid IN (SELECT productsid FROM products WHERE $1 = ANY(tags))',
             [TEST_MARKER]
         );
-        // 4. Variant option values (CASCADE on variants)
+        // 5. Variant option values (CASCADE on variants)
         await db.query(
             'DELETE FROM variantoptionvalue WHERE variantid IN (SELECT variantid FROM variants WHERE productsid IN (SELECT productsid FROM products WHERE $1 = ANY(tags)))',
             [TEST_MARKER]
         );
-        // 5. Variants (RESTRICT on products)
+        // 6. Variants (RESTRICT on products)
         await db.query(
             'DELETE FROM variants WHERE productsid IN (SELECT productsid FROM products WHERE $1 = ANY(tags))',
             [TEST_MARKER]
         );
-        // 6. Product images (CASCADE on products — safe, delete explicitly)
+        // 7. Product images (CASCADE on products — safe, delete explicitly)
         await db.query(
             'DELETE FROM productimages WHERE productsid IN (SELECT productsid FROM products WHERE $1 = ANY(tags))',
             [TEST_MARKER]
         );
-        // 7. Finally, delete the products
+        // 8. Reviews (CASCADE on products, but be explicit for consistency)
+        await db.query(
+            'DELETE FROM reviews WHERE productsid IN (SELECT productsid FROM products WHERE $1 = ANY(tags))',
+            [TEST_MARKER]
+        );
+        // 9. Wishlist items (RESTRICT / CASCADE on products — be explicit)
+        await db.query(
+            'DELETE FROM wishlist_items WHERE productsid IN (SELECT productsid FROM products WHERE $1 = ANY(tags))',
+            [TEST_MARKER]
+        );
+        // 10. Finally, delete the products
         await db.query(
             'DELETE FROM products WHERE $1 = ANY(tags)',
             [TEST_MARKER]
         );
-        // 8. Clean up the test category
+        // 11. Clean up the test category
         if (CATEGORY_ID) {
             await db.query('DELETE FROM category WHERE categoriesid = $1', [CATEGORY_ID]);
         }
     } finally {
-        await db.end();
+        // Don't close the pool — other test files may still need it
+        // Pool is managed by the test runner's lifecycle
     }
 });
 
@@ -191,6 +212,66 @@ describe('Product CRUD — real database', () => {
     it('deleteProduct returns false for non-existent product', async () => {
         const result = await ProductModel.deleteProduct(NONEXISTENT_ID);
         expect(result).toBe(false);
+    });
+
+    it('deleteProduct with forceDelete=true removes product and preserves order items', async () => {
+        // Create a product with a variant and stock
+        const pid = await insertProduct({ product_name: `Force Delete ${TEST_MARKER} ${Date.now()}` });
+        const vid = await ProductModel.createVariant({ product_id: pid, sku: `FORCE-${Date.now()}` });
+        await ProductModel.updateStock(vid, 10, 5);
+
+        // Get a valid user ID for the order
+        const { rows: users } = await db.query(
+            'SELECT usersid FROM users LIMIT 1'
+        );
+        const userId = users[0]?.usersid || null;
+
+        // Create an order that references this product/variant
+        const orderResult = await db.query(
+            `INSERT INTO orders (usersid, totalamount, status)
+             VALUES ($1, 19.99, 'pending') RETURNING ordersid`,
+            [userId]
+        );
+        const orderId = orderResult.rows[0].ordersid;
+
+        // Add an order item referencing the product and variant
+        await db.query(
+            `INSERT INTO orderitems (ordersid, productsid, variantid, quantity, unitprice)
+             VALUES ($1, $2, $3, 1, 19.99)`,
+            [orderId, pid, vid]
+        );
+
+        // Force delete the product
+        const deleted = await ProductModel.deleteProduct(pid, true);
+        expect(deleted).toBe(true);
+
+        // Product should be gone
+        const gone = await ProductModel.getProductById(pid);
+        expect(gone).toBeNull();
+
+        // Variant should be gone
+        const variant = await ProductModel.getVariantById(vid);
+        expect(variant).toBeUndefined();
+
+        // Order item should have been deleted (force mode cleared the FK)
+        const { rows: orderItems } = await db.query(
+            'SELECT productsid, variantid, quantity FROM orderitems WHERE ordersid = $1',
+            [orderId]
+        );
+        // Since variantid is NOT NULL, force mode DELETES order items entirely
+        expect(orderItems.length).toBe(0);
+
+        // Order record itself is preserved (just the line items are removed)
+        const { rows: orders } = await db.query(
+            'SELECT ordersid, totalamount, status FROM orders WHERE ordersid = $1',
+            [orderId]
+        );
+        expect(orders.length).toBe(1);
+        expect(parseFloat(orders[0].totalamount)).toBe(19.99);
+        expect(orders[0].status).toBe('pending');
+
+        // Clean up the order
+        await db.query('DELETE FROM orders WHERE ordersid = $1', [orderId]);
     });
 
     it('productExists returns true for existing product', async () => {

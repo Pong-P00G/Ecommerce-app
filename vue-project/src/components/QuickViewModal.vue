@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { X, ShoppingCart, Heart, Star, Minus, Plus } from 'lucide-vue-next'
+import { X, ShoppingCart, Check, Heart, Star, Minus, Plus } from 'lucide-vue-next'
 import { useShopStore } from '../stores/shop.js'
 import { useToast } from '../composables/useToast.js'
 import LazyImage from './LazyImage.vue'
@@ -16,6 +16,7 @@ const shop = useShopStore()
 const toast = useToast()
 const quantity = ref(1)
 const selectedImage = ref(0)
+const addingItem = ref(false)
 
 const images = computed(() => {
     return props.product.images?.length > 0
@@ -24,6 +25,8 @@ const images = computed(() => {
 })
 
 const addToCart = () => {
+    if (addingItem.value) return
+
     shop.addToCart({
         id: props.product.id,
         title: props.product.name || props.product.product_name,
@@ -32,12 +35,20 @@ const addToCart = () => {
         image: props.product.image || props.product.thumbnail,
     })
     toast.success('"' + (props.product.name || props.product.product_name) + '" added to cart')
-    close()
+
+    // Animate button, then close modal + open drawer
+    addingItem.value = true
+    setTimeout(() => {
+        shop.openCart()
+        close()
+        addingItem.value = false
+    }, 500)
 }
 
 const close = () => {
     quantity.value = 1
     selectedImage.value = 0
+    addingItem.value = false
     emit('close')
 }
 </script>
@@ -117,9 +128,19 @@ const close = () => {
                         <!-- Actions -->
                         <div class="flex flex-col gap-2 mt-auto">
                             <button @click="addToCart"
-                                class="btn-accent w-full py-3.5 shine-effect">
-                                <ShoppingCart class="w-4 h-4" />
-                                Add to cart
+                                :disabled="addingItem"
+                                class="w-full py-3.5 text-sm font-bold rounded-full transition-all duration-300"
+                                :class="addingItem
+                                    ? 'bg-success text-white scale-[1.02] shadow-[0_8px_24px_-6px_rgb(34_197_94_/_0.45)]'
+                                    : 'btn-accent shine-effect'">
+                                <transition name="icon-swap" mode="out-in">
+                                    <Check v-if="addingItem" key="check" class="w-4 h-4" />
+                                    <ShoppingCart v-else key="cart" class="w-4 h-4" />
+                                </transition>
+                                <transition name="icon-swap" mode="out-in">
+                                    <span v-if="addingItem" key="added">Added!</span>
+                                    <span v-else key="add">Add to cart</span>
+                                </transition>
                             </button>
                             <div class="flex gap-2">
                                 <button class="flex-1 btn-outline text-sm py-3">
@@ -155,5 +176,19 @@ const close = () => {
 @keyframes modalIn {
     from { opacity: 0; transform: scale(0.95) translateY(10px); }
     to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Icon swap animation — same as ShopCart */
+.icon-swap-enter-active,
+.icon-swap-leave-active {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.icon-swap-enter-from {
+    opacity: 0;
+    transform: scale(0.6) rotate(-12deg);
+}
+.icon-swap-leave-to {
+    opacity: 0;
+    transform: scale(0.6) rotate(12deg);
 }
 </style>

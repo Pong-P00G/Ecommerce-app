@@ -2,8 +2,15 @@ import db from '../../database/dbpool.js';
 
 export const getAllCategories = async () => {
     const { rows } = await db.query(
-        `SELECT categoriesid AS category_id, categoryname AS name, parentid AS parent_id, createdat AS created_at
-         FROM category ORDER BY categoryname`
+        `SELECT c.categoriesid AS category_id,
+                c.categoryname AS name,
+                c.parentid AS parent_id,
+                c.createdat AS created_at,
+                COUNT(p.productsid)::int AS product_count
+         FROM category c
+         LEFT JOIN products p ON p.categoriesid = c.categoriesid
+         GROUP BY c.categoriesid, c.categoryname, c.parentid, c.createdat
+         ORDER BY c.categoryname`
     );
     return rows;
 };

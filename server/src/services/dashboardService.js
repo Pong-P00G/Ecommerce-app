@@ -996,15 +996,30 @@ export const getReviewStats = async () => {
 };
 
 /** Called after a new order is created */
-export const notifyNewOrder = async (orderId, username, totalAmount) => {
+export const notifyNewOrder = async (orderId, username, totalAmount, userId) => {
+    // Admin broadcast (independent try/catch so a failure doesn't block the user notification)
     try {
         await NotificationModel.createNotification({
             type: 'order',
-            message: `New order #${orderId} received — $${parseFloat(totalAmount || 0).toFixed(2)}`,
+            message: `New order #${orderId} from ${username} — $${parseFloat(totalAmount || 0).toFixed(2)}`,
             link: `/admin/orders`,
         });
     } catch (err) {
-        console.error('Failed to create order notification:', err.message);
+        console.error('Failed to create admin order notification:', err.message);
+    }
+
+    // User-specific notification
+    if (userId) {
+        try {
+            await NotificationModel.createNotification({
+                type: 'order',
+                message: `Order #${orderId} placed successfully — $${parseFloat(totalAmount || 0).toFixed(2)}`,
+                link: `/notifications`,
+                userId,
+            });
+        } catch (err) {
+            console.error('Failed to create user order notification:', err.message);
+        }
     }
 };
 
@@ -1115,15 +1130,21 @@ export const notifyOrderStatusChange = async (orderId, userId, username, email, 
         };
         const label = statusLabels[newStatus] || newStatus;
 
-        // Create notification to display in user's notification bell
+        // Admin broadcast (visible in admin dashboard)
+        await NotificationModel.createNotification({
+            type: 'order',
+            message: `Order #${orderId} (${username}) status: ${label}`,
+            link: `/admin/orders`,
+        });
+
+        // User-specific notification (appears on /notifications page)
         await NotificationModel.createNotification({
             type: 'order',
             message: `Order #${orderId} status update: ${label}`,
-            link: `/userprofile?tab=orders`,
+            link: `/notifications`,
+            userId,
         });
 
-        // Also register a user-specific notification
-        // (This is a separate table concept - for now, admin notifications work as a broadcast)
         console.log(`[OrderNotification] User #${userId} (${username}, ${email}) notified: Order #${orderId} → ${label}`);
     } catch (err) {
         console.error('Failed to create order status notification:', err.message);

@@ -52,9 +52,11 @@ const filterStatus = ref('all');
 const filterStock = ref('all');
 const showDeleteModal = ref(false);
 const selectedProduct = ref(null);
+const forceDelete = ref(false);
 const bulkActionLoading = ref(false);
 const showBulkStatusModal = ref(false);
 const bulkNewStatus = ref('active');
+const bulkForceDelete = ref(false);
 
 // Sorting
 const sortField = ref('created_at');
@@ -476,6 +478,7 @@ const showBulkDeleteModal = ref(false);
 
 const executeBulkDelete = async () => {
     if (selectedIds.value.size === 0) return;
+    bulkForceDelete.value = false;
     showBulkDeleteModal.value = true;
 };
 
@@ -483,10 +486,29 @@ const confirmBulkDelete = async () => {
     bulkActionLoading.value = true;
     try {
         const ids = Array.from(selectedIds.value);
-        await Promise.all(ids.map(id => productAPI.deleteProduct(id)));
-        toast.success(`${ids.length} product(s) deleted`);
+        const force = bulkForceDelete.value;
+        const results = await Promise.allSettled(
+            ids.map(id => productAPI.deleteProduct(id, force))
+        );
+        const succeeded = results.filter(r => r.status === 'fulfilled').length;
+        const failedReasons = results
+            .filter(r => r.status === 'rejected')
+            .map(r => r.reason?.response?.data?.message || r.reason?.message);
+        const failed = failedReasons.length;
+        if (failed > 0) {
+            const hasFkSuggestion = results.some(
+                r => r.status === 'rejected' && r.reason?.response?.data?.suggestForceDelete
+            );
+            const hint = hasFkSuggestion && !force
+                ? ' — enable "Force delete" to remove order-linked products'
+                : '';
+            toast.warning(`${succeeded} deleted, ${failed} failed${hint}`);
+        } else {
+            toast.success(`${ids.length} product(s) deleted`);
+        }
         showBulkDeleteModal.value = false;
         selectedIds.value = new Set();
+        bulkForceDelete.value = false;
         await fetchProducts();
     } catch (err) {
         console.error('Bulk delete error:', err);
@@ -557,25 +579,33 @@ const viewProduct = (product) => {
 // ── Delete Modal ─────────────────────────────────────────────────────────────
 const openDeleteModal = (product) => {
     selectedProduct.value = product;
+    forceDelete.value = false;
     showDeleteModal.value = true;
 };
 
 const closeDeleteModal = () => {
     showDeleteModal.value = false;
     selectedProduct.value = null;
+    forceDelete.value = false;
 };
 
 const confirmDelete = async () => {
     try {
         deleting.value = true;
-        await productAPI.deleteProduct(selectedProduct.value.product_id);
+        await productAPI.deleteProduct(selectedProduct.value.product_id, forceDelete.value);
         toast.success(`"${selectedProduct.value.product_name}" deleted`);
         closeDeleteModal();
         selectedIds.value.delete(selectedProduct.value.product_id);
+        forceDelete.value = false;
         await fetchProducts();
     } catch (err) {
         console.error('Error deleting product:', err);
-        toast.error(err.response?.data?.message || 'Failed to delete product');
+        const msg = err.response?.data?.message || 'Failed to delete product';
+        if (err.response?.data?.suggestForceDelete) {
+            toast.warning(`${msg} — enable "Force delete" to remove it.`);
+        } else {
+            toast.error(msg);
+        }
     } finally {
         deleting.value = false;
     }
@@ -910,7 +940,7 @@ const pageSizeOptions = [10, 25, 50, 100];
 
 // ── Lifecycle ────────────────────────────────────────────────────────────────
 onMounted(() => {
-    // fetchProducts();
+    fetchProducts();
     fetchCategories();
 });
 </script>
@@ -1804,18 +1834,31 @@ onMounted(() => {
                     <AlertTriangle class="w-7 h-7 text-danger" />
                 </div>
                 <h3 class="text-lg font-bold text-ink mb-2">Delete Product</h3>
-                <p class="text-sm text-neutral-600 mb-6">
+                <p class="text-sm text-neutral-600 mb-2">
                     Are you sure you want to delete
                     <strong class="text-ink">{{ selectedProduct?.product_name }}</strong>?
                     This action cannot be undone.
                 </p>
+                <!-- Force Delete Checkbox -->
+                <label class="inline-flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors hover:bg-warning/5 mb-4"
+                       :class="{ 'bg-warning/10 border border-warning/30': forceDelete }">
+                    <input
+                        v-model="forceDelete"
+                        type="checkbox"
+                        class="w-4 h-4 rounded border-neutral-300 text-warning focus:ring-warning/30"
+                    />
+                    <span class="text-xs font-semibold text-neutral-600">
+                        Force delete
+                        <span class="text-warning font-bold">(removes from orders &amp; wishlists)</span>
+                    </span>
+                </label>
                 <div class="flex gap-3">
                     <button @click="closeDeleteModal" class="btn-outline flex-1" :disabled="deleting">
                         Cancel
                     </button>
                     <button @click="confirmDelete" :disabled="deleting" class="btn-danger flex-1 gap-2">
                         <Loader2 v-if="deleting" class="w-4 h-4 animate-spin" />
-                        {{ deleting ? 'Deleting...' : 'Delete' }}
+                        {{ deleting ? 'Deleting...' : (forceDelete ? 'Force Delete' : 'Delete') }}
                     </button>
                 </div>
             </div>
@@ -1836,7 +1879,20 @@ onMounted(() => {
                     Are you sure you want to delete <strong class="text-ink">{{ selectedIds.size }}</strong> product(s)?
                     This action cannot be undone.
                 </p>
-                <div class="flex gap-3 mt-6">
+                <!-- Force Delete Checkbox -->
+                <label class="inline-flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors hover:bg-warning/5"
+                       :class="{ 'bg-warning/10 border border-warning/30': bulkForceDelete }">
+                    <input
+                        v-model="bulkForceDelete"
+                        type="checkbox"
+                        class="w-4 h-4 rounded border-neutral-300 text-warning focus:ring-warning/30"
+                    />
+                    <span class="text-xs font-semibold text-neutral-600">
+                        Force delete
+                        <span class="text-warning font-bold">(removes from orders &amp; wishlists)</span>
+                    </span>
+                </label>
+                <div class="flex gap-3 mt-4">
                     <button
                         @click="showBulkDeleteModal = false"
                         class="btn-outline flex-1"
@@ -1850,7 +1906,7 @@ onMounted(() => {
                         class="btn-danger flex-1 gap-2"
                     >
                         <Loader2 v-if="bulkActionLoading" class="w-4 h-4 animate-spin" />
-                        {{ bulkActionLoading ? 'Deleting...' : 'Delete' }}
+                        {{ bulkActionLoading ? 'Deleting...' : (bulkForceDelete ? 'Force Delete' : 'Delete') }}
                     </button>
                 </div>
             </div>

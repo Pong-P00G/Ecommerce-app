@@ -35,26 +35,35 @@ export const getCart = async (userId) => {
  * Increments quantity when the (product, variant) tuple is already in the cart.
  */
 export const addItem = async (userId, { product_id, variant_id, quantity }) => {
-    if (!Number.isInteger(quantity) || quantity <= 0) {
+    // Coerce and validate quantity
+    const qty = Number.isInteger(quantity) ? quantity : parseInt(quantity, 10);
+    if (!Number.isInteger(qty) || qty <= 0) {
         const err = new Error('Quantity must be a positive integer');
         err.status = 400;
         throw err;
     }
 
-    if (!Number.isInteger(product_id)) {
+    // Coerce and validate product_id
+    const pid = Number.isInteger(product_id) ? product_id : parseInt(product_id, 10);
+    if (!Number.isInteger(pid)) {
         const err = new Error('product_id is required');
         err.status = 400;
         throw err;
     }
 
-    if (!(await productExists(product_id))) {
+    if (!(await productExists(pid))) {
         const err = new Error('Product not found');
         err.status = 404;
         throw err;
     }
 
+    // Coerce variant_id (can be null)
+    const vid = variant_id != null
+        ? (Number.isInteger(variant_id) ? variant_id : parseInt(variant_id, 10))
+        : null;
+
     const cart = await CartModel.getOrCreateCart(userId);
-    return await CartModel.addCartItem(cart.cartId, product_id, variant_id ?? null, quantity);
+    return await CartModel.addCartItem(cart.cartId, pid, vid, qty);
 };
 
 /**

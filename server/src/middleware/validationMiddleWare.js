@@ -56,13 +56,19 @@ export const validateLogin = (req, res, next) => {
             .messages({
                 'any.required': 'Password is required',
                 'string.empty': 'Password cannot be empty'
+            }),
+        rememberMe: Joi.boolean().optional().default(false)
+            .messages({
+                'boolean.base': 'rememberMe must be a boolean value'
             })
     });
     
-    const { error } = schema.validate(req.body);
+    const { error, value } = schema.validate(req.body);
     if (error) {
         return res.status(400).json({ message: error.details[0].message });
     }
+    // Preserve the validated body (includes rememberMe default)
+    req.body = value;
     next();
 };
 

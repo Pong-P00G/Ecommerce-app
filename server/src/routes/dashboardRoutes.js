@@ -93,13 +93,13 @@ router.put('/notifications/read-all', protect, isAdmin, dashboardController.mark
 
 // @route   GET /api/dashboard/notification-preferences
 // @desc    Get the current user's notification preferences
-// @access  Private/Admin
-router.get('/notification-preferences', protect, isAdmin, dashboardController.getNotificationPreferences);
+// @access  Private (any authenticated user)
+router.get('/notification-preferences', protect, dashboardController.getNotificationPreferences);
 
 // @route   PUT /api/dashboard/notification-preferences
 // @desc    Update the current user's notification preferences
-// @access  Private/Admin
-router.put('/notification-preferences', protect, isAdmin, dashboardController.updateNotificationPreferences);
+// @access  Private (any authenticated user)
+router.put('/notification-preferences', protect, dashboardController.updateNotificationPreferences);
 
 // ── PUSH SUBSCRIPTION ROUTES ────────────────────────────────────────────────
 

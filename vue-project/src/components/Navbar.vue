@@ -41,18 +41,21 @@ const notifLoading = ref(false);
 const cartCount = computed(() => shop.cartCount || 0);
 
 const fetchNotifications = async () => {
-    // Fetch notifications - works for admin users; non-admins get empty state
     if (!isAuthenticated.value) return;
     try {
         const { default: api } = await import('../api/api.js');
-        const { data } = await api.get('/dashboard/notifications?limit=5');
+        const isAdmin = Number(authStore.user?.role_id) <= 2;
+        const endpoint = isAdmin
+            ? '/dashboard/notifications?limit=5'
+            : '/notifications/recent?limit=5';
+        const { data } = await api.get(endpoint);
         if (data.success) {
             notifications.value = data.data?.notifications || [];
             unreadCount.value = data.data?.unreadCount || 0;
         }
     } catch (err) {
-        // Notifications unavailable for this user role - show empty state
-        if (err.response?.status !== 403) {
+        // Notifications unavailable - show empty state
+        if (err.response?.status !== 403 && err.response?.status !== 401) {
             console.debug('Notifications unavailable');
         }
     }
@@ -143,7 +146,6 @@ const openSearch = () => {
 const Navlinks = ref([
     { to: '/', label: 'Home', icon: Home, ariaLabel: 'Home' },
     { to: '/product', label: 'Product', icon: Package, ariaLabel: 'Browse Product' },
-    { to: '/blog', label: 'Journal', icon: Sparkles, ariaLabel: 'Blog' },
     { to: '/contact', label: 'Contact', icon: Phone, ariaLabel: 'Contact' },
     { to: '/about', label: 'About', icon: Info, ariaLabel: 'About' },
 ]);
@@ -238,9 +240,6 @@ watch(route, () => {
 
                 <!-- Desktop Actions -->
                 <div class="hidden lg:flex items-center gap-2">
-                    <!-- Theme Toggle -->
-                    <ThemeToggle />
-
                     <button
                         @click="openSearch"
                         class="w-10 h-10 rounded-full hover:bg-neutral-100 transition-all duration-300 text-ink flex items-center justify-center"
@@ -266,7 +265,7 @@ watch(route, () => {
                         </button>
 
                         <!-- Notification Dropdown -->
-                        <transition name="dropdown-fade">
+                        <transition enter-active-class="transition-opacity duration-150 ease-out" enter-from-class="opacity-0" leave-active-class="transition-opacity duration-100 ease-in" leave-to-class="opacity-0">
                             <div
                                 v-if="showNotifications"
                                 class="absolute right-0 top-full mt-2 w-80 bg-paper border border-neutral-200 rounded-2xl shadow-xl overflow-hidden z-50"
@@ -292,8 +291,8 @@ watch(route, () => {
                                     </div>
                                 </div>
                                 <div class="px-4 py-2 border-t border-neutral-100 text-center">
-                                    <router-link to="/userprofile?tab=orders" @click="showNotifications = false" class="text-xs text-accent font-medium hover:underline">
-                                        View all notifications
+                                    <router-link to="/notifications" @click="showNotifications = false" class="text-xs text-accent font-medium hover:underline">
+                                        View all
                                     </router-link>
                                 </div>
                             </div>
@@ -317,6 +316,7 @@ watch(route, () => {
                         <span
                             v-if="cartCount > 0"
                             class="absolute -top-0.5 -right-0.5 min-w-5 h-5 px-1 bg-accent text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-paper"
+                            :class="{ 'animate-cart-bounce': shop.cartBouncing }"
                         >
                             {{ cartCount }}
                         </span>
@@ -337,7 +337,7 @@ watch(route, () => {
                                 <div class="w-6 h-6 rounded-full bg-accent flex items-center justify-center text-xs font-bold text-white">
                                     {{ initials }}
                                 </div>
-                                <span class="max-w-[100px] truncate">{{ user.username || user.email || 'User' }}</span>
+                                <span class="max-w-25 truncate">{{ user.username || user.email || 'User' }}</span>
                                 <ChevronDown class="w-3.5 h-3.5 transition-transform duration-200" :class="{ 'rotate-180': isDropdownOpen }" />
                             </button>
 
@@ -415,7 +415,7 @@ watch(route, () => {
         </div>
 
         <!-- Mobile Menu -->
-        <transition name="mobile-menu">
+        <transition enter-active-class="transition-opacity duration-300 ease-out" enter-from-class="opacity-0" leave-active-class="transition-opacity duration-200 ease-in" leave-to-class="opacity-0">
             <div
                 v-if="isMenuOpen"
                 id="mobile-menu"
@@ -526,6 +526,7 @@ watch(route, () => {
                                 <span
                                     v-if="cartCount > 0"
                                     class="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 bg-accent text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-paper"
+                                    :class="{ 'animate-cart-bounce': shop.cartBouncing }"
                                 >{{ cartCount }}</span>
                             </RouterLink>
                         </div>
@@ -599,51 +600,18 @@ header {
     backdrop-filter: blur(12px);
 }
 
-/* Dropdown fade animation */
-.dropdown-fade-enter-active {
-    transition: all 0.15s ease-out;
+/* Cart badge bounce animation */
+@keyframes cart-bounce {
+    0%   { transform: scale(1); }
+    15%  { transform: scale(1.35); }
+    30%  { transform: scale(0.9); }
+    45%  { transform: scale(1.15); }
+    60%  { transform: scale(0.95); }
+    80%  { transform: scale(1.05); }
+    100% { transform: scale(1); }
 }
-.dropdown-fade-leave-active {
-    transition: all 0.1s ease-in;
-}
-.dropdown-fade-enter-from {
-    opacity: 0;
-    transform: translateY(-4px);
-}
-.dropdown-fade-leave-to {
-    opacity: 0;
-    transform: translateY(-4px);
-}
-
-/* Mobile menu — sidebar slides in from right */
-.mobile-menu-enter-active {
-    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.mobile-menu-leave-active {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.mobile-menu-enter-from {
-    opacity: 0;
-}
-.mobile-menu-leave-to {
-    opacity: 0;
-}
-
-/* Mobile sidebar panel — slide from right with delay */
-.mobile-menu-enter-active > div:last-child {
-    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.mobile-menu-leave-active > div:last-child {
-    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.mobile-menu-enter-from > div:last-child {
-    transform: translateX(100%);
-}
-.mobile-menu-leave-to > div:last-child {
-    transform: translateX(100%);
-}
-.mobile-menu-enter-to > div:last-child,
-.mobile-menu-leave-from > div:last-child {
-    transform: translateX(0);
+:deep(.animate-cart-bounce),
+.animate-cart-bounce {
+    animation: cart-bounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 </style>

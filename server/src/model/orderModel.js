@@ -78,6 +78,8 @@ export const getOrdersByUserId = async (userId) => {
 
 /**
  * Admin: list every order with the owning user's username/email.
+ * Also includes the latest payment method name and payment status
+ * so the admin UI can show COD-specific actions (e.g. "Mark as Paid").
  * Uses a direct join (instead of view_orders) so the module works even
  * before the payments table from Phase 6 is created.
  */
@@ -91,11 +93,21 @@ export const getAllOrders = async () => {
                 o.totalamount AS "totalAmount",
                 o.createdat   AS "createdAt",
                 o.updatedat   AS "updatedAt",
-                COUNT(oi.orderitemid) AS "itemCount"
+                COUNT(oi.orderitemid) AS "itemCount",
+                latest_payment.status      AS "paymentStatus",
+                latest_payment.methodname  AS "paymentMethod"
          FROM orders o
          JOIN users u ON o.usersid = u.usersid
          LEFT JOIN orderitems oi ON o.ordersid = oi.ordersid
-         GROUP BY o.ordersid, u.username, u.email
+         LEFT JOIN LATERAL (
+             SELECT p.status, pm.methodname
+             FROM payments p
+             JOIN paymentmethod pm ON p.methodsid = pm.methodsid
+             WHERE p.ordersid = o.ordersid
+             ORDER BY p.paymentsid DESC
+             LIMIT 1
+         ) latest_payment ON TRUE
+         GROUP BY o.ordersid, u.username, u.email, latest_payment.status, latest_payment.methodname
          ORDER BY o.createdat DESC`
     );
     return rows;

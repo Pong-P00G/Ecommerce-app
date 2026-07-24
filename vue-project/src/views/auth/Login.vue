@@ -48,15 +48,11 @@ const handleLogin = async () => {
   try {
     const result = await authStore.login({
       identifier: identifier.value.trim(),
-      password: password.value
+      password: password.value,
+      rememberMe: rememberMe.value
     });
 
     if (result.success) {
-      // Optionally handle remember me
-      if (rememberMe.value) {
-        localStorage.setItem('rememberMe', 'true');
-      }
-
       // Redirect based on role_id (1 = superadmin, 2 = admin, 3 = user/customer)
       if (authStore.user?.role_id === 1) {
         router.push('/admin/dashboard');

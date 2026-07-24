@@ -32,6 +32,15 @@ const VARIANT_QUERY = `
         MAX(CASE WHEN va.attributename = 'Color'   THEN vav.value END) AS variant_color,
         MAX(CASE WHEN va.attributename = 'Size'    THEN vav.value END) AS variant_size,
         MAX(CASE WHEN va.attributename = 'Storage' THEN vav.value END) AS variant_storage,
+        COALESCE(
+            JSON_AGG(
+                JSON_BUILD_OBJECT(
+                    'attribute_name', va.attributename,
+                    'value', vav.value
+                )
+            ) FILTER (WHERE va.attributename IS NOT NULL AND vav.value IS NOT NULL),
+            '[]'::JSON
+        ) AS options,
         v.price       AS variant_price,
         COALESCE(s.quantity, 0)   AS quantity,
         COALESCE(s.minstock,  5)  AS reorder_level
@@ -244,17 +253,23 @@ export const updateProduct = async (productId, productData) => {
     return result.rowCount;
 };
 
-export const deleteProduct = async (productId) => {
+export const deleteProduct = async (productId, forceDelete = false) => {
     // Cascade-delete associated data in FK-safe order, then delete the product.
     // Uses a transaction so a failure mid-way rolls everything back.
+    //
+    // When forceDelete is true, order items are deleted first (before variants)
+    // to clear both the productsid and variantid FK references, since variantid
+    // has a NOT NULL constraint and cannot be set to NULL.
     const client = await db.connect();
     try {
         await client.query('BEGIN');
 
+        // ── Phase 1: clean FK-safe children (no dependencies on each other) ──
+
         // 1. Discounts (FK → products)
         await client.query('DELETE FROM discounts WHERE productsid = $1', [productId]);
 
-        // 2. Stock log entries (FK → stock → products) — delete via stock IDs
+        // 2. Stock log entries (FK → stock → products)
         await client.query(
             `DELETE FROM stocklog WHERE stockid IN (
                 SELECT stockid FROM stock WHERE productsid = $1
@@ -264,6 +279,17 @@ export const deleteProduct = async (productId) => {
 
         // 3. Stock records (FK → products, FK → variants)
         await client.query('DELETE FROM stock WHERE productsid = $1', [productId]);
+
+        // ── Phase 2: order items & variants ──
+        // Order items have FK constraints on BOTH productsid AND variantid.
+        // variantid is NOT NULL, so in force mode we must DELETE order items
+        // before variants. In normal mode the order doesn't matter since no
+        // order items reference test products.
+
+        if (forceDelete) {
+            // Force mode: delete order items first to clear both FK references
+            await client.query('DELETE FROM orderitems WHERE productsid = $1', [productId]);
+        }
 
         // 4. Variant option values (FK → variants → products)
         await client.query(
@@ -276,6 +302,15 @@ export const deleteProduct = async (productId) => {
         // 5. Variants (FK → products)
         await client.query('DELETE FROM variants WHERE productsid = $1', [productId]);
 
+        if (!forceDelete) {
+            // Normal mode: try to delete order items (must come after variants
+            // since this is the same order as before; it only works when no
+            // order items exist for this product).
+            await client.query('DELETE FROM orderitems WHERE productsid = $1', [productId]);
+        }
+
+        // ── Phase 3: remaining FK-safe children ──
+
         // 6. Product images (FK → products)
         await client.query('DELETE FROM productimages WHERE productsid = $1', [productId]);
 
@@ -285,8 +320,8 @@ export const deleteProduct = async (productId) => {
         // 8. Cart items (FK → products)
         await client.query('DELETE FROM cartitems WHERE productsid = $1', [productId]);
 
-        // 9. Order items (FK → products)
-        await client.query('DELETE FROM orderitems WHERE productsid = $1', [productId]);
+        // 9. Wishlist items (FK → products, ON DELETE CASCADE)
+        await client.query('DELETE FROM wishlist_items WHERE productsid = $1', [productId]);
 
         // 10. Finally, the product itself
         const result = await client.query('DELETE FROM products WHERE productsid = $1', [productId]);
@@ -632,9 +667,19 @@ export const decrementStock = async (variantId, amount, userId = null, reason = 
 
 export const getLowStockProducts = async () => {
     const { rows } = await db.query(
-        `SELECT stockid AS stock_id, productname AS product_name, sku, quantity,
-                minstock AS reorder_level, shortage
-         FROM view_stock_low`
+        `SELECT
+             COALESCE(s.stockid, 0)          AS stock_id,
+             v.product_name,
+             v.sku,
+             v.quantity,
+             v.minstock                      AS reorder_level,
+             v.shortage
+         FROM view_stock_low v
+         LEFT JOIN stock s ON (
+             (s.variantid IS NOT NULL AND s.variantid = v.variant_id)
+             OR
+             (s.variantid IS NULL AND s.productsid = v.product_id)
+         )`
     );
     return rows;
 };

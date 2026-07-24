@@ -15,7 +15,7 @@ const ALLOWED_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cance
  * insufficient so the caller can ROLLBACK.
  */
 const decrementStockForItem = async (client, item) => {
-    const { productsid: productId, variantid: variantId, quantity } = item;
+    const { productId, variantId, quantity } = item;
 
     let result;
     if (variantId != null) {
@@ -30,7 +30,7 @@ const decrementStockForItem = async (client, item) => {
         result = await client.query(
             `UPDATE stock
              SET quantity = quantity - $1, updatedat = NOW()
-             WHERE productsid = $1 AND variantid IS NULL AND quantity >= $1
+             WHERE productsid = $2 AND variantid IS NULL AND quantity >= $1
              RETURNING stockid`,
             [quantity, productId]
         );
@@ -133,8 +133,8 @@ export const createOrderFromCart = async (userId) => {
         // Return the order via the model (which uses the pool, outside the tx).
         const result = await OrderModel.getOrderById(orderId);
 
-        // Fire-and-forget: create a notification for admins
-        notifyNewOrder(orderId, result.username, result.totalAmount).catch(() => {});
+        // Fire-and-forget: notify admins and customer about the new order
+        notifyNewOrder(orderId, result.username, result.totalAmount, result.userId).catch(() => {});
 
         return result;
     } catch (error) {

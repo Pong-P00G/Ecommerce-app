@@ -302,12 +302,46 @@ const regenerateVariants = () => {
     }
 
     const combinations = cartesianProduct(validValueArrays);
-    // Merge with existing variant data (SKU, price, stock)
+
+    // ── Preserve existing variant data via matching ────────────────────────
+    // Exact match by full key (e.g. "Color:Orange|Storage:1TB")
     const existingMap = {};
     generatedVariants.value.forEach(gv => {
         const key = gv.options.map(o => `${o.attribute_name}:${o.value}`).sort().join('|');
         existingMap[key] = gv;
     });
+
+    // Subset index: for each individual option key, list all variants that have it
+    // Used for partial matching when a new attribute is added mid-editing
+    const byOptionKey = {};
+    generatedVariants.value.forEach(gv => {
+        gv.options.forEach(o => {
+            const singleKey = `${o.attribute_name}:${o.value}`;
+            if (!byOptionKey[singleKey]) byOptionKey[singleKey] = [];
+            byOptionKey[singleKey].push(gv);
+        });
+    });
+
+    // Find the best-matching existing variant — one whose options are all
+    // present in `newOptions`. Prefers the variant with the most matches.
+    const findBestMatch = (newOptions) => {
+        const newKeySet = new Set(newOptions.map(o => `${o.attribute_name}:${o.value}`));
+        const candidates = new Set();
+        newOptions.forEach(o => {
+            const k = `${o.attribute_name}:${o.value}`;
+            (byOptionKey[k] || []).forEach(v => candidates.add(v));
+        });
+        let best = null;
+        let bestScore = 0;
+        for (const cand of candidates) {
+            const candKeys = cand.options.map(o => `${o.attribute_name}:${o.value}`);
+            if (candKeys.every(ck => newKeySet.has(ck)) && candKeys.length > bestScore) {
+                best = cand;
+                bestScore = candKeys.length;
+            }
+        }
+        return best;
+    };
 
     generatedVariants.value = combinations.map(combo => {
         const options = combo.map((val, i) => ({
@@ -315,7 +349,10 @@ const regenerateVariants = () => {
             value: val,
         }));
         const key = options.map(o => `${o.attribute_name}:${o.value}`).sort().join('|');
-        const existing = existingMap[key];
+        // 1. Try exact match (full key)
+        let existing = existingMap[key];
+        // 2. Fallback: partial subset match (new attribute added)
+        if (!existing) existing = findBestMatch(options);
         return {
             options,
             sku: existing?.sku || '',
@@ -471,16 +508,48 @@ const loadProductForEdit = async (productId) => {
 
         // Variants: map backend format to generated variant format
         if (product.variants && product.variants.length > 0) {
-            generatedVariants.value = product.variants.map(v => ({
-                options: [
-                    ...(v.variant_color   ? [{ attribute_name: 'Color',   value: v.variant_color   }] : []),
-                    ...(v.variant_size    ? [{ attribute_name: 'Size',    value: v.variant_size    }] : []),
-                    ...(v.variant_storage ? [{ attribute_name: 'Storage', value: v.variant_storage }] : []),
-                ],
-                sku: v.sku || '',
-                variant_price: v.variant_price || '',
-                stock_quantity: v.quantity || 0,
-            }));
+            generatedVariants.value = product.variants.map(v => {
+                // Prefer the dynamic `options` JSON array (includes ALL attributes)
+                let options = [];
+                if (Array.isArray(v.options) && v.options.length > 0) {
+                    options = v.options.filter(o => o.attribute_name && o.value);
+                }
+                // Fall back to legacy pivoted columns for backward compat
+                if (options.length === 0) {
+                    if (v.variant_color)   options.push({ attribute_name: 'Color',   value: v.variant_color });
+                    if (v.variant_size)    options.push({ attribute_name: 'Size',    value: v.variant_size });
+                    if (v.variant_storage) options.push({ attribute_name: 'Storage', value: v.variant_storage });
+                }
+                return {
+                    options,
+                    sku: v.sku || '',
+                    variant_price: v.variant_price || '',
+                    stock_quantity: v.quantity || 0,
+                };
+            });
+
+            // Rebuild attribute definitions from loaded variants
+            const attrMap = new Map();
+            generatedVariants.value.forEach(v => {
+                v.options.forEach(o => {
+                    if (!attrMap.has(o.attribute_name)) {
+                        attrMap.set(o.attribute_name, new Set());
+                    }
+                    attrMap.get(o.attribute_name).add(o.value);
+                });
+            });
+            if (attrMap.size > 0) {
+                attributeDefinitions.value = Array.from(attrMap.entries()).map(([name, values]) => {
+                    attrIdCounter++;
+                    return {
+                        id: attrIdCounter,
+                        name,
+                        values: Array.from(values),
+                    };
+                });
+                // Re-generate variants so the UI table stays in sync with attribute definitions
+                regenerateVariants();
+            }
         }
     } catch (err) {
         console.error('Error loading product for edit:', err);
@@ -683,7 +752,7 @@ onMounted(async () => {
                                 </div>
                                 <!-- Inline New Category -->
                                 <div v-if="showNewCategory"
-                                    class="mt-3 p-3 bg-neutral-50 rounded-xl border border-neutral-200 animate-fade-in">
+                                    class="mt-2.5 p-2.5 bg-neutral-50 rounded-md border border-neutral-200 animate-fade-in">
                                     <div class="flex gap-2">
                                         <input v-model="newCategoryName" type="text"
                                             class="input-base text-sm flex-1" placeholder="Category name"
@@ -1071,7 +1140,7 @@ onMounted(async () => {
                         </div>
                     </div>
 
-                    <!-- ── Manual Variant ────────────────────────────────────── -->
+                    <!-- ── Manual Variant (Single) ──────────────────────────── -->
                     <div class="mt-4 pt-4 border-t border-neutral-200">
                         <button type="button" @click="showManualVariant = !showManualVariant"
                             class="btn-ghost text-xs gap-1.5">
@@ -1079,49 +1148,59 @@ onMounted(async () => {
                             {{ showManualVariant ? 'Cancel' : 'Add single variant manually' }}
                         </button>
 
-                        <div v-if="showManualVariant" class="mt-3 animate-fade-in space-y-3">
-                            <div class="flex items-center gap-2 mb-1">
-                                <span class="text-xs font-bold uppercase tracking-[0.15em] text-ink">Options</span>
-                                <button type="button" @click="addManualOptionField"
-                                    class="text-[10px] text-accent font-bold hover:underline">
-                                    + Add another option
-                                </button>
+                        <div v-if="showManualVariant" class="mt-3 animate-fade-in space-y-4">
+                            <!-- Option rows: name + value pairs -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-bold uppercase tracking-[0.15em] text-ink">Options</span>
+                                    <button type="button" @click="addManualOptionField"
+                                        class="text-[10px] text-accent font-bold hover:underline flex items-center gap-1">
+                                        <Plus class="w-3 h-3" /> Add option
+                                    </button>
+                                </div>
+
+                                <div v-for="(opt, oIdx) in manualVariantOptions" :key="oIdx"
+                                    class="flex items-center gap-2 mb-2">
+                                    <input v-model="opt.name" type="text"
+                                        placeholder="e.g. Color, Size, Storage"
+                                        class="input-base text-sm flex-1" aria-label="Attribute name" />
+                                    <input v-model="opt.value" type="text"
+                                        placeholder="e.g. Natural Titanium, 256GB"
+                                        class="input-base text-sm flex-[2]" aria-label="Attribute value" />
+                                    <button v-if="manualVariantOptions.length > 1" type="button"
+                                        @click="removeManualOptionField(oIdx)"
+                                        class="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-neutral-200 text-neutral-400 hover:text-danger hover:border-danger transition-colors"
+                                        title="Remove option">
+                                        <X class="w-4 h-4" />
+                                    </button>
+                                </div>
                             </div>
 
-                            <div v-for="(opt, oIdx) in manualVariantOptions" :key="oIdx"
-                                :class="[
-                                    'grid grid-cols-1 gap-2',
-                                    oIdx === 0 ? 'sm:grid-cols-5' : 'sm:grid-cols-3'
-                                ]">
-                                <input v-model="opt.name" type="text"
-                                    placeholder="e.g. Color, Size, Storage"
-                                    class="input-base text-sm" aria-label="Attribute name" />
-                                <input v-model="opt.value" type="text"
-                                    placeholder="e.g. Natural Titanium, 256GB"
-                                    class="input-base text-sm" aria-label="Attribute value" />
-                                <button v-if="manualVariantOptions.length > 1" type="button"
-                                    @click="removeManualOptionField(oIdx)"
-                                    class="text-xs text-danger font-semibold hover:underline text-left sm:hidden">
-                                    Remove
-                                </button>
-                                <button v-if="manualVariantOptions.length > 1" type="button"
-                                    @click="removeManualOptionField(oIdx)"
-                                    class="hidden sm:flex items-center justify-center w-9 h-9 rounded-lg border border-neutral-200 text-neutral-400 hover:text-danger hover:border-danger transition-colors shrink-0"
-                                    title="Remove this option">
-                                    <X class="w-4 h-4" />
-                                </button>
-                                <input v-if="oIdx === 0" v-model="manualVariantPrice" type="number" step="0.01"
-                                    placeholder="Price (e.g. 999.00)"
-                                    class="input-base text-sm" aria-label="Variant price" />
-                                <input v-if="oIdx === 0" v-model.number="manualVariantStock" type="number" min="0"
-                                    placeholder="Stock"
-                                    class="input-base text-sm" aria-label="Variant stock" />
-                                <button v-if="oIdx === 0" type="button" @click="addManualVariant"
-                                    class="btn-primary text-sm py-2.5">
-                                    <Plus class="w-4 h-4" />
-                                    Add
-                                </button>
+                            <!-- Price & Stock fields -->
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-ink mb-1">
+                                        Price <span class="text-neutral-400 font-normal">(optional)</span>
+                                    </label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm font-medium">$</span>
+                                        <input v-model="manualVariantPrice" type="number" step="0.01"
+                                            class="input-base pl-7 text-sm" placeholder="0.00" aria-label="Variant price" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-ink mb-1">Stock quantity</label>
+                                    <input v-model.number="manualVariantStock" type="number" min="0"
+                                        class="input-base text-sm" placeholder="0" aria-label="Variant stock" />
+                                </div>
                             </div>
+
+                            <!-- Add button -->
+                            <button type="button" @click="addManualVariant"
+                                class="btn-accent text-sm w-full py-2.5 flex items-center justify-center gap-1.5">
+                                <Plus class="w-4 h-4" />
+                                Add variant to list
+                            </button>
                         </div>
                     </div>
                 </div>

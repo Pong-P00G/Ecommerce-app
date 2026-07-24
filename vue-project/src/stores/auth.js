@@ -1,17 +1,18 @@
 import { defineStore } from 'pinia';
 import { authAPI } from '../api/authApi.js';
+import { useShopStore } from './shop.js';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
-    token: null,
     permissions: [],
     error: null,
-    loading: false
+    loading: false,
+    initialized: false
   }),
 
   getters: {
-    isAuthenticated: (state) => !!state.token,
+    isAuthenticated: (state) => !!state.user,
     currentUser: (state) => state.user,
     hasError: (state) => !!state.error,
 
@@ -44,16 +45,27 @@ export const useAuthStore = defineStore('auth', {
 
   actions: {
     async init() {
-      const token = authAPI.getToken();
-      const user = authAPI.getCurrentUser();
+      try {
+        // Verify session via httpOnly cookie — calls /auth/me
+        const result = await authAPI.getMe();
+        if (result && result.success && result.user) {
+          this.user = result.user;
 
-      if (token && user) {
-        this.token = token;
-        this.user = user;
-        // Fetch permissions from server
-        const permissions = await authAPI.getUserPermissions();
-        this.permissions = permissions;
-        authAPI.storePermissions(permissions);
+          // Fetch permissions
+          const permissions = await authAPI.getUserPermissions();
+          this.permissions = permissions;
+          authAPI.storePermissions(permissions);
+
+          // Merge wishlist
+          const shop = useShopStore();
+          await shop.mergeAndSyncWishlistOnLogin();
+        }
+      } catch {
+        // API methods (getMe, getUserPermissions) already handle errors gracefully
+        // and return null/[] — but this catch ensures resilience if that ever changes,
+        // preventing errors from escaping init() and breaking the initialized flag.
+      } finally {
+        this.initialized = true;
       }
     },
 
@@ -64,16 +76,20 @@ export const useAuthStore = defineStore('auth', {
       try {
         const response = await authAPI.login(
           credentials.identifier,
-          credentials.password
+          credentials.password,
+          credentials.rememberMe ?? false
         );
 
-        this.token = response.token;
         this.user = response.user;
 
         // Fetch permissions for the user's role
         const permissions = await authAPI.getUserPermissions();
         this.permissions = permissions;
         authAPI.storePermissions(permissions);
+
+        // Merge wishlist: combine local (anonymous) items with server items
+        const shop = useShopStore();
+        await shop.mergeAndSyncWishlistOnLogin();
 
         return { success: true, user: response.user };
       } catch (err) {
@@ -92,13 +108,16 @@ export const useAuthStore = defineStore('auth', {
       try {
         const response = await authAPI.register(userData);
 
-        this.token = response.token;
         this.user = response.user;
 
         // Customer role (3) - fetch limited permissions
         const permissions = await authAPI.getUserPermissions();
         this.permissions = permissions;
         authAPI.storePermissions(permissions);
+
+        // Merge wishlist: combine local (anonymous) items with server items
+        const shop = useShopStore();
+        await shop.mergeAndSyncWishlistOnLogin();
 
         return { success: true, user: response.user };
       } catch (err) {
@@ -109,10 +128,13 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    logout() {
-      authAPI.logout();
+    async logout() {
+      try {
+        await authAPI.logout();
+      } catch (err) {
+        console.error('Logout error:', err);
+      }
       authAPI.clearPermissions();
-      this.token = null;
       this.user = null;
       this.permissions = [];
       this.error = null;

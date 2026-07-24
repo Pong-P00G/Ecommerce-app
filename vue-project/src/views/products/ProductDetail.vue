@@ -3,12 +3,14 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter, RouterLink } from 'vue-router';
 import { useProductStore } from '../../stores/product.js';
 import { useAuthStore } from '../../stores/auth.js';
+import { useShopStore } from '../../stores/shop.js';
 import { storeToRefs } from 'pinia';
 import { useHead } from '@unhead/vue';
 import LazyImage from '../../components/LazyImage.vue';
 import {
     Heart,
     Share2,
+    ShoppingCart,
     Plus,
     Minus,
     Check,
@@ -32,6 +34,7 @@ import { useToast } from '../../composables/useToast.js';
 
 const route = useRoute();
 const router = useRouter();
+const shop = useShopStore();
 const productStore = useProductStore();
 const authStore = useAuthStore();
 
@@ -42,6 +45,7 @@ const selectedVariant = ref(null);
 const quantity = ref(1);
 const showImageModal = ref(false);
 const relatedProducts = ref([]);
+const addingItem = ref(false);
 
 const isAdmin = computed(() => authStore.user?.role_id === 1);
 
@@ -158,16 +162,48 @@ const decrementQuantity = () => {
 };
 
 const addToCart = () => {
-    alert(`Added ${quantity.value} item(s) to cart!`);
+    if (addingItem.value) return;
+
+    shop.addToCart({
+        id: product.value.product_id,
+        title: product.value.product_name,
+        price: currentPrice.value,
+        qty: quantity.value,
+        image: currentImage.value,
+        variant: selectedVariant.value || null,
+    });
+    toast.success(`Added ${quantity.value} item(s) to cart!`);
+
+    addingItem.value = true;
+    setTimeout(() => {
+        shop.openCart();
+        addingItem.value = false;
+    }, 500);
 };
 
 const buyNow = () => {
-    addToCart();
+    if (addingItem.value) return;
+    shop.addToCart({
+        id: product.value.product_id,
+        title: product.value.product_name,
+        price: currentPrice.value,
+        qty: quantity.value,
+        image: currentImage.value,
+        variant: selectedVariant.value || null,
+    });
+    toast.success(`Added ${quantity.value} item(s) to cart!`);
     router.push('/checkout');
 };
 
 const addToWishlist = () => {
-    alert('Added to wishlist!');
+    shop.toggleWishlist({
+        id: product.value.product_id,
+        name: product.value.product_name,
+        price: currentPrice.value,
+        image: currentImage.value,
+        category: product.value.category_name,
+    });
+    toast.success(shop.inWishlist(product.value.product_id) ? 'Added to wishlist!' : 'Removed from wishlist!');
 };
 
 const showShareMenu = ref(false);
@@ -541,7 +577,7 @@ onMounted(async () => {
                                 ]"
                             >
                                 <span class="block text-xs opacity-80">
-                                    {{ [variant.variant_storage, variant.variant_size, variant.variant_color].filter(Boolean).join(' / ') || `Option ${variant.variant_id}` }}
+                                    {{ variant.options?.map(o => o.value).filter(Boolean).join(' / ') || [variant.variant_storage, variant.variant_size, variant.variant_color].filter(Boolean).join(' / ') || `Option ${variant.variant_id}` }}
                                 </span>
                                 <span class="block text-sm font-bold mt-0.5" :class="selectedVariant?.variant_id === variant.variant_id ? 'text-paper' : 'text-ink'">
                                     {{ variant.variant_price ? '$' + parseFloat(variant.variant_price).toFixed(2) : 'See price' }}
@@ -585,10 +621,20 @@ onMounted(async () => {
                     <div class="flex flex-col sm:flex-row gap-3 pt-2">
                         <button
                             @click="addToCart"
-                            :disabled="!stockStatus.available"
-                            class="btn-primary flex-1 py-4 disabled:opacity-40 disabled:hover:translate-y-0"
+                            :disabled="!stockStatus.available || addingItem"
+                            class="flex-1 py-4 text-sm font-bold rounded-full transition-all duration-300"
+                            :class="addingItem
+                                ? 'bg-success text-white scale-[1.02] shadow-[0_8px_24px_-6px_rgb(34_197_94_/_0.45)]'
+                                : 'btn-primary disabled:opacity-40 disabled:hover:translate-y-0'"
                         >
-                            Add to cart
+                            <transition name="icon-swap" mode="out-in">
+                                <Check v-if="addingItem" key="check" class="w-4 h-4" />
+                                <ShoppingCart v-else key="cart" class="w-4 h-4" />
+                            </transition>
+                            <transition name="icon-swap" mode="out-in">
+                                <span v-if="addingItem" key="added">Added!</span>
+                                <span v-else key="add">Add to cart</span>
+                            </transition>
                         </button>
                         <button
                             @click="buyNow"
@@ -894,3 +940,19 @@ onMounted(async () => {
         </div>
     </div>
 </template>
+
+<style scoped>
+/* Icon swap animation — matches ShopCart / QuickViewModal */
+.icon-swap-enter-active,
+.icon-swap-leave-active {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.icon-swap-enter-from {
+    opacity: 0;
+    transform: scale(0.6) rotate(-12deg);
+}
+.icon-swap-leave-to {
+    opacity: 0;
+    transform: scale(0.6) rotate(12deg);
+}
+</style>

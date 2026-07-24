@@ -1,6 +1,32 @@
 import * as userService from '../services/userService.js';
 import jwt from 'jsonwebtoken';
 
+// ── Cookie helpers ────────────────────────────────────────────────────────────
+
+const COOKIE_NAME = 'auth_token';
+
+const setAuthCookie = (res, token, rememberMe = false) => {
+    const maxAge = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000; // 30d or 7d
+    res.cookie(COOKIE_NAME, token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge,
+        path: '/',
+    });
+};
+
+const clearAuthCookie = (res) => {
+    res.clearCookie(COOKIE_NAME, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+    });
+};
+
+// ── Controller ────────────────────────────────────────────────────────────────
+
 // Register User
 export const registerUser = async (req, res) => {
     try {
@@ -14,9 +40,12 @@ export const registerUser = async (req, res) => {
             { expiresIn: '7d' }
         );
 
+        // Set httpOnly cookie AND return token in body for backward compat
+        setAuthCookie(res, token, false);
+
         res.status(201).json({
-            user: userWithoutPassword,
             token,
+            user: userWithoutPassword,
             message: 'Registration successful'
         });
     } catch (error) {
@@ -27,7 +56,7 @@ export const registerUser = async (req, res) => {
 // Login User - supports both email and username
 export const loginUser = async (req, res) => {
     try {
-        const { identifier, password } = req.body;
+        const { identifier, password, rememberMe } = req.body;
         
         if (!identifier || !password) {
             return res.status(400).json({ 
@@ -38,23 +67,55 @@ export const loginUser = async (req, res) => {
         // Login with identifier (can be email or username)
         const user = await userService.login(identifier, password);
         
-        // Generate JWT token
+        // Generate JWT token — 30 days if rememberMe, otherwise 7 days
+        const expiresIn = rememberMe ? '30d' : '7d';
         const token = jwt.sign(
             { id: user.user_id, role_id: user.role_id },
             process.env.JWT_SECRET,
-            { expiresIn: '7d' }
+            { expiresIn }
         );
         
         // Remove password from response
         const { password_hash, ...userWithoutPassword } = user;
         
+        // Set httpOnly cookie AND return token in body for backward compat
+        setAuthCookie(res, token, !!rememberMe);
+        
         res.json({ 
-            token, 
+            token,
             user: userWithoutPassword,
             message: 'Login successful'
         });
     } catch (error) {
         res.status(401).json({ message: error.message });
+    }
+};
+
+// Logout - clear the auth cookie
+export const logoutUser = async (req, res) => {
+    try {
+        clearAuthCookie(res);
+        res.json({ success: true, message: 'Logged out successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Get current user from the cookie token
+export const getMe = async (req, res) => {
+    try {
+        // Token should already be decoded and user attached by protect middleware
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ success: false, message: 'Not authenticated' });
+        }
+        const user = await userService.getUserById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        const { password_hash, ...userWithoutPassword } = user;
+        res.json({ success: true, user: userWithoutPassword });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
     }
 };
 

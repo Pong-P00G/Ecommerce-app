@@ -4,18 +4,53 @@ import { useShopStore } from '../stores/shop';
 import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-vue-next';
 import LazyImage from './LazyImage.vue';
 import { RouterLink } from 'vue-router';
+import { useToast } from '../composables/useToast';
 
 const shop = useShopStore();
+const toast = useToast();
 
 const totalQty = computed(() => shop.cart.reduce((s, i) => s + i.qty, 0));
 const totalPrice = computed(() => shop.cart.reduce((s, i) => s + i.qty * i.price, 0));
 
-const inc = (idx) => shop.cart[idx].qty++;
+const inc = (idx) => shop.updateQuantity(idx, shop.cart[idx].qty + 1);
+
 const dec = (idx) => {
-    if (shop.cart[idx].qty > 1) shop.cart[idx].qty--;
-    else shop.cart.splice(idx, 1);
+    const item = shop.cart[idx];
+    if (!item) return;
+    if (item.qty > 1) {
+        shop.updateQuantity(idx, item.qty - 1);
+    } else {
+        // Removing the last unit — offer undo
+        const removedItem = { ...item };
+        shop.removeFromCart(idx);
+        toast.warning(`${removedItem.title} removed`, {
+            duration: 5000,
+            action: {
+                label: 'Undo',
+                handler: () => {
+                    shop.addToCart(removedItem);
+                },
+            },
+        });
+    }
 };
-const remove = (idx) => shop.cart.splice(idx, 1);
+
+const remove = (idx) => {
+    const item = shop.cart[idx];
+    if (!item) return;
+    const removedItem = { ...item };
+    shop.removeFromCart(idx);
+    toast.warning(`${removedItem.title} removed`, {
+        duration: 5000,
+        action: {
+            label: 'Undo',
+            handler: () => {
+                shop.addToCart(removedItem);
+            },
+        },
+    });
+};
+
 const close = () => shop.closeCart();
 </script>
 

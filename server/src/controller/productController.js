@@ -322,17 +322,25 @@ export const updateCompleteProduct = async (req, res) => {
 
 export const deleteProduct = async (req, res) => {
     try {
-        await productService.deleteProduct(req.params.id);
+        const forceDelete = req.query.force === 'true' || req.body?.force === true;
+        await productService.deleteProduct(req.params.id, forceDelete);
         
         res.json({
             success: true,
-            message: 'Product deleted successfully'
+            message: forceDelete ? 'Product force-deleted successfully' : 'Product deleted successfully'
         });
     } catch (error) {
         if (error.message === 'Product not found') {
             res.status(404).json({
                 success: false,
                 message: error.message
+            });
+        } else if (error.code === '23503' || error.message?.includes('violates foreign key constraint')) {
+            // Foreign key violation — suggest force delete
+            res.status(409).json({
+                success: false,
+                message: 'Cannot delete: product is referenced by existing orders or wishlists. Use force delete to remove it.',
+                suggestForceDelete: true
             });
         } else {
             console.error('Delete product error:', error.message);
@@ -422,7 +430,19 @@ export const deleteCategory = async (req, res) => {
             message: 'Category deleted successfully'
         });
     } catch (error) {
-        res.status(404).json({
+        if (error.message === 'Category not found') {
+            return res.status(404).json({
+                success: false,
+                message: error.message
+            });
+        }
+        if (error.message?.includes('violates foreign key constraint') || error.code === '23503') {
+            return res.status(409).json({
+                success: false,
+                message: 'Cannot delete this category because it has associated products. Remove or reassign the products first.'
+            });
+        }
+        res.status(400).json({
             success: false,
             message: error.message
         });

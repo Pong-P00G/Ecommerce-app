@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useProductStore } from '../../stores/product.js';
 import { storeToRefs } from 'pinia';
 import { stockAPI } from '../../api/products/stockApi.js';
@@ -45,6 +45,31 @@ const showHistoryModal = ref(false);
 const historyProduct = ref(null);
 const stockHistory = ref([]);
 const loadingHistory = ref(false);
+
+// ── Auto-polling ────────────────────────────────────────────────────────────
+const lastCheckTime = ref(null);
+const autoCheckEnabled = ref(true);
+let autoPollInterval = null;
+let lowStockAlertInterval = null;
+
+const suggestedRestocks = computed(() =>
+  (products.value || []).filter(p => {
+    const stock = parseInt(p.total_stock || 0);
+    const reorder = parseInt(p.reorder_level || 5);
+    return stock <= reorder;
+  }).sort((a, b) => {
+    // Sort by shortage (most urgent first)
+    const aShortage = parseInt(a.reorder_level || 5) - parseInt(a.total_stock || 0);
+    const bShortage = parseInt(b.reorder_level || 5) - parseInt(b.total_stock || 0);
+    return bShortage - aShortage;
+  })
+);
+
+const formatLastCheckTime = () => {
+  if (!lastCheckTime.value) return 'Never';
+  const d = new Date(lastCheckTime.value);
+  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+};
 
 const filteredProducts = computed(() => {
   let result = products.value || [];
@@ -252,6 +277,7 @@ const handleCheckLowStock = async () => {
     const res = await dashboardAPI.checkLowStock();
     if (res.success) {
       const c = res.data?.notificationsCreated || 0;
+      lastCheckTime.value = new Date();
       if (c > 0) toast.success(c + ' low-stock notification(s) created');
       else toast.info('Low-stock check complete - no issues found');
       await productStore.fetchAllProducts();
@@ -270,8 +296,45 @@ const handleImageError = (event) => {
   event.target.src = 'https://via.placeholder.com/80?text=No+Image';
 };
 
+const startAutoPolling = () => {
+  // Refresh product list every 60 seconds
+  autoPollInterval = setInterval(async () => {
+    if (!autoCheckEnabled.value) return;
+    await productStore.fetchAllProducts();
+  }, 60_000);
+
+  // Auto-check low stock every 5 minutes
+  lowStockAlertInterval = setInterval(async () => {
+    if (!autoCheckEnabled.value) return;
+    try {
+      const res = await dashboardAPI.checkLowStock();
+      if (res.success) {
+        const c = res.data?.notificationsCreated || 0;
+        lastCheckTime.value = new Date();
+        if (c > 0) {
+          toast.info(c + ' low-stock alert(s) detected');
+          await productStore.fetchAllProducts();
+        }
+      }
+    } catch (err) {
+      // Silently fail on auto-poll — don't spam toasts
+      console.warn('Auto low-stock check failed:', err.message);
+    }
+  }, 5 * 60_000);
+};
+
+const stopAutoPolling = () => {
+  if (autoPollInterval) clearInterval(autoPollInterval);
+  if (lowStockAlertInterval) clearInterval(lowStockAlertInterval);
+};
+
 onMounted(async () => {
   await productStore.fetchAllProducts();
+  startAutoPolling();
+});
+
+onUnmounted(() => {
+  stopAutoPolling();
 });
 </script>
 
@@ -331,11 +394,93 @@ onMounted(async () => {
             <div class="w-px h-8 bg-zinc-200 self-center mx-1 hidden sm:block"></div>
             <button @click="handleCheckLowStock" :disabled="checkingLowStock"
               class="px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 bg-amber-50 text-amber-700 hover:bg-amber-100 disabled:opacity-50">
-              <Bell v-if="!checkingLowStock" class="w-4 h-4" />
-              <RefreshCw v-else class="w-4 h-4 animate-spin" />
+              <Bell v-if="!checkingLowStock" class="w-4 h-4" />                          <RefreshCw v-else class="w-4 h-4 animate-spin" />
               {{ checkingLowStock ? 'Checking...' : 'Check Alerts' }}
             </button>
           </div>
+        </div>
+      </div>
+
+      <!-- ── Auto-Restock Suggestions ──────────────────────────── -->
+      <div v-if="suggestedRestocks.length > 0"
+        class="bg-white rounded-2xl p-4 sm:p-6 border border-amber-100 mb-6">
+        <div class="flex items-start justify-between gap-4 mb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center shrink-0">
+              <Bell class="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <h3 class="font-bold text-zinc-900 text-sm">Restock Suggestions</h3>
+              <p class="text-xs text-zinc-500">{{ suggestedRestocks.length }} product(s) below reorder threshold</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-1.5 text-[10px] text-zinc-400">
+              <div class="w-2 h-2 rounded-full" :class="autoCheckEnabled ? 'bg-emerald-500' : 'bg-zinc-300'"></div>
+              <span>Auto-check {{ autoCheckEnabled ? 'ON' : 'OFF' }}</span>
+            </div>
+            <button @click="autoCheckEnabled = !autoCheckEnabled"
+              class="text-[10px] font-bold uppercase tracking-wider text-amber-700 hover:text-amber-800 transition-colors">
+              {{ autoCheckEnabled ? 'Pause' : 'Resume' }}
+            </button>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-150">
+            <thead class="bg-zinc-50 border-b border-zinc-200">
+              <tr>
+                <th class="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500">Product</th>
+                <th class="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500">Stock</th>
+                <th class="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500">Reorder at</th>
+                <th class="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500">Shortage</th>
+                <th class="px-3 py-2.5 text-right text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-zinc-100">
+              <tr v-for="product in suggestedRestocks.slice(0, 10)" :key="product.product_id"
+                class="hover:bg-zinc-50/80 transition-colors"
+                :class="{ 'bg-red-50/30': parseInt(product.total_stock || 0) === 0 }">
+                <td class="px-3 py-2.5">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 bg-zinc-100 rounded-lg overflow-hidden shrink-0">
+                      <LazyImage :src="product.main_image || 'https://via.placeholder.com/40'" :alt="product.product_name"
+                        wrapper-class="w-full h-full" img-class="w-full h-full object-cover" />
+                    </div>
+                    <span class="text-sm font-semibold text-zinc-900 truncate max-w-45">{{ product.product_name }}</span>
+                  </div>
+                </td>
+                <td class="px-3 py-2.5">
+                  <span class="text-lg font-bold tabular-nums"
+                    :class="parseInt(product.total_stock || 0) === 0 ? 'text-red-600' : 'text-amber-600'">
+                    {{ product.total_stock || 0 }}
+                  </span>
+                </td>
+                <td class="px-3 py-2.5">
+                  <span class="text-sm font-semibold text-zinc-500">{{ product.reorder_level || 5 }}</span>
+                </td>
+                <td class="px-3 py-2.5">
+                  <span class="text-sm font-bold"
+                    :class="parseInt(product.total_stock || 0) === 0 ? 'text-red-600' : 'text-amber-600'">
+                    {{ Math.max(0, parseInt(product.reorder_level || 5) - parseInt(product.total_stock || 0)) }}
+                  </span>
+                </td>
+                <td class="px-3 py-2.5 text-right">
+                  <button @click="openUpdateModal(product)"
+                    class="px-3 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all text-xs font-semibold">
+                    Restock
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="mt-3 flex items-center justify-between">
+          <p class="text-[10px] text-zinc-400">
+            Last auto-check: <span class="font-semibold text-zinc-500">{{ formatLastCheckTime() }}</span>
+          </p>
+          <p v-if="suggestedRestocks.length > 10" class="text-[10px] text-zinc-400">
+            +{{ suggestedRestocks.length - 10 }} more products below threshold
+          </p>
         </div>
       </div>
 
