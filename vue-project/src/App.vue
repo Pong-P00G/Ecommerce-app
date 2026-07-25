@@ -1,5 +1,5 @@
 <script setup>
-import { watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter, RouterView } from 'vue-router'
 import ToastContainer from './components/ToastContainer.vue'
 import CookieConsent from './components/CookieConsent.vue'
@@ -12,10 +12,62 @@ const router = useRouter()
 const authStore = useAuthStore()
 const ui = useUIStore()
 
+// ── Direction-aware page transitions ──────────────────────────────
+// Track navigation direction so the page transition animation
+// slides left (forward) or right (backward) naturally.
+const transitionDirection = ref('forward');
+
+// Define route hierarchy depth for auto-direction detection
+// Deeper pages (product detail, checkout) slide in from the right
+// Shallower pages (home, product listing) slide in from the left
+const ROUTE_DEPTH_MAP = {
+    home: 0,
+    about: 1,
+    contact: 1,
+    Product: 1,
+    ProductDetail: 2,
+    checkout: 2,
+    payment: 3,
+    orderSucces: 4,
+    wishlist: 1,
+    userprofile: 1,
+    userNotifications: 1,
+    login: 1,
+    register: 1,
+    forgotPassword: 1,
+    giftCards: 1,
+    trackOrder: 1,
+    returns: 1,
+    shipping: 1,
+    faq: 1,
+    careers: 1,
+    press: 1,
+    blog: 1,
+    blogPost: 2,
+    privacy: 1,
+    terms: 1,
+    compare: 1,
+    sitemap: 1,
+};
+
+router.beforeEach((to, from, next) => {
+    if (from.name && to.name) {
+        const fromDepth = ROUTE_DEPTH_MAP[from.name] ?? 1;
+        const toDepth = ROUTE_DEPTH_MAP[to.name] ?? 1;
+        if (toDepth > fromDepth) {
+            transitionDirection.value = 'forward';
+        } else if (toDepth < fromDepth) {
+            transitionDirection.value = 'backward';
+        } else {
+            transitionDirection.value = to.path.length >= from.path.length ? 'forward' : 'backward';
+        }
+    } else {
+        transitionDirection.value = 'forward';
+    }
+    next();
+});
+
 // ── Re-evaluate route after auth init completes ────────────────────────
-// The router's beforeEach guard is deferred during init (initialized = false).
-// Once init finishes, we re-navigate to the current URL so the guard runs
-// again with the real auth state (authenticated or not).
 watch(() => authStore.initialized, (val) => {
     if (val) {
         router.replace(router.currentRoute.value.fullPath);
@@ -50,7 +102,10 @@ watch(() => authStore.initialized, (val) => {
         <!-- ── Main App ─────────────────────────────────────── -->
         <div v-if="authStore.initialized">
             <RouterView v-slot="{ Component, route }">
-                <Transition name="page" mode="out-in">
+                <Transition 
+                    :name="'page-' + transitionDirection" 
+                    mode="out-in"
+                >
                     <component :is="Component" :key="route.path" />
                 </Transition>
             </RouterView>

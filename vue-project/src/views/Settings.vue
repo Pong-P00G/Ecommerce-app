@@ -194,7 +194,7 @@ const tabs = [
                     <SettingsIcon class="w-4 h-4" />
                     Settings
                 </span>
-                <h1 class="text-4xl md:text-5xl font-elegant font-bold text-ink">Account settings</h1>
+                <h1 class="text-3xl sm:text-4xl md:text-5xl font-elegant font-bold text-ink">Account settings</h1>
                 <p class="text-neutral-500">Manage your preferences, security, and notifications.</p>
             </div>
 
@@ -248,12 +248,11 @@ const tabs = [
                             <label class="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1.5 block">Bio</label>
                             <textarea rows="3" class="input-base resize-none" placeholder="Tell us about yourself"></textarea>
                         </div>
-                        <div class="flex justify-end">
-                            <button @click="save" :disabled="isSaving" class="btn-accent">
-                                <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
-                                <Check v-else class="w-4 h-4" />
-                                {{ isSaving ? 'Saving...' : 'Save changes' }}
-                            </button>
+                        <div class="flex justify-end">                                <button @click="save" :disabled="isSaving" class="btn-accent active:scale-[0.97] transition-all duration-200">
+                                    <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
+                                    <Check v-else class="w-4 h-4" />
+                                    {{ isSaving ? 'Saving...' : 'Save changes' }}
+                                </button>
                         </div>
                     </div>
 
@@ -263,12 +262,11 @@ const tabs = [
                             <div>
                                 <h2 class="text-xl font-bold text-ink mb-1">Notifications</h2>
                                 <p class="text-sm text-neutral-500">Choose what we notify you about.</p>
-                            </div>
-                            <button @click="saveNotificationPrefs" :disabled="isSaving || loadingPrefs" class="btn-accent text-sm gap-2">
-                                <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
-                                <Check v-else class="w-4 h-4" />
-                                {{ isSaving ? 'Saving...' : 'Save' }}
-                            </button>
+                            </div>                                <button @click="saveNotificationPrefs" :disabled="isSaving || loadingPrefs" class="btn-accent text-sm gap-2 active:scale-[0.97] transition-all duration-200">
+                                    <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
+                                    <Check v-else class="w-4 h-4" />
+                                    {{ isSaving ? 'Saving...' : 'Save' }}
+                                </button>
                         </div>
 
                         <div v-if="loadingPrefs" class="py-12 flex items-center justify-center">
@@ -420,12 +418,11 @@ const tabs = [
                                 </select>
                             </div>
                         </div>
-                        <div class="flex justify-end">
-                            <button @click="save" :disabled="isSaving" class="btn-accent">
-                                <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
-                                <Check v-else class="w-4 h-4" />
-                                {{ isSaving ? 'Saving...' : 'Save preferences' }}
-                            </button>
+                        <div class="flex justify-end">                                <button @click="save" :disabled="isSaving" class="btn-accent active:scale-[0.97] transition-all duration-200">
+                                    <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
+                                    <Check v-else class="w-4 h-4" />
+                                    {{ isSaving ? 'Saving...' : 'Save preferences' }}
+                                </button>
                         </div>
                     </div>
 

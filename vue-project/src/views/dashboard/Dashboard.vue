@@ -296,10 +296,103 @@ onUnmounted(() => {
             </div>
 
             <!-- ── Loading State ────────────────────────────────── -->
-            <div v-if="dashboardLoading && !dashboardStats" class="flex items-center justify-center py-20">
-                <div class="text-center">
-                    <div class="w-12 h-12 border-4 border-zinc-200 border-t-zinc-900 rounded-full animate-spin mb-4 mx-auto"></div>
-                    <p class="text-zinc-500 text-sm">Loading dashboard...</p>
+            <div v-if="dashboardLoading && !dashboardStats" class="space-y-6">
+                <!-- Skeleton Header -->
+                <div class="flex items-center justify-between">
+                    <div class="space-y-3">
+                        <div class="h-3 w-32 skeleton-shimmer rounded"></div>
+                        <div class="h-7 w-64 skeleton-shimmer rounded-lg"></div>
+                    </div>
+                </div>
+
+                <!-- Skeleton Revenue Card -->
+                <div class="bg-zinc-200/60 rounded-2xl p-8">
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-4">
+                            <div class="w-11 h-11 skeleton-shimmer rounded-xl"></div>
+                            <div class="space-y-2">
+                                <div class="h-3 w-24 skeleton-shimmer rounded"></div>
+                                <div class="h-8 w-48 skeleton-shimmer rounded-lg"></div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4 pt-4 border-t border-zinc-300/30">
+                            <div v-for="i in 3" :key="'sk-rev-' + i" class="space-y-2">
+                                <div class="h-3 w-16 skeleton-shimmer rounded"></div>
+                                <div class="h-6 w-12 skeleton-shimmer rounded"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skeleton Actions Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div v-for="i in 4" :key="'sk-act-' + i" class="bg-white rounded-2xl p-5 border border-zinc-100 space-y-4">
+                        <div class="w-12 h-12 skeleton-shimmer rounded-xl"></div>
+                        <div class="space-y-2">
+                            <div class="h-3 w-16 skeleton-shimmer rounded"></div>
+                            <div class="h-4 w-20 skeleton-shimmer rounded"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skeleton Widgets (Orders + Reviews side by side) -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div v-for="i in 2" :key="'sk-wid-' + i" class="bg-white rounded-2xl p-6 border border-zinc-100 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div class="space-y-1">
+                                <div class="h-3 w-20 skeleton-shimmer rounded"></div>
+                                <div class="h-5 w-32 skeleton-shimmer rounded"></div>
+                            </div>
+                            <div class="h-4 w-16 skeleton-shimmer rounded"></div>
+                        </div>
+                        <div v-for="j in 3" :key="'sk-row-' + i + '-' + j" class="flex items-center justify-between p-3 bg-zinc-50 rounded-xl">
+                            <div class="flex items-center gap-3">
+                                <div class="w-11 h-11 skeleton-shimmer rounded-xl"></div>
+                                <div class="space-y-2">
+                                    <div class="h-3.5 w-28 skeleton-shimmer rounded"></div>
+                                    <div class="h-3 w-20 skeleton-shimmer rounded"></div>
+                                </div>
+                            </div>
+                            <div class="h-4 w-14 skeleton-shimmer rounded"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skeleton Products Grid -->
+                <div class="bg-white rounded-2xl p-6 border border-zinc-100 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="space-y-1">
+                            <div class="h-3 w-20 skeleton-shimmer rounded"></div>
+                            <div class="h-5 w-24 skeleton-shimmer rounded"></div>
+                        </div>
+                        <div class="h-4 w-16 skeleton-shimmer rounded"></div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                        <div v-for="i in 3" :key="'sk-prod-' + i" class="bg-zinc-50 rounded-2xl p-5 space-y-3">
+                            <div class="aspect-square skeleton-shimmer rounded-xl"></div>
+                            <div class="h-3 w-16 skeleton-shimmer rounded"></div>
+                            <div class="h-4 w-32 skeleton-shimmer rounded"></div>
+                            <div class="flex items-center justify-between">
+                                <div class="h-5 w-16 skeleton-shimmer rounded"></div>
+                                <div class="h-3 w-12 skeleton-shimmer rounded"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skeleton Activity Widget -->
+                <div class="bg-white rounded-2xl p-6 border border-zinc-100 space-y-4">
+                    <div class="space-y-1">
+                        <div class="h-3 w-16 skeleton-shimmer rounded"></div>
+                        <div class="h-5 w-28 skeleton-shimmer rounded"></div>
+                    </div>
+                    <div v-for="i in 3" :key="'sk-act-' + i" class="flex items-start gap-3 p-3">
+                        <div class="w-9 h-9 skeleton-shimmer rounded-xl"></div>
+                        <div class="flex-1 space-y-2">
+                            <div class="h-3.5 w-3/4 skeleton-shimmer rounded"></div>
+                            <div class="h-3 w-1/4 skeleton-shimmer rounded"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

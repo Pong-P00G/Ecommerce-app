@@ -223,7 +223,7 @@ watch(route, () => {
                         v-for="link in Navlinks"
                         :key="link.label"
                         :to="link.to"
-                        class="relative px-6 py-2 rounded-full font-medium text-sm transition-all duration-300 flex items-center gap-2"
+                        class="relative px-6 py-2 rounded-full font-medium text-sm transition-all duration-300 flex items-center gap-2 group/link"
                         :class="isActiveRoute(link.to)
                             ? 'bg-ink text-paper shadow-md'
                             : 'text-neutral-600 hover:text-ink hover:bg-paper'"
@@ -234,6 +234,10 @@ watch(route, () => {
                         <span
                             v-if="isActiveRoute(link.to)"
                             class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-accent rounded-full"
+                        ></span>
+                        <span
+                            v-else
+                            class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-accent rounded-full transition-all duration-300 group-hover/link:w-1/2"
                         ></span>
                     </RouterLink>
                 </nav>

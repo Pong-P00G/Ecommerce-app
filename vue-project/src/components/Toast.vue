@@ -53,17 +53,19 @@ const { toasts, remove } = useToast();
 </template>
 
 <style scoped>
-.toast-enter-active,
+.toast-enter-active {
+    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
 .toast-leave-active {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .toast-enter-from {
     opacity: 0;
-    transform: translateX(20px);
+    transform: translateX(40px) scale(0.92);
 }
 .toast-leave-to {
     opacity: 0;
-    transform: translateX(20px);
+    transform: translateX(20px) scale(0.95);
 }
 @keyframes shrink {
     from { width: 100%; }

@@ -315,9 +315,8 @@ onMounted(fetchDiscounts);
             </div>
         </div>
 
-        <!-- Delete Confirmation Modal -->
-        <div v-if="showDeleteConfirm" @click="cancelDelete" class="fixed inset-0 bg-ink/50 z-50 flex items-center justify-center p-4">
-            <div @click.stop class="card-flat p-6 max-w-sm w-full text-center">
+        <!-- Delete Confirmation Modal -->            <div v-if="showDeleteConfirm" @click="cancelDelete" class="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div @click.stop class="card-flat p-6 max-w-sm w-full text-center animate-[scale-in_0.25s_ease-out]">
                 <div class="w-14 h-14 bg-danger/10 rounded-full flex items-center justify-center mx-auto mb-4">
                     <AlertTriangle class="w-7 h-7 text-danger" />
                 </div>
@@ -336,8 +335,8 @@ onMounted(fetchDiscounts);
         </div>
 
         <!-- Create/Edit Modal -->
-        <div v-if="showFormModal" @click="closeForm" class="fixed inset-0 bg-ink/50 z-50 flex items-center justify-center p-4">
-            <div @click.stop class="card-flat p-5 sm:p-8 max-w-md w-full">
+        <div v-if="showFormModal" @click="closeForm" class="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div @click.stop class="card-flat p-5 sm:p-8 max-w-md w-full animate-[scale-in_0.25s_ease-out]">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-lg font-bold text-ink">{{ editingDiscount ? 'Edit Discount' : 'Add Discount' }}</h3>
                     <button @click="closeForm" class="btn-ghost p-1.5 -mr-1.5">

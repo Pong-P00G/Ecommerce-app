@@ -1,12 +1,26 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL,
+    baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
     timeout: 10000,
     withCredentials: true, // Send httpOnly cookie with every request
     headers: {
         "Content-Type": "application/json"
     },
+});
+
+// ── CSRF Protection ──────────────────────────────────────────────────────────
+// Read the csrf-token cookie (httpOnly: false) and attach it as the
+// x-csrf-token header on every state-changing request.
+api.interceptors.request.use(config => {
+    const isSafeMethod = ['get', 'head', 'options'].includes(config.method?.toLowerCase());
+    if (!isSafeMethod) {
+        const match = document.cookie.match(/(?:^|;\s*)csrf-token=([^;]*)/);
+        if (match) {
+            config.headers['x-csrf-token'] = match[1];
+        }
+    }
+    return config;
 });
 
 // Handle response errors globally

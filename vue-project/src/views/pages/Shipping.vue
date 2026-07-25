@@ -29,7 +29,7 @@ const faqs = [
                 <span class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-ink text-paper mb-5 shadow-[0_8px_24px_-6px_rgb(249_115_22_/_0.45)]">
                     <Truck class="w-7 h-7 text-accent" />
                 </span>
-                <h1 class="heading-hero text-5xl md:text-6xl text-ink mb-4">
+                <h1 class="heading-hero text-4xl sm:text-5xl md:text-6xl text-ink mb-4">
                     Shipping
                     <span class="text-accent">information</span>
                 </h1>
@@ -39,7 +39,7 @@ const faqs = [
             <!-- Shipping Options -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-12">
                 <div v-for="option in shippingOptions" :key="option.name"
-                    class="card-base p-6 group">
+                    class="card-base p-6 group stagger-item">
                     <div class="flex items-start justify-between mb-5">
                         <div class="w-12 h-12 rounded-xl bg-ink text-paper inline-flex items-center justify-center group-hover:bg-accent transition-colors duration-300">
                             <component :is="option.icon" class="w-6 h-6" />
@@ -60,7 +60,7 @@ const faqs = [
                     <span class="text-xs font-bold uppercase tracking-[0.2em] text-accent">Why ship with us</span>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div v-for="feature in features" :key="feature.title" class="text-center group">
+                    <div v-for="feature in features" :key="feature.title" class="text-center group stagger-item">
                         <div class="w-14 h-14 mx-auto mb-4 rounded-xl bg-neutral-100 group-hover:bg-accent group-hover:text-paper text-ink inline-flex items-center justify-center transition-all duration-300">
                             <component :is="feature.icon" class="w-6 h-6" />
                         </div>

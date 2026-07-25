@@ -354,22 +354,22 @@ onUnmounted(() => {
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8">
-        <div class="bg-white rounded-2xl p-5 sm:p-6 border border-zinc-100">
-          <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center mb-4">
+        <div class="bg-white rounded-2xl p-5 sm:p-6 border border-zinc-100 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
+          <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center mb-4 transition-transform hover:scale-110">
             <Package class="w-6 h-6 text-amber-700" />
           </div>
           <p class="text-zinc-500 text-xs uppercase tracking-[0.15em] font-bold mb-1">Total Products</p>
           <p class="text-3xl font-bold text-zinc-900">{{ products?.length || 0 }}</p>
         </div>
-        <div class="bg-white rounded-2xl p-5 sm:p-6 border border-amber-100">
-          <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center mb-4">
+        <div class="bg-white rounded-2xl p-5 sm:p-6 border border-amber-100 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
+          <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center mb-4 transition-transform hover:scale-110">
             <AlertTriangle class="w-6 h-6 text-amber-600" />
           </div>
           <p class="text-zinc-500 text-xs uppercase tracking-[0.15em] font-bold mb-1">Low Stock</p>
           <p class="text-3xl font-bold text-amber-600">{{ lowStockCount }}</p>
         </div>
-        <div class="bg-white rounded-2xl p-5 sm:p-6 border border-red-100">
-          <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center mb-4">
+        <div class="bg-white rounded-2xl p-5 sm:p-6 border border-red-100 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
+          <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center mb-4 transition-transform hover:scale-110">
             <XCircle class="w-6 h-6 text-red-600" />
           </div>
           <p class="text-zinc-500 text-xs uppercase tracking-[0.15em] font-bold mb-1">Out of Stock</p>
@@ -595,8 +595,8 @@ onUnmounted(() => {
 
     <!-- Single Stock Update Modal -->
     <div v-if="showUpdateModal" @click="closeUpdateModal"
-      class="fixed inset-0 bg-zinc-900/50 z-50 flex items-center justify-center p-4">
-      <div @click.stop class="bg-white rounded-2xl p-5 sm:p-8 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+      class="fixed inset-0 bg-zinc-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div @click.stop class="bg-white rounded-2xl p-5 sm:p-8 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto animate-[scale-in_0.25s_ease-out]">
         <h3 class="text-xl font-bold text-zinc-900 mb-6">Update Stock</h3>
 
         <div class="flex items-center gap-4 mb-6 p-4 bg-zinc-50 rounded-xl">
@@ -644,8 +644,8 @@ onUnmounted(() => {
 
     <!-- Bulk Stock Update Modal -->
     <div v-if="showBulkUpdateModal" @click="closeBulkUpdateModal"
-      class="fixed inset-0 bg-zinc-900/50 z-50 flex items-center justify-center p-4">
-      <div @click.stop class="bg-white rounded-2xl p-5 sm:p-8 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+      class="fixed inset-0 bg-zinc-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div @click.stop class="bg-white rounded-2xl p-5 sm:p-8 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto animate-[scale-in_0.25s_ease-out]">
         <h3 class="text-xl font-bold text-zinc-900 mb-2">Bulk Stock Update</h3>
         <p class="text-sm text-zinc-500 mb-6">Update stock for <strong class="text-zinc-900">{{ selectedIds.size }}</strong> selected product(s)</p>
 
@@ -680,8 +680,8 @@ onUnmounted(() => {
 
     <!-- Stock History Modal -->
     <div v-if="showHistoryModal" @click="closeHistoryModal"
-      class="fixed inset-0 bg-zinc-900/50 z-50 flex items-center justify-center p-4">
-      <div @click.stop class="bg-white rounded-2xl p-5 sm:p-8 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+      class="fixed inset-0 bg-zinc-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div @click.stop class="bg-white rounded-2xl p-5 sm:p-8 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto animate-[scale-in_0.25s_ease-out]">
         <div class="flex items-center justify-between mb-6">
           <div>
             <span class="text-[10px] uppercase tracking-[0.2em] text-amber-700 font-bold">Stock History</span>

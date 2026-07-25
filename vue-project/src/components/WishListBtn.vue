@@ -32,6 +32,23 @@ const handleToggle = () => {
 };
 </script>
 
+<style scoped>
+@keyframes heartbeat {
+    0% { transform: scale(1); }
+    15% { transform: scale(1.3); }
+    30% { transform: scale(0.95); }
+    45% { transform: scale(1.15); }
+    65% { transform: scale(1); }
+    100% { transform: scale(1); }
+}
+.heartbeat {
+    animation: heartbeat 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.wishlist-btn:active .heartbeat {
+    animation: heartbeat 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+</style>
+
 <template>
     <div class="inline-flex items-center">
         <button
@@ -43,13 +60,14 @@ const handleToggle = () => {
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
                 isWishlisted
                     ? 'bg-accent text-white shadow-[0_8px_24px_-6px_rgb(249_115_22_/_0.45)]'
-                    : 'bg-paper text-ink border border-neutral-300 hover:border-ink hover:bg-ink hover:text-paper'
+                    : 'bg-paper text-ink border border-neutral-300 hover:border-ink hover:bg-ink hover:text-paper',
+                'wishlist-btn'
             ]"
             :title="isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'"
             :aria-pressed="isWishlisted.toString()"
             aria-label="Toggle wishlist"
         >
-            <Heart :class="[iconSize, isWishlisted ? 'fill-current' : '']" />
+            <Heart :class="[iconSize, isWishlisted ? 'fill-current heartbeat' : '']" />
         </button>
         <span v-if="showText" class="ml-2 text-sm font-medium text-ink">
             <slot name="text" :inWish="isWishlisted">

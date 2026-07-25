@@ -199,19 +199,19 @@ onMounted(fetchCategories);
                 </button>
             </div>
 
-            <!-- Stats -->
+            <!-- Stat cards -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8">
-                <div class="card-flat p-6">
+                <div class="card-flat p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
                     <p class="text-neutral-600 text-sm mb-1">Total Categories</p>
                     <p class="text-3xl font-bold text-ink tabular-nums">{{ totalCount }}</p>
                 </div>
-                <div class="card-flat p-6">
+                <div class="card-flat p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
                     <p class="text-neutral-600 text-sm mb-1">With Products</p>
                     <p class="text-3xl font-bold text-accent tabular-nums">
                         {{ categories.filter(c => c.product_count > 0).length }}
                     </p>
                 </div>
-                <div class="card-flat p-6">
+                <div class="card-flat p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
                     <p class="text-neutral-600 text-sm mb-1">Empty</p>
                     <p class="text-3xl font-bold text-neutral-400 tabular-nums">
                         {{ categories.filter(c => !c.product_count).length }}
@@ -251,9 +251,52 @@ onMounted(fetchCategories);
             </div>
 
             <!-- Loading -->
-            <div v-if="loading && categories.length === 0" class="card-flat p-12 text-center">
-                <Loader2 class="w-10 h-10 text-accent animate-spin mx-auto mb-4" />
-                <p class="text-neutral-500 text-sm">Loading categories...</p>
+            <div v-if="loading && categories.length === 0" class="card-flat overflow-hidden">
+                <div class="p-6 sm:p-8 space-y-6">
+                    <!-- Skeleton Header -->
+                    <div class="flex items-center justify-between">
+                        <div class="space-y-3">
+                            <div class="h-3 w-24 skeleton-shimmer rounded"></div>
+                            <div class="h-7 w-48 skeleton-shimmer rounded-lg"></div>
+                            <div class="h-4 w-36 skeleton-shimmer rounded"></div>
+                        </div>
+                    </div>
+
+                    <!-- Skeleton Stats -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                        <div v-for="i in 3" :key="'sk-stat-' + i" class="rounded-2xl border border-neutral-200 p-5 space-y-3">
+                            <div class="h-3 w-20 skeleton-shimmer rounded"></div>
+                            <div class="h-7 w-16 skeleton-shimmer rounded"></div>
+                        </div>
+                    </div>
+
+                    <!-- Skeleton Search -->
+                    <div class="rounded-2xl border border-neutral-200 p-5">
+                        <div class="h-10 skeleton-shimmer rounded-xl max-w-md"></div>
+                    </div>
+
+                    <!-- Skeleton Table -->
+                    <div class="rounded-2xl border border-neutral-200 overflow-hidden">
+                        <div class="px-6 py-4 bg-neutral-50 border-b border-neutral-200">
+                            <div class="grid grid-cols-3 gap-4">
+                                <div v-for="i in 3" :key="'sk-th-' + i" class="h-3 skeleton-shimmer rounded w-3/4"></div>
+                            </div>
+                        </div>
+                        <div v-for="i in 4" :key="'sk-row-' + i" class="px-6 py-4 border-b border-neutral-200 last:border-b-0">
+                            <div class="grid grid-cols-3 gap-4 items-center">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-9 h-9 skeleton-shimmer rounded-lg"></div>
+                                    <div class="h-4 w-32 skeleton-shimmer rounded"></div>
+                                </div>
+                                <div><div class="h-3 w-24 skeleton-shimmer rounded"></div></div>
+                                <div class="flex justify-end gap-2">
+                                    <div class="h-8 w-16 skeleton-shimmer rounded-lg"></div>
+                                    <div class="h-8 w-16 skeleton-shimmer rounded-lg"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Table -->
@@ -335,9 +378,9 @@ onMounted(fetchCategories);
         <div
             v-if="showModal"
             @click="closeModal"
-            class="fixed inset-0 bg-ink/50 z-50 flex items-center justify-center p-4"
+            class="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
         >
-            <div @click.stop class="card-flat p-5 sm:p-8 max-w-md w-full">
+            <div @click.stop class="card-flat p-5 sm:p-8 max-w-md w-full animate-[scale-in_0.25s_ease-out]">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-xl font-bold text-ink">{{ formTitle }}</h3>
                     <button @click="closeModal" class="btn-ghost p-1.5 -mr-1.5"><X class="w-5 h-5" /></button>
@@ -377,9 +420,9 @@ onMounted(fetchCategories);
         <div
             v-if="showDeleteConfirm"
             @click="cancelDelete"
-            class="fixed inset-0 bg-ink/50 z-50 flex items-center justify-center p-4"
+            class="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
         >
-            <div @click.stop class="card-flat p-6 sm:p-8 max-w-sm w-full text-center">
+            <div @click.stop class="card-flat p-6 sm:p-8 max-w-sm w-full text-center animate-[scale-in_0.25s_ease-out]">
                 <div class="w-12 h-12 bg-danger/10 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Trash2 class="w-6 h-6 text-danger" />
                 </div>

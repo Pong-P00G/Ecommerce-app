@@ -457,27 +457,27 @@ onMounted(() => { fetchData(); });
             </div>
 
             <!-- ── Loading Skeleton ──────────────────────────────────────── -->
-            <div v-if="loading && !analyticsData" class="space-y-6 animate-pulse">
+            <div v-if="loading && !analyticsData" class="space-y-6">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                     <div v-for="i in 4" :key="i" class="bg-white rounded-2xl p-5 sm:p-6 border border-zinc-100">
                         <div class="flex items-center justify-between mb-4">
-                            <div class="w-11 h-11 bg-zinc-100 rounded-xl"></div>
-                            <div class="w-16 h-6 bg-zinc-100 rounded-full"></div>
+                            <div class="w-11 h-11 skeleton-shimmer rounded-xl"></div>
+                            <div class="w-16 h-6 skeleton-shimmer rounded-full"></div>
                         </div>
-                        <div class="h-3 w-24 bg-zinc-100 rounded mb-2"></div>
-                        <div class="h-8 w-28 bg-zinc-100 rounded"></div>
+                        <div class="h-3 w-24 skeleton-shimmer rounded mb-2"></div>
+                        <div class="h-8 w-28 skeleton-shimmer rounded"></div>
                     </div>
                 </div>
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-2 bg-white rounded-2xl p-6 border border-zinc-100 h-80">
-                        <div class="h-4 w-20 bg-zinc-100 rounded mb-2"></div>
-                        <div class="h-5 w-32 bg-zinc-100 rounded mb-6"></div>
-                        <div class="h-52 bg-zinc-100 rounded-lg"></div>
+                        <div class="h-4 w-20 skeleton-shimmer rounded mb-2"></div>
+                        <div class="h-5 w-32 skeleton-shimmer rounded mb-6"></div>
+                        <div class="h-52 skeleton-shimmer rounded-lg"></div>
                     </div>
                     <div class="bg-white rounded-2xl p-6 border border-zinc-100 h-80">
-                        <div class="h-4 w-20 bg-zinc-100 rounded mb-2"></div>
-                        <div class="h-5 w-36 bg-zinc-100 rounded mb-6"></div>
-                        <div class="h-44 w-44 bg-zinc-100 rounded-full mx-auto"></div>
+                        <div class="h-4 w-20 skeleton-shimmer rounded mb-2"></div>
+                        <div class="h-5 w-36 skeleton-shimmer rounded mb-6"></div>
+                        <div class="h-44 w-44 skeleton-shimmer rounded-full mx-auto"></div>
                     </div>
                 </div>
             </div>
@@ -507,9 +507,9 @@ onMounted(() => { fetchData(); });
                 <!-- ── Key Metrics ────────────────────────────────── -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                     <div v-for="metric in metricCards" :key="metric.label"
-                        class="bg-white rounded-2xl p-5 sm:p-6 border border-zinc-100 hover:border-zinc-200 hover:shadow-sm transition-all duration-200">
+                        class="bg-white rounded-2xl p-5 sm:p-6 border border-zinc-100 hover:border-zinc-200 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
                         <div class="flex items-center justify-between mb-4">
-                            <div :class="['w-11 h-11 rounded-xl flex items-center justify-center', metric.iconBg]">
+                            <div :class="['w-11 h-11 rounded-xl flex items-center justify-center transition-transform hover:scale-110', metric.iconBg]">
                                 <component :is="metric.icon" :class="['w-5 h-5', metric.iconColor]" />
                             </div>
                             <span v-if="metric.growthKey && growth[metric.growthKey] !== undefined"
@@ -538,7 +538,7 @@ onMounted(() => { fetchData(); });
                 <!-- ── Charts Row 1: Sales Trend + Category ────────── -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- Revenue Trend (Line Chart) -->
-                    <div class="lg:col-span-2 bg-white rounded-2xl p-5 sm:p-6 border border-zinc-100">
+                    <div class="lg:col-span-2 bg-white rounded-2xl p-5 sm:p-6 border border-zinc-100 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
                         <div class="flex items-center justify-between mb-6">
                             <div>
                                 <span class="text-[10px] uppercase tracking-[0.2em] text-amber-700 font-bold">Revenue trend</span>
@@ -562,7 +562,7 @@ onMounted(() => { fetchData(); });
                     </div>
 
                     <!-- Sales by Category (Doughnut) -->
-                    <div class="bg-white rounded-2xl p-5 sm:p-6 border border-zinc-100">
+                    <div class="bg-white rounded-2xl p-5 sm:p-6 border border-zinc-100 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
                         <div class="mb-6">
                             <span class="text-[10px] uppercase tracking-[0.2em] text-amber-700 font-bold">Breakdown</span>
                             <h2 class="font-bold text-xl text-zinc-900 mt-1">Sales by category</h2>
@@ -583,7 +583,7 @@ onMounted(() => { fetchData(); });
                 <!-- ── Charts Row 2: Products + Orders ───────────── │ -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- Top Products (Horizontal Bar) -->
-                    <div class="lg:col-span-2 bg-white rounded-2xl p-5 sm:p-6 border border-zinc-100">
+                    <div class="lg:col-span-2 bg-white rounded-2xl p-5 sm:p-6 border border-zinc-100 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
                         <div class="flex items-center justify-between mb-6">
                             <div>
                                 <span class="text-[10px] uppercase tracking-[0.2em] text-amber-700 font-bold">Best sellers</span>
@@ -605,7 +605,7 @@ onMounted(() => { fetchData(); });
                     <!-- Order Status (Pie) + Customer Trend -->
                     <div class="space-y-6">
                         <!-- Order Status -->
-                        <div class="bg-white rounded-2xl p-5 sm:p-6 border border-zinc-100">
+                        <div class="bg-white rounded-2xl p-5 sm:p-6 border border-zinc-100 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
                             <div class="mb-4">
                                 <span class="text-[10px] uppercase tracking-[0.2em] text-amber-700 font-bold">Orders</span>
                                 <h2 class="font-bold text-lg text-zinc-900 mt-1">Order status</h2>
@@ -622,7 +622,7 @@ onMounted(() => { fetchData(); });
                         </div>
 
                         <!-- Customer Trend -->
-                        <div class="bg-white rounded-2xl p-5 sm:p-6 border border-zinc-100">
+                        <div class="bg-white rounded-2xl p-5 sm:p-6 border border-zinc-100 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
                             <div class="mb-4">
                                 <span class="text-[10px] uppercase tracking-[0.2em] text-amber-700 font-bold">Customers</span>
                                 <h2 class="font-bold text-lg text-zinc-900 mt-1">Customer acquisition</h2>
@@ -641,7 +641,7 @@ onMounted(() => { fetchData(); });
                 </div>
 
                 <!-- ── Detailed Product Performance Table ─────────── -->
-                <div class="bg-white rounded-2xl p-5 sm:p-6 border border-zinc-100">
+                <div class="bg-white rounded-2xl p-5 sm:p-6 border border-zinc-100 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
                     <div class="mb-6">
                         <span class="text-[10px] uppercase tracking-[0.2em] text-amber-700 font-bold">Details</span>
                         <h2 class="font-bold text-xl text-zinc-900 mt-1">Product performance details</h2>

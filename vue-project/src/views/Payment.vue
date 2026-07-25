@@ -148,7 +148,7 @@ const processPayment = async () => {
                         <div class="mb-8">
                             <label class="text-xs font-bold uppercase tracking-[0.2em] text-neutral-500 mb-3 block">Payment method</label>
                             <div class="grid sm:grid-cols-2 gap-2">
-                                <button v-for="m in methods" :key="m.id" @click="method = m.id" type="button" :class="['flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all', method === m.id ? 'border-ink bg-ink text-paper' : 'border-neutral-200 text-ink hover:border-ink']">
+                                <button v-for="m in methods" :key="m.id" @click="method = m.id" type="button" :class="['flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all active:scale-[0.98]', method === m.id ? 'border-ink bg-ink text-paper' : 'border-neutral-200 text-ink hover:border-ink hover:bg-neutral-50']">
                                     <component :is="m.icon" class="w-5 h-5 shrink-0" />
                                     <span class="text-sm font-bold flex-1">{{ m.label }}</span>
                                     <span class="w-4 h-4 rounded-full border-2 flex items-center justify-center" :class="method === m.id ? 'border-paper bg-accent' : 'border-neutral-300'">
@@ -217,7 +217,7 @@ const processPayment = async () => {
                                     <input type="checkbox" v-model="form.saveCard" class="w-4 h-4 rounded border-neutral-300 text-accent focus:ring-accent" />
                                     <span>Save this card for future purchases</span>
                                 </label>
-                                <button type="submit" :disabled="isProcessing || isSuccess" class="w-full btn-accent shine-effect justify-center py-4 text-base">
+                                <button type="submit" :disabled="isProcessing || isSuccess" class="w-full btn-accent shine-effect justify-center py-4 text-base active:scale-[0.98]">
                                     <Loader2 v-if="isProcessing" class="w-5 h-5 animate-spin" />
                                     <CheckCircle2 v-else-if="isSuccess" class="w-5 h-5" />
                                     <Lock v-else class="w-5 h-5" />

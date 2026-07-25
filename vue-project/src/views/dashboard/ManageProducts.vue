@@ -972,16 +972,16 @@ onMounted(() => {
 
             <!-- Stats -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-5 mb-6">
-                <div class="card-flat p-4 sm:p-5">
+                <div class="card-flat p-4 sm:p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
                     <div class="flex items-center gap-3 mb-3">
-                        <div class="w-10 h-10 rounded-xl bg-info/10 inline-flex items-center justify-center">
+                        <div class="w-10 h-10 rounded-xl bg-info/10 inline-flex items-center justify-center transition-transform hover:scale-110">
                             <Boxes class="w-5 h-5 text-info" />
                         </div>
                     </div>
                     <p class="text-neutral-500 text-[10px] uppercase tracking-[0.15em] font-bold mb-0.5">Total</p>
                     <p class="text-2xl sm:text-3xl font-bold text-ink tabular-nums">{{ totalProducts }}</p>
                 </div>
-                <div class="card-flat p-4 sm:p-5">
+                <div class="card-flat p-4 sm:p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
                     <div class="flex items-center gap-3 mb-3">
                         <div class="w-10 h-10 rounded-xl bg-accent/10 inline-flex items-center justify-center">
                             <Package class="w-5 h-5 text-accent" />
@@ -990,7 +990,7 @@ onMounted(() => {
                     <p class="text-neutral-500 text-[10px] uppercase tracking-[0.15em] font-bold mb-0.5">Active</p>
                     <p class="text-2xl sm:text-3xl font-bold text-accent tabular-nums">{{ activeProducts }}</p>
                 </div>
-                <div class="card-flat p-4 sm:p-5">
+                <div class="card-flat p-4 sm:p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
                     <div class="flex items-center gap-3 mb-3">
                         <div class="w-10 h-10 rounded-xl bg-warning/10 inline-flex items-center justify-center">
                             <Eye class="w-5 h-5 text-warning" />
@@ -999,7 +999,7 @@ onMounted(() => {
                     <p class="text-neutral-500 text-[10px] uppercase tracking-[0.15em] font-bold mb-0.5">Draft</p>
                     <p class="text-2xl sm:text-3xl font-bold text-warning tabular-nums">{{ draftProducts }}</p>
                 </div>
-                <div class="card-flat p-4 sm:p-5">
+                <div class="card-flat p-4 sm:p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
                     <div class="flex items-center gap-3 mb-3">
                         <div class="w-10 h-10 rounded-xl bg-danger/10 inline-flex items-center justify-center">
                             <AlertCircle class="w-5 h-5 text-danger" />
@@ -1109,9 +1109,109 @@ onMounted(() => {
             </div>
 
             <!-- Loading State (initial) -->
-            <div v-if="loading && products.length === 0" class="card-flat p-12 sm:p-16 text-center">
-                <Loader2 class="w-10 h-10 text-accent animate-spin mx-auto mb-4" />
-                <p class="text-neutral-500 text-sm font-medium">Loading products...</p>
+            <div v-if="loading && products.length === 0" class="card-flat overflow-hidden">
+                <div class="p-6 sm:p-8">
+                    <!-- Skeleton Header -->
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                        <div class="space-y-3">
+                            <div class="h-3 w-24 skeleton-shimmer rounded"></div>
+                            <div class="h-7 w-48 skeleton-shimmer rounded-lg"></div>
+                            <div class="h-4 w-36 skeleton-shimmer rounded"></div>
+                        </div>
+                        <div class="flex gap-3">
+                            <div class="h-10 w-28 skeleton-shimmer rounded-full"></div>
+                            <div class="h-10 w-32 skeleton-shimmer rounded-full"></div>
+                        </div>
+                    </div>
+
+                    <!-- Skeleton Stats -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-5 mb-8">
+                        <div v-for="i in 4" :key="'sk-stat-' + i" class="rounded-2xl border border-neutral-200 p-4 sm:p-5 space-y-3">
+                            <div class="w-10 h-10 skeleton-shimmer rounded-xl"></div>
+                            <div class="h-3 w-16 skeleton-shimmer rounded"></div>
+                            <div class="h-7 w-20 skeleton-shimmer rounded"></div>
+                        </div>
+                    </div>
+
+                    <!-- Skeleton Filters -->
+                    <div class="rounded-2xl border border-neutral-200 p-4 sm:p-5 mb-8">
+                        <div class="flex flex-col lg:flex-row gap-4">
+                            <div class="flex-1 h-10 skeleton-shimmer rounded-xl"></div>
+                            <div class="w-full lg:w-44 h-10 skeleton-shimmer rounded-xl"></div>
+                            <div class="w-full lg:w-36 h-10 skeleton-shimmer rounded-xl"></div>
+                            <div class="w-full lg:w-36 h-10 skeleton-shimmer rounded-xl"></div>
+                        </div>
+                    </div>
+
+                    <!-- Skeleton Table -->
+                    <div class="rounded-2xl border border-neutral-200 overflow-hidden">
+                        <!-- Toolbar -->
+                        <div class="px-4 sm:px-6 py-3 bg-neutral-50 border-b border-neutral-200">
+                            <div class="flex items-center justify-between">
+                                <div class="h-5 w-40 skeleton-shimmer rounded"></div>
+                                <div class="flex gap-2">
+                                    <div class="h-8 w-20 skeleton-shimmer rounded-lg"></div>
+                                    <div class="h-8 w-20 skeleton-shimmer rounded-lg"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Table Header -->
+                        <div class="px-4 sm:px-6 py-3.5 bg-neutral-50 border-b border-neutral-200">
+                            <div class="flex gap-6">
+                                <div v-for="i in 7" :key="'sk-th-' + i" class="h-3 w-16 skeleton-shimmer rounded" :class="{ 'w-24': i === 1 }"></div>
+                            </div>
+                        </div>
+                        <!-- Skeleton Rows -->
+                        <div v-for="i in 4" :key="'sk-row-' + i" class="border-b border-neutral-200 last:border-b-0">
+                            <div class="px-4 sm:px-6 py-4 flex items-center gap-4">
+                                <div class="w-5 h-5 skeleton-shimmer rounded"></div>
+                                <div class="w-12 h-12 skeleton-shimmer rounded-xl shrink-0"></div>
+                                <div class="flex-1 space-y-2">
+                                    <div class="h-4 w-48 skeleton-shimmer rounded"></div>
+                                    <div class="h-3 w-32 skeleton-shimmer rounded"></div>
+                                </div>
+                                <div class="h-5 w-20 skeleton-shimmer rounded-full"></div>
+                                <div class="h-5 w-16 skeleton-shimmer rounded"></div>
+                                <div class="h-5 w-16 skeleton-shimmer rounded"></div>
+                                <div class="h-5 w-20 skeleton-shimmer rounded-full"></div>
+                                <div class="h-5 w-16 skeleton-shimmer rounded"></div>
+                                <div class="flex gap-2">
+                                    <div v-for="j in 3" :key="'sk-act-' + i + '-' + j" class="w-8 h-8 skeleton-shimmer rounded-full"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtered Empty State -->
+            <div v-if="!loading && products.length === 0 && !error && totalProducts > 0" class="card-flat p-12 sm:p-16 text-center">
+                <div class="w-20 h-20 rounded-full bg-warning/10 flex items-center justify-center mx-auto mb-5">
+                    <Inbox class="w-9 h-9 text-warning" />
+                </div>
+                <h3 class="text-lg font-bold text-ink mb-2">No matching products</h3>
+                <p class="text-sm text-neutral-500 mb-2 max-w-sm mx-auto">
+                    No products match your current filters. Try adjusting your search or filter criteria.
+                </p>
+                <button @click="clearFilters" class="btn-outline text-sm gap-1.5 mt-3">
+                    <X class="w-3.5 h-3.5" />
+                    Clear filters
+                </button>
+            </div>
+
+            <!-- Empty State -->
+            <div v-else-if="!loading && products.length === 0 && !error && totalProducts === 0" class="card-flat p-12 sm:p-16 text-center">
+                <div class="w-24 h-24 rounded-full bg-neutral-100 flex items-center justify-center mx-auto mb-6">
+                    <Package class="w-11 h-11 text-neutral-300" />
+                </div>
+                <h3 class="text-xl font-bold text-ink mb-2">No products yet</h3>
+                <p class="text-sm text-neutral-500 mb-6 max-w-sm mx-auto">
+                    Get started by adding your first product to the catalog. You can add images, variants, and more.
+                </p>
+                <button @click="openAddProduct" class="btn-accent text-sm gap-2 shine-effect">
+                    <Plus class="w-4 h-4" />
+                    Add your first product
+                </button>
             </div>
 
             <!-- Products Table -->
@@ -1622,62 +1722,41 @@ onMounted(() => {
                     </table>
                 </div>
 
-                <!-- Empty State -->
-                <div v-if="products.length === 0 && !loading" class="text-center py-16 sm:py-20">
-                    <Inbox class="mx-auto w-14 h-14 text-neutral-200 mb-4" />
-                    <p class="text-neutral-500 text-sm font-semibold">No products found</p>
-                    <p class="text-xs text-neutral-400 mt-1 max-w-xs mx-auto">
-                        <template v-if="hasActiveFilters">
-                            Try adjusting your search or filter criteria, or
-                            <button @click="clearFilters" class="text-accent underline underline-offset-2 hover:text-accent-600">clear all filters</button>.
-                        </template>
-                        <template v-else>
-                            Get started by adding your first product to the catalog.
-                        </template>
-                    </p>
-                    <button
-                        v-if="!hasActiveFilters"
-                        @click="openAddProduct"
-                        class="btn-accent text-sm gap-2 mt-6"
-                    >
-                        <Plus class="w-4 h-4" />
-                        Add Product
-                    </button>
-                </div>
+                <!-- Empty State (kept as fallback) -->
 
                 <!-- Pagination -->
                 <div v-if="totalPages > 1" class="border-t border-neutral-200 px-4 sm:px-6 py-4">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div class="text-xs text-neutral-500 text-center sm:text-left">
                             Showing <span class="font-semibold text-ink">{{ paginationStart }}</span>
-                            to <span class="font-semibold text-ink">{{ paginationEnd }}</span>
+                            – <span class="font-semibold text-ink">{{ paginationEnd }}</span>
                             of <span class="font-semibold text-ink">{{ totalProducts }}</span> products
                         </div>
-                        <div class="flex items-center justify-center gap-1.5">
+                        <div class="flex items-center justify-center gap-1">
                             <button
                                 @click="prevPage"
                                 :disabled="currentPage === 1"
-                                class="btn-ghost p-2 disabled:opacity-30"
+                                class="w-9 h-9 rounded-lg flex items-center justify-center text-neutral-500 hover:bg-neutral-100 hover:text-ink transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+                                aria-label="Previous page"
                             >
                                 <ChevronLeft class="w-4 h-4" />
                             </button>
-                            <button
-                                v-for="page in getPageNumbers()"
-                                :key="page"
-                                @click="goToPage(page)"
-                                :class="[
-                                    'min-w-9 h-9 rounded-lg text-sm font-bold transition-colors',
-                                    page === currentPage
-                                        ? 'bg-ink text-paper shadow-sm'
-                                        : 'text-neutral-600 hover:bg-neutral-100'
-                                ]"
-                            >
-                                {{ page }}
-                            </button>
+                                <button
+                                    v-for="page in getPageNumbers()"
+                                    :key="page"
+                                    @click="goToPage(page)"
+                                    class="min-w-9 h-9 rounded-lg text-sm font-bold transition-all duration-150 active:scale-90"
+                                    :class="page === currentPage
+                                        ? 'bg-ink text-paper shadow-sm scale-105'
+                                        : 'text-neutral-500 hover:bg-neutral-100 hover:text-ink'"
+                                >
+                                    {{ page }}
+                                </button>
                             <button
                                 @click="nextPage"
                                 :disabled="currentPage === totalPages"
-                                class="btn-ghost p-2 disabled:opacity-30"
+                                class="w-9 h-9 rounded-lg flex items-center justify-center text-neutral-500 hover:bg-neutral-100 hover:text-ink transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+                                aria-label="Next page"
                             >
                                 <ChevronRight class="w-4 h-4" />
                             </button>
@@ -1688,33 +1767,35 @@ onMounted(() => {
         </div>
 
         <!-- Image Preview Modal -->
-        <div
-            v-if="showImagePreview"
-            @click="closeImagePreview"
-            class="fixed inset-0 bg-ink/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        >
-            <div @click.stop class="relative max-w-3xl max-h-[90vh] w-full">
-                <button
-                    @click="closeImagePreview"
-                    class="absolute -top-3 -right-3 w-10 h-10 bg-paper rounded-full shadow-lg flex items-center justify-center hover:bg-neutral-100 transition-colors z-10"
-                >
-                    <X class="w-5 h-5" />
-                </button>
-                <img
-                    :src="previewImage"
-                    alt="Product image preview"
-                    class="w-full h-auto max-h-[85vh] object-contain rounded-2xl shadow-2xl"
-                />
+        <transition name="modal">
+            <div
+                v-if="showImagePreview"
+                @click="closeImagePreview"
+                class="fixed inset-0 bg-ink/70 backdrop-blur-md z-50 flex items-center justify-center p-4"
+            >
+                <div @click.stop class="relative max-w-3xl max-h-[90vh] w-full animate-[scale-in_0.25s_ease-out]">
+                    <button
+                        @click="closeImagePreview"
+                        class="absolute -top-3 -right-3 w-10 h-10 bg-paper rounded-full shadow-lg flex items-center justify-center hover:bg-neutral-100 transition-colors z-10"
+                    >
+                        <X class="w-5 h-5" />
+                    </button>
+                    <img
+                        :src="previewImage"
+                        alt="Product image preview"
+                        class="w-full h-auto max-h-[85vh] object-contain rounded-2xl shadow-2xl"
+                    />
+                </div>
             </div>
-        </div>
+        </transition>
 
         <!-- CSV Import Modal -->
         <div
             v-if="showImportModal"
             @click="showImportModal = false"
-            class="fixed inset-0 bg-ink/50 z-50 flex items-center justify-center p-4"
+            class="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
         >
-            <div @click.stop class="card-flat p-5 sm:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div @click.stop class="card-flat p-5 sm:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-[scale-in_0.25s_ease-out]">
                 <div class="flex items-center justify-between mb-6">
                     <div>
                         <span class="text-[10px] uppercase tracking-[0.2em] text-accent font-bold">Import</span>
@@ -1827,9 +1908,9 @@ onMounted(() => {
         <div
             v-if="showDeleteModal"
             @click="closeDeleteModal"
-            class="fixed inset-0 bg-ink/50 z-50 flex items-center justify-center p-4"
+            class="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
         >
-            <div @click.stop class="card-flat p-6 sm:p-8 max-w-md w-full text-center">
+            <div @click.stop class="card-flat p-6 sm:p-8 max-w-md w-full text-center animate-[scale-in_0.25s_ease-out]">
                 <div class="w-14 h-14 bg-danger/10 rounded-full flex items-center justify-center mx-auto mb-4">
                     <AlertTriangle class="w-7 h-7 text-danger" />
                 </div>
@@ -1868,9 +1949,9 @@ onMounted(() => {
         <div
             v-if="showBulkDeleteModal"
             @click="showBulkDeleteModal = false"
-            class="fixed inset-0 bg-ink/50 z-50 flex items-center justify-center p-4"
+            class="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
         >
-            <div @click.stop class="card-flat p-6 sm:p-8 max-w-sm w-full text-center">
+            <div @click.stop class="card-flat p-6 sm:p-8 max-w-sm w-full text-center animate-[scale-in_0.25s_ease-out]">
                 <div class="w-14 h-14 bg-danger/10 rounded-full flex items-center justify-center mx-auto mb-4">
                     <AlertTriangle class="w-7 h-7 text-danger" />
                 </div>
@@ -1916,9 +1997,9 @@ onMounted(() => {
         <div
             v-if="showDiscountModal"
             @click="closeDiscountModal"
-            class="fixed inset-0 bg-ink/50 z-50 flex items-center justify-center p-4"
+            class="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
         >
-            <div @click.stop class="card-flat p-5 sm:p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div @click.stop class="card-flat p-5 sm:p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-[scale-in_0.25s_ease-out]">
                 <div class="flex items-center justify-between mb-6">
                     <div>
                         <span class="text-[10px] uppercase tracking-[0.2em] text-amber-700 font-bold">
@@ -2029,9 +2110,9 @@ onMounted(() => {
         <div
             v-if="showDeleteDiscountConfirm"
             @click="cancelDeleteDiscount"
-            class="fixed inset-0 bg-ink/50 z-50 flex items-center justify-center p-4"
+            class="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
         >
-            <div @click.stop class="card-flat p-6 max-w-sm w-full text-center">
+            <div @click.stop class="card-flat p-6 max-w-sm w-full text-center animate-[scale-in_0.25s_ease-out]">
                 <div class="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
                     <AlertTriangle class="w-7 h-7 text-red-500" />
                 </div>
@@ -2053,9 +2134,8 @@ onMounted(() => {
         <div
             v-if="showBulkStatusModal"
             @click="showBulkStatusModal = false"
-            class="fixed inset-0 bg-ink/50 z-50 flex items-center justify-center p-4"
-        >
-            <div @click.stop class="card-flat p-6 sm:p-8 max-w-sm w-full text-center">
+            class="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div @click.stop class="card-flat p-6 sm:p-8 max-w-sm w-full text-center animate-[scale-in_0.25s_ease-out]">
                 <div class="w-14 h-14 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
                     <CheckSquare class="w-7 h-7 text-accent" />
                 </div>
@@ -2072,7 +2152,7 @@ onMounted(() => {
                     >
                         Cancel
                     </button>
-                    <button
+                        <button
                         @click="executeBulkStatusChange"
                         :disabled="bulkActionLoading"
                         class="btn-accent flex-1 gap-2"
@@ -2085,3 +2165,31 @@ onMounted(() => {
         </div>
     </div>
 </template>
+
+<style scoped>
+/* Modal transitions */
+.modal-enter-active {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.modal-leave-active {
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.modal-enter-from {
+    opacity: 0;
+}
+.modal-leave-to {
+    opacity: 0;
+}
+
+/* Scale-in animation for modal content */
+@keyframes scale-in {
+    from {
+        opacity: 0;
+        transform: scale(0.92);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+</style>

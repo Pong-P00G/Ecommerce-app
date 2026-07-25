@@ -334,16 +334,20 @@ onMounted(fetchNotifications);
 
             <!-- Pagination -->
             <div v-if="totalPages > 1" class="flex items-center justify-between mt-6">
-                <p class="text-sm text-neutral-500">Page {{ currentPage }} of {{ totalPages }} ({{ totalItems }} total)</p>
+                <p class="text-sm text-neutral-500">
+                    Showing <span class="font-bold text-ink tabular-nums">{{ (currentPage - 1) * pageSize + 1 }}-{{ Math.min(currentPage * pageSize, totalItems) }}</span>
+                    of <span class="font-bold text-ink tabular-nums">{{ totalItems }}</span>
+                </p>
                 <div class="flex items-center gap-2">
-                    <button @click="goToPage(currentPage - 1)" :disabled="currentPage <= 1" class="btn-ghost p-2 disabled:opacity-30">
+                    <button @click="goToPage(currentPage - 1)" :disabled="currentPage <= 1" class="btn-ghost p-2 disabled:opacity-30 active:scale-90 transition-transform" aria-label="Previous page">
                         <ChevronLeft class="w-4 h-4" />
                     </button>
                     <button v-for="p in pageNumbers" :key="p" @click="goToPage(p)"
-                        :class="['w-8 h-8 rounded-lg text-sm font-bold transition-colors', p === currentPage ? 'bg-ink text-paper' : 'text-neutral-600 hover:bg-neutral-200']">
+                        :class="['w-8 h-8 rounded-lg text-sm font-bold transition-all active:scale-90', p === currentPage ? 'bg-ink text-paper scale-105' : 'text-neutral-600 hover:bg-neutral-200']"
+                        :aria-label="`Page ${p}`">
                         {{ p }}
                     </button>
-                    <button @click="goToPage(currentPage + 1)" :disabled="currentPage >= totalPages" class="btn-ghost p-2 disabled:opacity-30">
+                    <button @click="goToPage(currentPage + 1)" :disabled="currentPage >= totalPages" class="btn-ghost p-2 disabled:opacity-30 active:scale-90 transition-transform" aria-label="Next page">
                         <ChevronRight class="w-4 h-4" />
                     </button>
                 </div>

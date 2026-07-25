@@ -24,15 +24,14 @@ const handlePurchase = () => {
                 <span class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-ink text-paper mb-5 shadow-[0_8px_24px_-6px_rgb(249_115_22_/_0.45)]">
                     <Gift class="w-7 h-7 text-accent" />
                 </span>
-                <h1 class="heading-hero text-5xl md:text-6xl text-ink mb-4">
+                <h1 class="heading-hero text-4xl sm:text-5xl md:text-6xl text-ink mb-4">
                     Gift
                     <span class="text-accent">cards</span>
                 </h1>
                 <p class="text-neutral-600 text-lg">Give the perfect gift — let them choose what they love.</p>
             </div>
 
-            <!-- Gift Card Preview -->
-            <div class="bg-ink text-paper rounded-3xl p-8 md:p-10 mb-10 relative overflow-hidden shadow-[0_20px_60px_-15px_rgb(0_0_0_/_0.4)]">
+            <!-- Gift Card Preview -->                    <div class="bg-ink text-paper rounded-3xl p-8 md:p-10 mb-10 relative overflow-hidden shadow-[0_20px_60px_-15px_rgb(0_0_0_/_0.4)] hover:shadow-[0_20px_60px_-10px_rgb(0_0_0_/_0.5)] transition-shadow duration-500">
                 <div class="absolute top-0 right-0 w-72 h-72 bg-accent/20 rounded-full -mr-36 -mt-36"></div>
                 <div class="absolute bottom-0 left-0 w-48 h-48 bg-accent/15 rounded-full -ml-24 -mb-24"></div>
                 <div class="relative z-10 flex items-center justify-between gap-6 flex-wrap">
@@ -41,7 +40,7 @@ const handlePurchase = () => {
                             <div class="w-2 h-2 rounded-full bg-accent pulse-dot"></div>
                             <p class="text-neutral-400 text-xs font-bold uppercase tracking-[0.2em]">AlieeShop</p>
                         </div>
-                        <p class="text-5xl md:text-6xl font-bold tabular-nums">
+                        <p class="text-4xl sm:text-5xl md:text-6xl font-bold tabular-nums">
                             {{ '$' }}{{ selectedAmount === 'custom' ? customAmount || '0' : selectedAmount }}
                         </p>
                         <p class="text-neutral-400 mt-3 text-sm">For: {{ recipientName || 'Recipient Name' }}</p>
@@ -61,7 +60,7 @@ const handlePurchase = () => {
                             :key="amount"
                             @click="selectedAmount = amount"
                             :class="[
-                                'py-4 rounded-xl font-bold text-lg transition-all duration-200',
+                                'py-4 rounded-xl font-bold text-lg transition-all duration-200 active:scale-95',
                                 selectedAmount === amount
                                     ? 'bg-ink text-paper shadow-sm'
                                     : 'bg-neutral-50 text-neutral-700 hover:bg-neutral-100 border border-neutral-200'

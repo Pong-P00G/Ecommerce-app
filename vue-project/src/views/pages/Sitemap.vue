@@ -77,7 +77,7 @@ const sections = [
                 <span class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-ink text-paper mb-5 shadow-[0_8px_24px_-6px_rgb(249_115_22_/_0.45)]">
                     <Map class="w-7 h-7 text-accent" />
                 </span>
-                <h1 class="heading-hero text-5xl md:text-6xl text-ink mb-4">
+                <h1 class="heading-hero text-4xl sm:text-5xl md:text-6xl text-ink mb-4">
                     Site
                     <span class="text-accent">map</span>
                 </h1>
@@ -86,13 +86,13 @@ const sections = [
 
             <!-- Sitemap Grid -->
             <div class="max-w-4xl mx-auto grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div v-for="section in sections" :key="section.label" class="card-flat p-6">
+                <div v-for="section in sections" :key="section.label" class="card-flat p-6 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 stagger-item">
                     <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-accent mb-4">{{ section.label }}</h2>
                     <ul class="space-y-2">
                         <li v-for="link in section.links" :key="link.name">
                             <RouterLink :to="link.to"
-                                class="flex items-center gap-2 text-sm text-neutral-600 hover:text-ink font-medium transition-colors group">
-                                <ChevronRight class="w-3.5 h-3.5 text-neutral-400 group-hover:text-accent transition-colors shrink-0" />
+                                class="flex items-center gap-2 text-sm text-neutral-600 hover:text-ink font-medium transition-all duration-200 group">
+                                <ChevronRight class="w-3.5 h-3.5 text-neutral-400 group-hover:text-accent group-hover:translate-x-0.5 transition-all duration-200 shrink-0" />
                                 {{ link.name }}
                             </RouterLink>
                         </li>
@@ -102,7 +102,7 @@ const sections = [
 
             <!-- Admin Section -->
             <div class="max-w-4xl mx-auto mt-6">
-                <div class="card-flat p-6">
+                <div class="card-flat p-6 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 stagger-item" style="animation-delay: 350ms;">
                     <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-accent mb-4">Admin Dashboard</h2>
                     <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
                         <RouterLink v-for="link in [
@@ -118,8 +118,8 @@ const sections = [
                             { name: 'Reviews', to: '/admin/reviews' },
                             { name: 'Reports', to: '/admin/report' },
                         ]" :key="link.name" :to="link.to"
-                            class="flex items-center gap-2 text-sm text-neutral-600 hover:text-ink font-medium transition-colors group p-2 rounded-xl hover:bg-neutral-50">
-                            <ChevronRight class="w-3.5 h-3.5 text-neutral-400 group-hover:text-accent transition-colors shrink-0" />
+                            class="flex items-center gap-2 text-sm text-neutral-600 hover:text-ink font-medium transition-all duration-200 group p-2 rounded-xl hover:bg-neutral-50">
+                            <ChevronRight class="w-3.5 h-3.5 text-neutral-400 group-hover:text-accent group-hover:translate-x-0.5 transition-all duration-200 shrink-0" />
                             {{ link.name }}
                         </RouterLink>
                     </div>

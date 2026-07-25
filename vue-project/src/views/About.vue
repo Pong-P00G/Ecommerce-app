@@ -45,7 +45,7 @@ const team = [
                             <Sparkles class="w-4 h-4" />
                             Our Story
                         </span>
-                        <h1 class="text-5xl md:text-6xl lg:text-7xl font-elegant font-bold leading-[1.05]">
+                        <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-elegant font-bold leading-[1.05]">
                             We curate <span class="italic text-accent">objects</span> worth keeping.
                         </h1>
                         <p class="text-lg text-neutral-300 font-light leading-relaxed max-w-xl">
@@ -95,7 +95,7 @@ const team = [
                 <h2 class="text-4xl md:text-5xl font-elegant font-bold text-ink">Built on principles, not promises.</h2>
             </div>
             <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div v-for="v in values" :key="v.title" class="card-flat p-6 space-y-4 hover:border-ink hover:-translate-y-1 transition-all duration-300 group">
+                <div v-for="v in values" :key="v.title" class="card-flat p-6 space-y-4 hover:border-ink hover:-translate-y-1 hover:shadow-md transition-all duration-300 group stagger-item">
                     <div class="w-12 h-12 rounded-2xl bg-accent-50 group-hover:bg-accent flex items-center justify-center transition-colors">
                         <component :is="v.icon" class="w-5 h-5 text-accent group-hover:text-white transition-colors" />
                     </div>
@@ -132,9 +132,9 @@ const team = [
                 </RouterLink>
             </div>
             <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div v-for="m in team" :key="m.name" class="group">
-                    <div class="aspect-3/4 rounded-2xl overflow-hidden bg-neutral-100 mb-4">
-                        <LazyImage :src="m.img" :alt="m.name" wrapper-class="w-full h-full" img-class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
+                <div v-for="m in team" :key="m.name" class="group stagger-item">
+                    <div class="aspect-3/4 rounded-2xl overflow-hidden bg-neutral-100 mb-4 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                        <LazyImage :src="m.img" :alt="m.name" wrapper-class="w-full h-full" img-class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-105" />
                     </div>
                     <h3 class="text-lg font-bold text-ink">{{ m.name }}</h3>
                     <p class="text-sm text-neutral-500">{{ m.role }}</p>

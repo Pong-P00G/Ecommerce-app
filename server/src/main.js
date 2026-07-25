@@ -1,8 +1,13 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
+import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import db from './database/dbpool.js';
+import csrfProtection from './middleware/csrfMiddleware.js';
 
 import userRoutes from './routes/userRoutes.js'
 import authRoutes from './routes/authRoutes.js'
@@ -26,7 +31,20 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 
-// Middleware
+// ── Security & Performance Middleware ─────────────────────────────────
+
+app.use(helmet());
+app.use(compression());
+
+// Global rate-limit: 200 requests per 15 min per IP
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 200,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: 'Too many requests, please try again later.' },
+});
+app.use(limiter);
 app.use(cors({
     origin: (origin, callback) => {
         const allowedOrigins = [
@@ -44,9 +62,13 @@ app.use(cors({
     credentials: true
 }));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
+
+// CSRF protection — sets a csrf-token cookie on GET/HEAD/OPTIONS,
+// validates x-csrf-token header on state-changing methods.
+app.use(csrfProtection);
 
 // Request logging middleware (optional)
 app.use((req, res, next) => {
@@ -203,33 +225,6 @@ if (!isTestEnv) {
         console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3001'}`);
         console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
         console.log('='.repeat(50));
-
-        // ── Scheduled Low-Stock Checker ────────────────────────────────
-        // Runs every 30 minutes to automatically check for products
-        // below their reorder level and create admin notifications.
-        const STOCK_CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
-
-        // Also run once shortly after startup (60s delay to let DB warm up)
-        setTimeout(async () => {
-            try {
-                const { checkAndNotifyLowStock } = await import('./services/dashboardService.js');
-                console.log('🔄 Running initial low-stock check...');
-                await checkAndNotifyLowStock();
-            } catch (err) {
-                console.error('❌ Initial low-stock check failed:', err.message);
-            }
-        }, 60_000);
-
-        setInterval(async () => {
-            try {
-                const { checkAndNotifyLowStock } = await import('./services/dashboardService.js');
-                await checkAndNotifyLowStock();
-            } catch (err) {
-                console.error('❌ Scheduled low-stock check failed:', err.message);
-            }
-        }, STOCK_CHECK_INTERVAL_MS);
-
-        console.log(`⏰ Low-stock checker scheduled every ${STOCK_CHECK_INTERVAL_MS / 60000} minutes`);
     });
 }
 

@@ -70,27 +70,27 @@ const handleLogin = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#f9fafb] relative flex items-center justify-center px-4">
+  <div class="min-h-screen bg-neutral-50 relative flex items-center justify-center px-4">
     <!-- Dotted background -->
     <div class="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[18px_18px]"></div>
 
     <div class="relative w-full max-w-md">
       <!-- Header -->
       <div class="text-center mb-8">
-        <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-600 text-white shadow">
+        <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-ink text-paper shadow">
           <ShieldCheck class="h-7 w-7" />
         </div>
-        <h1 class="text-2xl font-semibold text-gray-900">Welcome Back</h1>
-        <p class="mt-1 text-sm text-gray-500">
+        <h1 class="text-xl sm:text-2xl font-semibold text-ink">Welcome Back</h1>
+        <p class="mt-1 text-sm text-neutral-500">
           Elevate your experience with AlieeShop
         </p>
       </div>
 
       <!-- Card -->
-      <div class="rounded-2xl bg-white p-8 shadow-lg">
+      <div class="rounded-2xl bg-paper p-8 shadow-lg">
         <!-- Error -->
         <div v-if="error"
-          class="mb-6 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600 animate-shake">
+          class="mb-6 flex items-center gap-2 rounded-lg bg-danger/10 px-4 py-3 text-sm text-danger animate-shake">
           <AlertCircle class="h-5 w-5 shrink-0" />
           {{ error }}
         </div>
@@ -98,35 +98,35 @@ const handleLogin = async () => {
         <form @submit.prevent="handleLogin" class="space-y-6">
           <!-- Identity -->
           <div>
-            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">
               Identity
             </p>
             <div class="relative">
-              <User class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input v-model="identifier" type="text" required placeholder="Email or Username" :disabled="loading" aria-label="Email or username"
-                class="w-full rounded-xl border border-gray-200 bg-gray-50 px-12 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed" />
+              <User class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
+              <input v-model="identifier" type="text" required id="login-identifier" name="identifier" placeholder="Email or Username" :disabled="loading" aria-label="Email or username"
+                class="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-12 py-3 text-sm text-ink placeholder-neutral-400 focus:border-ink focus:ring-2 focus:ring-ink/10 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed" />
             </div>
           </div>
 
           <!-- Security -->
           <div>
             <div class="mb-2 flex items-center justify-between">
-              <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">
+              <p class="text-xs font-semibold uppercase tracking-wide text-neutral-400">
                 Security
               </p>
             </div>
             <div class="relative">
-              <Lock class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input v-model="password" :type="showPassword ? 'text' : 'password'" required placeholder="Password" aria-label="Password"
+              <Lock class="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
+              <input v-model="password" :type="showPassword ? 'text' : 'password'" required id="login-password" name="password" placeholder="Password" aria-label="Password"
                 :disabled="loading"
-                class="w-full rounded-xl border border-gray-200 bg-gray-50 px-12 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed" />
+                class="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-12 py-3 text-sm text-ink placeholder-neutral-400 focus:border-ink focus:ring-2 focus:ring-ink/10 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed" />
               <button type="button" @click="showPassword = !showPassword" :disabled="loading"
-                class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50">
+                class="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors disabled:opacity-50">
                 <component :is="showPassword ? EyeOff : Eye" class="h-5 w-5" />
               </button>
             </div>
             <RouterLink to="/forgotPassword"
-              class="inline-block mt-2 text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+              class="inline-block mt-2 text-xs font-medium text-accent hover:text-accent-600 transition-colors">
               Forgot Password?
             </RouterLink>
           </div>
@@ -134,23 +134,23 @@ const handleLogin = async () => {
           <!-- Remember -->
           <div class="flex items-center gap-3 px-1">
             <label class="relative flex items-center mt-1 cursor-pointer group">
-              <input v-model="rememberMe" type="checkbox" class="peer sr-only" :disabled="loading" />
+              <input v-model="rememberMe" type="checkbox" id="login-remember" name="remember" class="peer sr-only" :disabled="loading" />
               <div
-                class="w-5 h-5 border-2 border-gray-200 rounded-lg group-hover:border-indigo-400 peer-checked:bg-indigo-600 peer-checked:border-indigo-600 transition-all duration-200 peer-disabled:opacity-50">
+                class="w-5 h-5 border-2 border-neutral-200 rounded-lg group-hover:border-accent peer-checked:bg-accent peer-checked:border-accent transition-all duration-200 peer-disabled:opacity-50">
               </div>
               <div
                 class="absolute inset-0 flex items-center justify-center text-white scale-0 peer-checked:scale-100 transition-transform duration-200">
                 <CheckCircle2 class="w-3.5 h-3.5" />
               </div>
             </label>
-            <span class="text-sm font-medium text-gray-600">
+            <span class="text-sm font-medium text-neutral-600">
               Remember Me
             </span>
           </div>
 
           <!-- Button -->
           <button type="submit" :disabled="loading || !identifier.trim() || !password"
-            class="flex w-full items-center justify-center gap-2 rounded-xl bg-black py-3 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed">
+            class="flex w-full items-center justify-center gap-2 rounded-xl bg-ink py-3 text-sm font-semibold text-paper transition hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed">
             <Loader2 v-if="loading" class="h-5 w-5 animate-spin" />
             <span v-else class="flex items-center gap-2">
               Authenticate
@@ -161,9 +161,9 @@ const handleLogin = async () => {
       </div>
 
       <!-- Footer -->
-      <p class="mt-6 mb-8 text-center text-sm font-bold text-gray-500">
+      <p class="mt-6 mb-8 text-center text-sm font-bold text-neutral-500">
         New to the platform?
-        <RouterLink to="/register" class="font-medium text-indigo-600 hover:text-indigo-700">
+        <RouterLink to="/register" class="font-medium text-accent hover:text-accent-600">
           Sign Up
         </RouterLink>
       </p>

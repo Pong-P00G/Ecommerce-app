@@ -222,9 +222,9 @@ onMounted(() => {
         <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 pb-16 relative z-10">
             <!-- Stats -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-                <div v-for="s in stats" :key="s.label" class="bg-paper border border-neutral-200 rounded-2xl p-4 sm:p-5 flex items-center gap-3 sm:gap-4 hover:border-ink transition-colors">
-                    <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0">
-                        <component :is="s.icon" class="w-5 h-5 text-ink" />
+                <div v-for="s in stats" :key="s.label" class="bg-paper border border-neutral-200 rounded-2xl p-4 sm:p-5 flex items-center gap-3 sm:gap-4 transition-all duration-200 hover:border-ink hover:shadow-md hover:-translate-y-0.5 group/stats">
+                    <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0 group-hover/stats:bg-accent group-hover/stats:text-white transition-colors duration-200">
+                        <component :is="s.icon" class="w-5 h-5 text-ink group-hover/stats:text-white transition-colors duration-200" />
                     </div>
                     <div class="min-w-0">
                         <p class="text-xl sm:text-2xl font-elegant font-bold text-ink tabular-nums">{{ s.value }}</p>
@@ -271,7 +271,7 @@ onMounted(() => {
                     <div class="grid sm:grid-cols-2 gap-4">
                         <div>
                             <label class="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1.5 block">Full name</label>
-                            <input v-model="profile.name" :disabled="!isEditing" class="input-base disabled:bg-neutral-50 disabled:text-neutral-500" />
+                            <input v-model="profile.name" :disabled="!isEditing" class="input-base disabled:bg-neutral-50 disabled:text-neutral-500 transition-all duration-200 focus:ring-2 focus:ring-neutral-400" />
                         </div>
                         <div>
                             <label class="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1.5 block">Email</label>
@@ -291,12 +291,12 @@ onMounted(() => {
                         <textarea v-model="profile.bio" :disabled="!isEditing" rows="3" class="input-base disabled:bg-neutral-50 disabled:text-neutral-500 resize-none"></textarea>
                     </div>
                     <div v-if="isEditing" class="flex gap-2 pt-2">
-                        <button @click="save" :disabled="isSaving" class="btn-accent">
+                        <button @click="save" :disabled="isSaving" class="btn-accent active:scale-[0.97] transition-all duration-200">
                             <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
                             <Save v-else class="w-4 h-4" />
                             {{ isSaving ? 'Saving...' : 'Save changes' }}
                         </button>
-                        <button @click="isEditing = false" class="btn-outline">Cancel</button>
+                        <button @click="isEditing = false" class="btn-outline active:scale-[0.97] transition-all duration-200">Cancel</button>
                     </div>
                 </div>
 
@@ -422,7 +422,7 @@ onMounted(() => {
                             <!-- Order info -->
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2 flex-wrap">
-                                    <span class="font-bold text-ink tabular-nums">#{{ order.orderId }}</span>
+                                    <span class="font-bold text-ink tabular-nums group-hover:text-accent transition-colors">#{{ order.orderId }}</span>
                                     <span :class="['px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border', getStatusConfig(order.status).color]">
                                         {{ getStatusConfig(order.status).label }}
                                     </span>
@@ -438,10 +438,10 @@ onMounted(() => {
 
                             <!-- Total & Arrow -->
                             <div class="text-right shrink-0">
-                                <p class="text-base sm:text-lg font-bold text-ink tabular-nums">${{ formatPrice(order.totalAmount) }}</p>
+                                <p class="text-base sm:text-lg font-bold text-ink tabular-nums group-hover:text-accent transition-colors">${{ formatPrice(order.totalAmount) }}</p>
                                 <div class="flex items-center justify-end gap-1 mt-1 text-xs text-neutral-400 group-hover:text-ink transition-colors">
                                     <span>Details</span>
-                                    <ChevronRight class="w-3 h-3" />
+                                    <ChevronRight class="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                                 </div>
                             </div>
                         </div>

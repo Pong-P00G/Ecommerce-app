@@ -81,7 +81,7 @@ const confirmClear = () => {
                         <Heart class="w-4 h-4 fill-accent" />
                         Saved for later
                     </span>
-                    <h1 class="text-4xl md:text-5xl font-elegant font-bold text-ink leading-tight">Your wishlist</h1>
+                    <h1 class="text-3xl sm:text-4xl md:text-5xl font-elegant font-bold text-ink leading-tight">Your wishlist</h1>
                     <p class="text-sm text-neutral-500 mt-1.5">
                         <span class="font-bold text-ink tabular-nums">{{ items.length }}</span>
                         {{ items.length === 1 ? 'item' : 'items' }}
@@ -95,14 +95,14 @@ const confirmClear = () => {
                 <div v-if="items.length" class="flex items-center gap-3">
                     <button
                         @click="moveAllToCart"
-                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-ink text-paper text-sm font-bold rounded-full hover:bg-accent transition-all"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-ink text-paper text-sm font-bold rounded-full hover:bg-accent active:scale-95 transition-all duration-200"
                     >
                         <ShoppingCart class="w-4 h-4" />
                         Move all to cart
                     </button>
                     <button
                         @click="showClearConfirm = true"
-                        class="inline-flex items-center gap-2 px-4 py-2.5 bg-paper border border-neutral-300 text-ink text-sm font-bold rounded-full hover:border-danger hover:text-danger transition-all"
+                        class="inline-flex items-center gap-2 px-4 py-2.5 bg-paper border border-neutral-300 text-ink text-sm font-bold rounded-full hover:border-danger hover:text-danger active:scale-95 transition-all duration-200"
                     >
                         <Trash2 class="w-4 h-4" />
                         Clear all
@@ -164,7 +164,7 @@ const confirmClear = () => {
                             class="mt-2 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold transition-all duration-200"
                             :class="movingIds.has(item.id)
                                 ? 'bg-success/10 text-success'
-                                : 'bg-ink text-paper hover:bg-accent'"
+                                : 'bg-ink text-paper hover:bg-accent active:scale-[0.97]'"
                         >
                             <template v-if="movingIds.has(item.id)">
                                 <CheckCheck class="w-4 h-4" />
@@ -184,7 +184,7 @@ const confirmClear = () => {
         <Transition name="modal">
             <div v-if="showClearConfirm" class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="showClearConfirm = false">
                 <div class="absolute inset-0 bg-ink/60 backdrop-blur-sm"></div>
-                <div class="relative bg-paper rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+                <div class="relative bg-paper rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center animate-[scale-in_0.25s_ease-out]">
                     <div class="w-14 h-14 rounded-full bg-danger/10 flex items-center justify-center mx-auto mb-4">
                         <Trash2 class="w-7 h-7 text-danger" />
                     </div>
@@ -193,13 +193,13 @@ const confirmClear = () => {
                     <div class="flex gap-3">
                         <button
                             @click="showClearConfirm = false"
-                            class="flex-1 px-4 py-2.5 border border-neutral-300 text-ink text-sm font-bold rounded-full hover:bg-neutral-50 transition-all"
+                            class="flex-1 px-4 py-2.5 border border-neutral-300 text-ink text-sm font-bold rounded-full hover:bg-neutral-50 active:scale-[0.97] transition-all"
                         >
                             Cancel
                         </button>
                         <button
                             @click="confirmClear"
-                            class="flex-1 px-4 py-2.5 bg-danger text-paper text-sm font-bold rounded-full hover:bg-danger-600 transition-all"
+                            class="flex-1 px-4 py-2.5 bg-danger text-paper text-sm font-bold rounded-full hover:bg-danger-600 active:scale-[0.97] transition-all"
                         >
                             Clear all
                         </button>

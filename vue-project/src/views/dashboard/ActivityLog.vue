@@ -208,10 +208,26 @@ onMounted(() => {
             </div>
 
             <!-- Loading State -->
-            <div v-if="loading && activities.length === 0" class="card-flat p-16">
-                <div class="flex flex-col items-center justify-center gap-4">
-                    <Loader2 class="w-10 h-10 text-accent animate-spin" />
-                    <p class="text-sm text-neutral-500 font-semibold">Loading activities...</p>
+            <div v-if="loading && activities.length === 0" class="card-flat overflow-hidden">
+                <div class="px-5 sm:px-6 py-3 bg-neutral-50 border-b border-neutral-200">
+                    <div class="h-4 w-40 skeleton-shimmer rounded"></div>
+                </div>
+                <div class="divide-y divide-neutral-100">
+                    <div v-for="i in 6" :key="'sk-act-' + i" class="px-5 sm:px-6 py-4">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 skeleton-shimmer rounded-full shrink-0"></div>
+                            <div class="flex-1 min-w-0 space-y-2">
+                                <div class="flex items-center gap-2">
+                                    <div class="h-5 w-20 skeleton-shimmer rounded"></div>
+                                </div>
+                                <div class="h-3.5 w-3/4 skeleton-shimmer rounded"></div>
+                                <div class="flex items-center gap-3">
+                                    <div class="h-3 w-24 skeleton-shimmer rounded"></div>
+                                    <div class="h-3 w-20 skeleton-shimmer rounded"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -268,35 +284,37 @@ onMounted(() => {
             </div>
 
             <!-- Pagination -->
-            <div v-if="totalPages > 1" class="flex items-center justify-between mt-6">
-                <p class="text-sm text-neutral-500">
-                    Page {{ currentPage }} of {{ totalPages }}
+            <div v-if="totalPages > 1" class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
+                <p class="text-xs text-neutral-500 text-center sm:text-left">
+                    Showing <span class="font-semibold text-ink">{{ (currentPage - 1) * 20 + 1 }}</span>
+                    to <span class="font-semibold text-ink">{{ Math.min(currentPage * 20, totalItems) }}</span>
+                    of <span class="font-semibold text-ink">{{ totalItems }}</span> activities
                 </p>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center justify-center gap-1">
                     <button
                         @click="goToPage(currentPage - 1)"
                         :disabled="currentPage <= 1"
-                        class="btn-ghost p-2 disabled:opacity-30"
+                        class="w-9 h-9 rounded-lg flex items-center justify-center text-neutral-500 hover:bg-neutral-100 hover:text-ink transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+                        aria-label="Previous page"
                     >
                         <ChevronLeft class="w-4 h-4" />
                     </button>
-                    <button
-                        v-for="p in pageNumbers"
-                        :key="p"
-                        @click="goToPage(p)"
-                        :class="[
-                            'w-8 h-8 rounded-lg text-sm font-bold transition-colors',
-                            p === currentPage
-                                ? 'bg-ink text-paper'
-                                : 'text-neutral-600 hover:bg-neutral-200'
-                        ]"
-                    >
-                        {{ p }}
-                    </button>
+                        <button
+                            v-for="p in pageNumbers"
+                            :key="p"
+                            @click="goToPage(p)"
+                            class="min-w-9 h-9 rounded-lg text-sm font-bold transition-all duration-150 active:scale-90"
+                            :class="p === currentPage
+                                ? 'bg-ink text-paper shadow-sm scale-105'
+                                : 'text-neutral-500 hover:bg-neutral-100 hover:text-ink'"
+                        >
+                            {{ p }}
+                        </button>
                     <button
                         @click="goToPage(currentPage + 1)"
                         :disabled="currentPage >= totalPages"
-                        class="btn-ghost p-2 disabled:opacity-30"
+                        class="w-9 h-9 rounded-lg flex items-center justify-center text-neutral-500 hover:bg-neutral-100 hover:text-ink transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+                        aria-label="Next page"
                     >
                         <ChevronRight class="w-4 h-4" />
                     </button>

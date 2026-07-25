@@ -1,7 +1,8 @@
-import { defineConfig } from 'vitest/config';
-import dotenv from 'dotenv';
+// dotenv intentionally omitted — Node 21+ handles --env-file natively
+// The startup script is: vitest run --config vitest.integration.config.js
+// and should be invoked with: node --env-file=.env ... or the --env-file flag
 
-dotenv.config({ path: '.env' });
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
     test: {

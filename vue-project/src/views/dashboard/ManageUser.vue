@@ -265,9 +265,9 @@ onMounted(() => {
 
       <!-- Stats -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8">
-        <div class="card-flat p-6">
+        <div class="card-flat p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
           <div class="flex items-center justify-between mb-4">
-            <div class="w-12 h-12 bg-info/10 rounded-lg flex items-center justify-center">
+            <div class="w-12 h-12 bg-info/10 rounded-lg flex items-center justify-center transition-transform hover:scale-110">
               <Users class="w-6 h-6 text-info" />
             </div>
           </div>
@@ -275,9 +275,9 @@ onMounted(() => {
           <p class="text-3xl font-bold text-ink">{{ totalUsers }}</p>
         </div>
 
-        <div class="card-flat p-6">
+        <div class="card-flat p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
           <div class="flex items-center justify-between mb-4">
-            <div class="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
+            <div class="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center transition-transform hover:scale-110">
               <UserCheck class="w-6 h-6 text-accent" />
             </div>
           </div>
@@ -285,9 +285,9 @@ onMounted(() => {
           <p class="text-3xl font-bold text-ink">{{ activeUsers }}</p>
         </div>
 
-        <div class="card-flat p-6">
+        <div class="card-flat p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
           <div class="flex items-center justify-between mb-4">
-            <div class="w-12 h-12 bg-ink/10 rounded-lg flex items-center justify-center">
+            <div class="w-12 h-12 bg-ink/10 rounded-lg flex items-center justify-center transition-transform hover:scale-110">
               <Shield class="w-6 h-6 text-ink" />
             </div>
           </div>
@@ -341,9 +341,60 @@ onMounted(() => {
       </div>
 
       <!-- Loading State -->
-      <div v-if="loading && users.length === 0" class="card-flat p-12 text-center">
-        <Loader2 class="w-10 h-10 text-accent animate-spin mx-auto mb-4" />
-        <p class="text-neutral-500 text-sm">Loading users...</p>
+      <div v-if="loading && users.length === 0" class="card-flat overflow-hidden">
+        <div class="p-6 sm:p-8 space-y-6">
+          <!-- Skeleton Header -->
+          <div class="flex items-center justify-between">
+            <div class="space-y-3">
+              <div class="h-3 w-24 skeleton-shimmer rounded"></div>
+              <div class="h-7 w-48 skeleton-shimmer rounded-lg"></div>
+              <div class="h-4 w-36 skeleton-shimmer rounded"></div>
+            </div>
+          </div>
+
+          <!-- Skeleton Stats -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+            <div v-for="i in 3" :key="'sk-stat-' + i" class="rounded-2xl border border-neutral-200 p-5 space-y-4">
+              <div class="w-12 h-12 skeleton-shimmer rounded-lg"></div>
+              <div class="space-y-2">
+                <div class="h-3 w-20 skeleton-shimmer rounded"></div>
+                <div class="h-7 w-16 skeleton-shimmer rounded"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Skeleton Filters -->
+          <div class="rounded-2xl border border-neutral-200 p-5">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div v-for="i in 3" :key="'sk-filt-' + i" class="h-10 skeleton-shimmer rounded-xl"></div>
+            </div>
+          </div>
+
+          <!-- Skeleton Table -->
+          <div class="rounded-2xl border border-neutral-200 overflow-hidden">
+            <div class="px-6 py-4 bg-neutral-50 border-b border-neutral-200">
+              <div class="grid grid-cols-6 gap-4">
+                <div v-for="i in 6" :key="'sk-th-' + i" class="h-3 skeleton-shimmer rounded w-3/4"></div>
+              </div>
+            </div>
+            <div v-for="i in 4" :key="'sk-row-' + i" class="px-6 py-4 border-b border-neutral-200 last:border-b-0">
+              <div class="grid grid-cols-6 gap-4 items-center">
+                <div class="space-y-2">
+                  <div class="h-4 w-32 skeleton-shimmer rounded"></div>
+                  <div class="h-3 w-24 skeleton-shimmer rounded"></div>
+                </div>
+                <div><div class="h-5 w-20 skeleton-shimmer rounded-full"></div></div>
+                <div><div class="h-3 w-16 skeleton-shimmer rounded"></div></div>
+                <div><div class="h-5 w-16 skeleton-shimmer rounded-full"></div></div>
+                <div><div class="h-3 w-20 skeleton-shimmer rounded"></div></div>
+                <div class="flex justify-end gap-2">
+                  <div class="h-8 w-14 skeleton-shimmer rounded-lg"></div>
+                  <div class="h-8 w-14 skeleton-shimmer rounded-lg"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Users Table -->
@@ -431,8 +482,8 @@ onMounted(() => {
 
     <!-- User Modal (Create/Edit) -->
     <div v-if="showUserModal" @click="closeModal"
-      class="fixed inset-0 bg-ink/50 z-50 flex items-center justify-center p-4">
-      <div @click.stop class="card-flat p-5 sm:p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
+      class="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div @click.stop class="card-flat p-5 sm:p-8 max-w-md w-full max-h-[90vh] overflow-y-auto animate-[scale-in_0.25s_ease-out]">
         <div class="flex items-center justify-between mb-6">
           <h3 class="text-xl font-bold text-ink">
             {{ isEditMode ? 'Edit User' : 'Add New User' }}
@@ -509,8 +560,8 @@ onMounted(() => {
 
     <!-- Delete Confirmation Modal -->
     <div v-if="showDeleteConfirm" @click="cancelDelete"
-      class="fixed inset-0 bg-ink/50 z-50 flex items-center justify-center p-4">
-      <div @click.stop class="card-flat p-6 sm:p-8 max-w-sm w-full text-center">
+      class="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div @click.stop class="card-flat p-6 sm:p-8 max-w-sm w-full text-center animate-[scale-in_0.25s_ease-out]">
         <div class="w-12 h-12 bg-danger/10 rounded-full flex items-center justify-center mx-auto mb-4">
           <Trash2 class="w-6 h-6 text-danger" />
         </div>

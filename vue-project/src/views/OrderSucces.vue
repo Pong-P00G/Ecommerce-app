@@ -219,34 +219,34 @@ const formatPrice = (p) => parseFloat(p || 0).toFixed(2);
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                            <div class="flex items-start gap-3">
-                                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0">
-                                    <Package class="w-4 h-4 text-ink" />
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 stagger-item">
+                            <div class="flex items-start gap-3 p-3 rounded-xl bg-neutral-50 transition-all duration-200 hover:bg-ink hover:text-paper group/detail">
+                                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0 transition-colors group-hover/detail:bg-accent group-hover/detail:text-white">
+                                    <Package class="w-4 h-4 text-ink group-hover/detail:text-white transition-colors" />
                                 </div>
                                 <div>
-                                    <p class="text-xs text-neutral-500">Items</p>
-                                    <p class="text-sm font-bold text-ink tabular-nums">
+                                    <p class="text-xs text-neutral-500 group-hover/detail:text-neutral-300 transition-colors">Items</p>
+                                    <p class="text-sm font-bold text-ink group-hover/detail:text-paper transition-colors tabular-nums">
                                         {{ itemCount || order?.items?.length || '-' }} products
                                     </p>
                                 </div>
                             </div>
-                            <div class="flex items-start gap-3">
-                                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0">
-                                    <Truck class="w-4 h-4 text-ink" />
+                            <div class="flex items-start gap-3 p-3 rounded-xl bg-neutral-50 transition-all duration-200 hover:bg-ink hover:text-paper group/detail">
+                                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0 transition-colors group-hover/detail:bg-accent group-hover/detail:text-white">
+                                    <Truck class="w-4 h-4 text-ink group-hover/detail:text-white transition-colors" />
                                 </div>
                                 <div>
-                                    <p class="text-xs text-neutral-500">Estimated arrival</p>
-                                    <p class="text-sm font-bold text-ink">{{ estimatedDelivery }}</p>
+                                    <p class="text-xs text-neutral-500 group-hover/detail:text-neutral-300 transition-colors">Estimated arrival</p>
+                                    <p class="text-sm font-bold text-ink group-hover/detail:text-paper transition-colors">{{ estimatedDelivery }}</p>
                                 </div>
                             </div>
-                            <div class="flex items-start gap-3">
-                                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0">
-                                    <Calendar class="w-4 h-4 text-ink" />
+                            <div class="flex items-start gap-3 p-3 rounded-xl bg-neutral-50 transition-all duration-200 hover:bg-ink hover:text-paper group/detail">
+                                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0 transition-colors group-hover/detail:bg-accent group-hover/detail:text-white">
+                                    <Calendar class="w-4 h-4 text-ink group-hover/detail:text-white transition-colors" />
                                 </div>
                                 <div>
-                                    <p class="text-xs text-neutral-500">Total paid</p>
-                                    <p class="text-sm font-bold text-accent tabular-nums">${{ countUp.toFixed(2) }}</p>
+                                    <p class="text-xs text-neutral-500 group-hover/detail:text-neutral-300 transition-colors">Total paid</p>
+                                    <p class="text-sm font-bold text-accent tabular-nums group-hover/detail:text-white transition-colors">${{ countUp.toFixed(2) }}</p>
                                 </div>
                             </div>
                         </div>

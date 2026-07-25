@@ -422,11 +422,32 @@ onMounted(async () => {
 
 <template>
     <div class="bg-paper min-h-screen">
-        <!-- Loading State -->
-        <div v-if="loading" class="flex items-center justify-center min-h-[60vh]">
-            <div class="text-center">
-                <div class="w-12 h-12 border-4 border-neutral-200 border-t-accent rounded-full animate-spin mb-4 mx-auto"></div>
-                <p class="text-neutral-500 text-sm">Loading product...</p>
+        <!-- Skeleton Loading State -->
+        <div v-if="loading" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14">
+                <div class="space-y-4">
+                    <div class="aspect-square rounded-2xl bg-neutral-100 skeleton-shimmer"></div>
+                    <div class="grid grid-cols-5 gap-3">
+                        <div v-for="i in 5" :key="'sk-thumb-'+i" class="aspect-square rounded-xl bg-neutral-100 skeleton-shimmer"></div>
+                    </div>
+                </div>
+                <div class="space-y-5">
+                    <div class="h-6 w-24 skeleton-shimmer rounded-full"></div>
+                    <div class="h-10 w-72 skeleton-shimmer rounded"></div>
+                    <div class="h-12 w-32 skeleton-shimmer rounded"></div>
+                    <div class="h-4 w-20 skeleton-shimmer rounded"></div>
+                    <div class="space-y-2">
+                        <div class="h-4 w-full skeleton-shimmer rounded"></div>
+                        <div class="h-4 w-3/4 skeleton-shimmer rounded"></div>
+                    </div>
+                    <div class="flex gap-3 pt-4">
+                        <div class="flex-1 h-14 skeleton-shimmer rounded-full"></div>
+                        <div class="flex-1 h-14 skeleton-shimmer rounded-full"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 pt-4">
+                        <div v-for="i in 4" :key="'sk-feat-'+i" class="h-16 skeleton-shimmer rounded-xl"></div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -655,29 +676,29 @@ onMounted(async () => {
 
                     <!-- Features -->
                     <div class="grid grid-cols-2 gap-3 pt-6 border-t border-neutral-200">
-                        <div class="flex items-center gap-3 p-3 rounded-xl bg-neutral-50">
-                            <div class="w-10 h-10 rounded-full bg-paper inline-flex items-center justify-center text-ink shrink-0">
-                                <Truck class="w-5 h-5" />
+                        <div class="flex items-center gap-3 p-3 rounded-xl bg-neutral-50 transition-all duration-200 hover:bg-ink hover:text-paper group/feat">
+                            <div class="w-10 h-10 rounded-full bg-paper inline-flex items-center justify-center text-ink shrink-0 transition-colors group-hover/feat:bg-accent group-hover/feat:text-white">
+                                <Truck class="w-5 h-5 group-hover/feat:scale-110 transition-transform" />
                             </div>
-                            <span class="text-xs font-semibold text-ink">Free shipping</span>
+                            <span class="text-xs font-semibold text-ink group-hover/feat:text-paper transition-colors">Free shipping</span>
                         </div>
-                        <div class="flex items-center gap-3 p-3 rounded-xl bg-neutral-50">
-                            <div class="w-10 h-10 rounded-full bg-paper inline-flex items-center justify-center text-ink shrink-0">
-                                <CreditCard class="w-5 h-5" />
+                        <div class="flex items-center gap-3 p-3 rounded-xl bg-neutral-50 transition-all duration-200 hover:bg-ink hover:text-paper group/feat">
+                            <div class="w-10 h-10 rounded-full bg-paper inline-flex items-center justify-center text-ink shrink-0 transition-colors group-hover/feat:bg-accent group-hover/feat:text-white">
+                                <CreditCard class="w-5 h-5 group-hover/feat:scale-110 transition-transform" />
                             </div>
-                            <span class="text-xs font-semibold text-ink">Secure payment</span>
+                            <span class="text-xs font-semibold text-ink group-hover/feat:text-paper transition-colors">Secure payment</span>
                         </div>
-                        <div class="flex items-center gap-3 p-3 rounded-xl bg-neutral-50">
-                            <div class="w-10 h-10 rounded-full bg-paper inline-flex items-center justify-center text-ink shrink-0">
-                                <RotateCcw class="w-5 h-5" />
+                        <div class="flex items-center gap-3 p-3 rounded-xl bg-neutral-50 transition-all duration-200 hover:bg-ink hover:text-paper group/feat">
+                            <div class="w-10 h-10 rounded-full bg-paper inline-flex items-center justify-center text-ink shrink-0 transition-colors group-hover/feat:bg-accent group-hover/feat:text-white">
+                                <RotateCcw class="w-5 h-5 group-hover/feat:scale-110 transition-transform" />
                             </div>
-                            <span class="text-xs font-semibold text-ink">Easy returns</span>
+                            <span class="text-xs font-semibold text-ink group-hover/feat:text-paper transition-colors">Easy returns</span>
                         </div>
-                        <div class="flex items-center gap-3 p-3 rounded-xl bg-neutral-50">
-                            <div class="w-10 h-10 rounded-full bg-paper inline-flex items-center justify-center text-ink shrink-0">
-                                <Clock class="w-5 h-5" />
+                        <div class="flex items-center gap-3 p-3 rounded-xl bg-neutral-50 transition-all duration-200 hover:bg-ink hover:text-paper group/feat">
+                            <div class="w-10 h-10 rounded-full bg-paper inline-flex items-center justify-center text-ink shrink-0 transition-colors group-hover/feat:bg-accent group-hover/feat:text-white">
+                                <Clock class="w-5 h-5 group-hover/feat:scale-110 transition-transform" />
                             </div>
-                            <span class="text-xs font-semibold text-ink">24/7 support</span>
+                            <span class="text-xs font-semibold text-ink group-hover/feat:text-paper transition-colors">24/7 support</span>
                         </div>
                     </div>
                 </div>
@@ -697,7 +718,7 @@ onMounted(async () => {
                         v-for="relatedProduct in relatedProducts"
                         :key="relatedProduct.product_id"
                         @click="viewRelatedProduct(relatedProduct.product_id)"
-                        class="card-base overflow-hidden cursor-pointer group"
+                        class="card-base overflow-hidden cursor-pointer group transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_-8px_rgb(0_0_0_/_0.12)]"
                     >
                         <div class="aspect-square bg-neutral-100 overflow-hidden">
                             <LazyImage

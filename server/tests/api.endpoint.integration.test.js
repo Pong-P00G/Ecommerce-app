@@ -25,22 +25,45 @@ let testProductId;
 let testVariantId;
 let testCartItemId;
 
+// ── CSRF helpers ────────────────────────────────────────────────────────────
+// The csrfProtection middleware requires the x-csrf-token header to match the
+// csrf-token cookie. We obtain the token once in beforeAll.
+
+let csrfToken = null;
+
+async function fetchCsrfToken() {
+    const res = await request(app).get('/');
+    const cookies = res.headers['set-cookie'] || [];
+    const csrfCookie = cookies.find(c => c.startsWith('csrf-token='));
+    if (csrfCookie) {
+        csrfToken = csrfCookie.split(';')[0].split('=')[1];
+    }
+}
+
+function withCsrf(req) {
+    if (csrfToken) {
+        return req.set('x-csrf-token', csrfToken);
+    }
+    return req;
+}
+
 // ── Auth request helpers ────────────────────────────────────────────────────
 // supertest's request(app) returns a SuperTest instance (not a Test).
 // .set() is only available on Test objects returned by .get()/.post() etc.
 // These helpers correctly chain: request(app).method(path).set(...)
+// State-changing methods include the CSRF token via withCsrf().
 
 function authGet(token) {
     return (path) => request(app).get(path).set('Authorization', `Bearer ${token}`);
 }
 function authPost(token) {
-    return (path) => request(app).post(path).set('Authorization', `Bearer ${token}`);
+    return (path) => withCsrf(request(app).post(path).set('Authorization', `Bearer ${token}`));
 }
 function authPut(token) {
-    return (path) => request(app).put(path).set('Authorization', `Bearer ${token}`);
+    return (path) => withCsrf(request(app).put(path).set('Authorization', `Bearer ${token}`));
 }
 function authDelete(token) {
-    return (path) => request(app).delete(path).set('Authorization', `Bearer ${token}`);
+    return (path) => withCsrf(request(app).delete(path).set('Authorization', `Bearer ${token}`));
 }
 
 function createAuthRequest(token) {
@@ -84,10 +107,15 @@ async function createTestProduct(categoryId) {
 // ── Setup / Teardown ───────────────────────────────────────────────────────
 
 beforeAll(async () => {
+    // 0. Fetch CSRF token for state-changing requests
+    await fetchCsrfToken();
+
     // 1. Get admin token via login
-    const loginRes = await request(app)
-        .post('/api/auth/login')
-        .send({ identifier: ADMIN_EMAIL, password: ADMIN_PASSWORD });
+    const loginRes = await withCsrf(
+        request(app)
+            .post('/api/auth/login')
+            .send({ identifier: ADMIN_EMAIL, password: ADMIN_PASSWORD })
+    );
 
     adminToken = loginRes.body.token || null;
 
@@ -275,9 +303,11 @@ describe('404 handler', () => {
 
 describe('POST /api/auth/login', () => {
     it('logs in with valid email/password and returns token + user', async () => {
-        const res = await request(app)
-            .post('/api/auth/login')
-            .send({ identifier: ADMIN_EMAIL, password: ADMIN_PASSWORD });
+        const res = await withCsrf(
+            request(app)
+                .post('/api/auth/login')
+                .send({ identifier: ADMIN_EMAIL, password: ADMIN_PASSWORD })
+        );
 
         expect(res.status).toBe(200);
         expect(res.body.token).toBeDefined();
@@ -286,26 +316,32 @@ describe('POST /api/auth/login', () => {
     });
 
     it('rejects wrong password with 401', async () => {
-        const res = await request(app)
-            .post('/api/auth/login')
-            .send({ identifier: ADMIN_EMAIL, password: 'wrongpassword123' });
+        const res = await withCsrf(
+            request(app)
+                .post('/api/auth/login')
+                .send({ identifier: ADMIN_EMAIL, password: 'wrongpassword123' })
+        );
 
         expect(res.status).toBe(401);
         expect(res.body.token).toBeUndefined();
     });
 
     it('rejects missing identifier with 400', async () => {
-        const res = await request(app)
-            .post('/api/auth/login')
-            .send({ password: ADMIN_PASSWORD });
+        const res = await withCsrf(
+            request(app)
+                .post('/api/auth/login')
+                .send({ password: ADMIN_PASSWORD })
+        );
 
         expect(res.status).toBe(400);
     });
 
     it('rejects missing password with 400', async () => {
-        const res = await request(app)
-            .post('/api/auth/login')
-            .send({ identifier: ADMIN_EMAIL });
+        const res = await withCsrf(
+            request(app)
+                .post('/api/auth/login')
+                .send({ identifier: ADMIN_EMAIL })
+        );
 
         expect(res.status).toBe(400);
     });
@@ -315,15 +351,17 @@ describe('POST /api/auth/register', () => {
     const testEmail = `endpoint_test_register_${Date.now()}@test.com`;
 
     it('registers a new user and returns token + user', async () => {
-        const res = await request(app)
-            .post('/api/auth/register')
-            .send({
-                username: `testuser${Date.now()}`,
-                email: testEmail,
-                password: 'testpass123',
-                first_name: 'Test',
-                last_name: 'User',
-            });
+        const res = await withCsrf(
+            request(app)
+                .post('/api/auth/register')
+                .send({
+                    username: `testuser${Date.now()}`,
+                    email: testEmail,
+                    password: 'testpass123',
+                    first_name: 'Test',
+                    last_name: 'User',
+                })
+        );
 
         expect(res.status).toBe(201);
         expect(res.body.token).toBeDefined();
@@ -332,37 +370,43 @@ describe('POST /api/auth/register', () => {
     });
 
     it('rejects duplicate email with 400', async () => {
-        const res = await request(app)
-            .post('/api/auth/register')
-            .send({
-                username: `dupuser${Date.now()}`,
-                email: testEmail,
-                password: 'testpass123',
-                first_name: 'Dup',
-                last_name: 'User',
-            });
+        const res = await withCsrf(
+            request(app)
+                .post('/api/auth/register')
+                .send({
+                    username: `dupuser${Date.now()}`,
+                    email: testEmail,
+                    password: 'testpass123',
+                    first_name: 'Dup',
+                    last_name: 'User',
+                })
+        );
 
         expect(res.status).toBe(400);
     });
 
     it('rejects short password with 400', async () => {
-        const res = await request(app)
-            .post('/api/auth/register')
-            .send({
-                username: `shortpass${Date.now()}`,
-                email: `endpoint_test_short_${Date.now()}@test.com`,
-                password: 'short',
-                first_name: 'Short',
-                last_name: 'Pass',
-            });
+        const res = await withCsrf(
+            request(app)
+                .post('/api/auth/register')
+                .send({
+                    username: `shortpass${Date.now()}`,
+                    email: `endpoint_test_short_${Date.now()}@test.com`,
+                    password: 'short',
+                    first_name: 'Short',
+                    last_name: 'Pass',
+                })
+        );
 
         expect(res.status).toBe(400);
     });
 
     it('rejects missing required fields with 400', async () => {
-        const res = await request(app)
-            .post('/api/auth/register')
-            .send({ email: 'test@test.com' });
+        const res = await withCsrf(
+            request(app)
+                .post('/api/auth/register')
+                .send({ email: 'test@test.com' })
+        );
 
         expect(res.status).toBe(400);
     });
@@ -676,14 +720,16 @@ describe('POST /api/products — admin', () => {
     });
 
     it('rejects unauthorized requests with 401', async () => {
-        const res = await request(app)
-            .post('/api/products')
-            .send({
-                category_id: testCategoryId,
-                product_name: 'Should Not Create',
-                base_price: 10.00,
-                product_status: 'active',
-            });
+        const res = await withCsrf(
+            request(app)
+                .post('/api/products')
+                .send({
+                    category_id: testCategoryId,
+                    product_name: 'Should Not Create',
+                    base_price: 10.00,
+                    product_status: 'active',
+                })
+        );
 
         expect(res.status).toBe(401);
     });
@@ -1206,9 +1252,9 @@ describe('Protected route behavior', () => {
             let res;
             switch (ep.method) {
                 case 'get':    res = await request(app).get(ep.path); break;
-                case 'post':   res = await request(app).post(ep.path); break;
-                case 'put':    res = await request(app).put(ep.path); break;
-                case 'delete': res = await request(app).delete(ep.path); break;
+            case 'post':   res = await withCsrf(request(app).post(ep.path)); break;
+            case 'put':    res = await withCsrf(request(app).put(ep.path)); break;
+            case 'delete': res = await withCsrf(request(app).delete(ep.path)); break;
             }
             expect(res.status).toBe(401);
         }
@@ -1298,7 +1344,7 @@ describe('POST /api/orders — create order from cart', () => {
     });
 
     it('returns 401 without auth token', async () => {
-        const res = await request(app).post('/api/orders');
+        const res = await withCsrf(request(app).post('/api/orders'));
         expect(res.status).toBe(401);
     });
 
@@ -1447,7 +1493,7 @@ describe('PUT /api/orders/:id/status — admin', () => {
     });
 
     it('returns 401 without token', async () => {
-        const res = await request(app).put(`/api/orders/${orderId || 1}/status`).send({ status: 'confirmed' });
+        const res = await withCsrf(request(app).put(`/api/orders/${orderId || 1}/status`).send({ status: 'confirmed' }));
         expect(res.status).toBe(401);
     });
 });
@@ -1530,7 +1576,7 @@ describe('POST /api/payments/orders/:id/pay — record payment', () => {
     it('returns 401 without token', async () => {
         if (!orderId) return;
 
-        const res = await request(app).post(`/api/orders/${orderId}/pay`).send({ method_id: 1, amount: 10 });
+        const res = await withCsrf(request(app).post(`/api/orders/${orderId}/pay`).send({ method_id: 1, amount: 10 }));
         expect(res.status).toBe(401);
     });
 });

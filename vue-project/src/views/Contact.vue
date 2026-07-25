@@ -64,7 +64,7 @@ const isOpen = computed(() => {
                     <Sparkles class="w-4 h-4" />
                     Get in touch
                 </span>
-                <h1 class="text-5xl md:text-6xl lg:text-7xl font-elegant font-bold leading-[1.05]">
+                <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-elegant font-bold leading-[1.05]">
                     We'd love to <span class="italic text-accent">hear</span> from you.
                 </h1>
                 <p class="mt-6 text-lg text-neutral-300 max-w-2xl mx-auto font-light">
@@ -107,29 +107,29 @@ const isOpen = computed(() => {
                             <div class="grid sm:grid-cols-2 gap-4">
                                 <div>
                                     <label class="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1.5 block">Name</label>
-                                    <input v-model="contactForm.name" required type="text" class="input-base" placeholder="Your name" />
+                                    <input v-model="contactForm.name" required type="text" id="contact-name" name="name" class="input-base" placeholder="Your name" />
                                 </div>
                                 <div>
                                     <label class="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1.5 block">Email</label>
-                                    <input v-model="contactForm.email" required type="email" class="input-base" placeholder="you@example.com" />
+                                    <input v-model="contactForm.email" required type="email" id="contact-email" name="email" class="input-base" placeholder="you@example.com" />
                                 </div>
                             </div>
                             <div v-if="contactForm.category === 'order' || contactForm.category === 'returns'">
                                 <label class="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1.5 block">Order Number</label>
-                                <input v-model="contactForm.orderNumber" type="text" class="input-base" placeholder="e.g. ALIE-2024-001" />
+                                <input v-model="contactForm.orderNumber" type="text" id="contact-order" name="order_number" class="input-base" placeholder="e.g. ALIE-2024-001" />
                             </div>
                             <div>
                                 <label class="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1.5 block">Subject</label>
-                                <input v-model="contactForm.subject" type="text" class="input-base" placeholder="What's this about?" />
+                                <input v-model="contactForm.subject" type="text" id="contact-subject" name="subject" class="input-base" placeholder="What's this about?" />
                             </div>
                             <div>
                                 <label class="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1.5 block">Message</label>
-                                <textarea v-model="contactForm.message" required rows="5" class="input-base resize-none" placeholder="Tell us more..."></textarea>
+                                <textarea v-model="contactForm.message" required rows="5" id="contact-message" name="message" class="input-base resize-none" placeholder="Tell us more..."></textarea>
                             </div>
                             <button
                                 type="submit"
                                 :disabled="isSubmitting || isSent"
-                                class="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-7 py-3.5 bg-ink text-paper font-bold text-sm rounded-full hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                class="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-7 py-3.5 bg-ink text-paper font-bold text-sm rounded-full hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 active:scale-[0.97]"
                             >
                                 <Loader2 v-if="isSubmitting" class="w-4 h-4 animate-spin" />
                                 <CheckCircle2 v-else-if="isSent" class="w-4 h-4 text-accent-300" />

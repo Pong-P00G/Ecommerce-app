@@ -34,6 +34,28 @@ const toggle = (idx) => {
 }
 </script>
 
+<style scoped>
+.faq-answer-enter-active,
+.faq-answer-leave-active {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.faq-answer-enter-from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-4px);
+}
+.faq-answer-leave-to {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-4px);
+}
+.faq-answer-enter-to,
+.faq-answer-leave-from {
+    opacity: 1;
+    max-height: 500px;
+}
+</style>
+
 <template>
     <div class="bg-paper min-h-screen">
         <section class="section py-12 md:py-16">
@@ -42,7 +64,7 @@ const toggle = (idx) => {
                 <span class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-ink text-paper mb-5 shadow-[0_8px_24px_-6px_rgb(249_115_22_/_0.45)]">
                     <HelpCircle class="w-7 h-7 text-accent" />
                 </span>
-                <h1 class="heading-hero text-5xl md:text-6xl text-ink mb-4">
+                <h1 class="heading-hero text-4xl sm:text-5xl md:text-6xl text-ink mb-4">
                     Frequently
                     <span class="text-accent">asked</span>
                 </h1>
@@ -63,13 +85,13 @@ const toggle = (idx) => {
             </div>
 
             <!-- Category Filter -->
-            <div class="flex flex-wrap gap-2 mb-10 justify-center">
+            <div class="flex flex-wrap gap-2 mb-10 justify-center stagger-item">
                 <button
                     v-for="cat in categories"
                     :key="cat.id"
                     @click="activeCategory = cat.id"
                     :class="[
-                        'px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200',
+                        'px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 active:scale-95',
                         activeCategory === cat.id
                             ? 'bg-ink text-paper shadow-sm'
                             : 'bg-paper border border-neutral-200 text-neutral-700 hover:border-ink'
@@ -84,20 +106,22 @@ const toggle = (idx) => {
                 <div
                     v-for="(faq, idx) in visibleFaqs"
                     :key="idx"
-                    class="card-flat overflow-hidden"
+                    class="card-flat overflow-hidden transition-all duration-200 hover:shadow-md stagger-item"
                 >
                     <button
                         @click="toggle(idx)"
-                        class="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-50 transition-colors"
+                        class="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-50 transition-colors active:scale-[0.99]"
                     >
                         <span class="font-bold text-ink pr-4">{{ faq.q }}</span>
                         <ChevronDown
                             :class="['w-5 h-5 text-neutral-500 transition-transform duration-300 shrink-0', faq.open ? 'rotate-180' : '']"
                         />
                     </button>
-                    <div v-if="faq.open" class="px-6 pb-5 text-neutral-600 border-t border-neutral-100 pt-4 leading-relaxed">
-                        {{ faq.a }}
-                    </div>
+                    <transition name="faq-answer">
+                        <div v-if="faq.open" class="px-6 pb-5 text-neutral-600 border-t border-neutral-100 pt-4 leading-relaxed">
+                            {{ faq.a }}
+                        </div>
+                    </transition>
                 </div>
             </div>
 

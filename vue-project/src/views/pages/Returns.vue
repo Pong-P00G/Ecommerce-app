@@ -27,7 +27,7 @@ const policies = [
                 <span class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-ink text-paper mb-5 shadow-[0_8px_24px_-6px_rgb(249_115_22_/_0.45)]">
                     <RotateCcw class="w-7 h-7 text-accent" />
                 </span>
-                <h1 class="heading-hero text-5xl md:text-6xl text-ink mb-4">
+                <h1 class="heading-hero text-4xl sm:text-5xl md:text-6xl text-ink mb-4">
                     Returns &
                     <span class="text-accent">exchanges</span>
                 </h1>
@@ -41,7 +41,7 @@ const policies = [
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
                     <div v-for="step in steps" :key="step.num"
-                        class="card-flat p-6 hover:border-ink transition-all duration-300 group">
+                        class="card-flat p-6 hover:border-ink hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 group stagger-item">
                         <div class="flex items-center justify-between mb-4">
                             <div class="w-11 h-11 rounded-full bg-ink text-paper inline-flex items-center justify-center font-bold group-hover:bg-accent transition-colors">
                                 {{ step.num }}
@@ -56,8 +56,8 @@ const policies = [
 
             <!-- Policies -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-10">
-                <div v-for="policy in policies" :key="policy.title" class="card-flat p-6 flex items-start gap-4">
-                    <div class="w-11 h-11 rounded-full bg-accent-50 inline-flex items-center justify-center text-accent shrink-0">
+                <div v-for="policy in policies" :key="policy.title" class="card-flat p-6 flex items-start gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 hover:border-ink group stagger-item">
+                    <div class="w-11 h-11 rounded-full bg-accent-50 inline-flex items-center justify-center text-accent shrink-0 group-hover:bg-accent group-hover:text-white transition-all duration-300">
                         <CheckCircle class="w-5 h-5" />
                     </div>
                     <div>

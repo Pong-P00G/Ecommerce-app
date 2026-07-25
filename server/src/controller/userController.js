@@ -44,12 +44,13 @@ export const registerUser = async (req, res) => {
         setAuthCookie(res, token, false);
 
         res.status(201).json({
+            success: true,
             token,
             user: userWithoutPassword,
             message: 'Registration successful'
         });
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(400).json({ success: false, message: error.message });
     }
 };
 
@@ -60,6 +61,7 @@ export const loginUser = async (req, res) => {
         
         if (!identifier || !password) {
             return res.status(400).json({ 
+                success: false,
                 message: 'Email/Username and password are required' 
             });
         }
@@ -82,12 +84,13 @@ export const loginUser = async (req, res) => {
         setAuthCookie(res, token, !!rememberMe);
         
         res.json({ 
+            success: true,
             token,
             user: userWithoutPassword,
             message: 'Login successful'
         });
     } catch (error) {
-        res.status(401).json({ message: error.message });
+        res.status(401).json({ success: false, message: error.message });
     }
 };
 
@@ -126,6 +129,7 @@ export const checkUsername = async (req, res) => {
 
         if (!username || username.length < 4) {
             return res.status(400).json({
+                success: false,
                 available: false,
                 message: 'Username must be at least 4 characters'
             });
@@ -134,11 +138,12 @@ export const checkUsername = async (req, res) => {
         const existingUser = await userService.getUserByUsername(username);
 
         res.json({
+            success: true,
             available: !existingUser,
             message: existingUser ? 'Username already taken' : 'Username available'
         });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ success: false, message: error.message });
     }
 };
 
@@ -149,6 +154,7 @@ export const checkEmail = async (req, res) => {
 
         if (!email) {
             return res.status(400).json({
+                success: false,
                 available: false,
                 message: 'Email is required'
             });
@@ -157,11 +163,12 @@ export const checkEmail = async (req, res) => {
         const exists = await userService.emailExists(email);
 
         res.json({
+            success: true,
             available: !exists,
             message: exists ? 'Email already registered' : 'Email available'
         });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ success: false, message: error.message });
     }
 };
 

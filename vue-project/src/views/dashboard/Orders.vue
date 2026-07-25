@@ -184,11 +184,10 @@ onMounted(fetchOrders);
                 <p class="text-neutral-500 mt-1 text-sm">View, manage, and update customer orders</p>
             </div>
 
-            <div class="flex flex-wrap gap-2 mb-6">
-                <button v-for="status in ['all', ...statuses]" :key="status" @click="statusFilter = status" :class="filterBtnClass(status)" class="px-4 py-2.5 rounded-lg font-semibold text-sm capitalize transition-colors">
-                    {{ status }}
-                    <span class="ml-1.5 text-xs opacity-70">({{ statusCounts[status] || 0 }})</span>
-                </button>
+            <div class="flex flex-wrap gap-2 mb-6">                    <button v-for="status in ['all', ...statuses]" :key="status" @click="statusFilter = status" :class="filterBtnClass(status)" class="px-4 py-2.5 rounded-lg font-semibold text-sm capitalize transition-all active:scale-95">
+                        {{ status }}
+                        <span class="ml-1.5 text-xs opacity-70">({{ statusCounts[status] || 0 }})</span>
+                    </button>
             </div>
 
             <div class="card-flat p-4 sm:p-6 mb-6">
@@ -313,8 +312,8 @@ onMounted(fetchOrders);
         </div>
 
         <!-- Order Detail Modal -->
-        <div v-if="showDetailModal && selectedOrder" @click="closeDetail" class="fixed inset-0 bg-ink/50 z-50 flex items-center justify-center p-4">
-            <div @click.stop class="card-flat p-5 sm:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div v-if="showDetailModal && selectedOrder" @click="closeDetail" class="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div @click.stop class="card-flat p-5 sm:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-[scale-in_0.25s_ease-out]">
                 <div class="flex items-center justify-between mb-6">
                     <div>
                         <span class="text-[10px] uppercase tracking-[0.2em] text-accent font-bold">Order Details</span>

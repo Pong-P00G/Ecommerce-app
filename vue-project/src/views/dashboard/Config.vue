@@ -165,9 +165,54 @@ onMounted(loadConfig);
             </div>
 
             <!-- Loading -->
-            <div v-if="loading" class="card-flat p-12 text-center">
-                <Loader2 class="w-10 h-10 text-accent animate-spin mx-auto mb-4" />
-                <p class="text-neutral-500 text-sm">Loading configuration...</p>
+            <div v-if="loading" class="space-y-6">
+                <!-- Skeleton Header -->
+                <div class="flex items-center justify-between">
+                    <div class="space-y-3">
+                        <div class="h-3 w-24 skeleton-shimmer rounded"></div>
+                        <div class="h-7 w-48 skeleton-shimmer rounded-lg"></div>
+                        <div class="h-4 w-36 skeleton-shimmer rounded"></div>
+                    </div>
+                </div>
+
+                <!-- Skeleton General Settings Card -->
+                <div class="card-flat p-6 sm:p-8">
+                    <div class="flex items-start gap-4 sm:gap-6">
+                        <div class="w-14 h-14 skeleton-shimmer rounded-2xl shrink-0"></div>
+                        <div class="flex-1 space-y-6">
+                            <div>
+                                <div class="h-5 w-36 skeleton-shimmer rounded"></div>
+                                <div class="h-3 w-48 skeleton-shimmer rounded mt-2"></div>
+                            </div>
+                            <div v-for="i in 4" :key="'sk-set-' + i" class="p-5 bg-neutral-100 rounded-2xl space-y-4">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-5 h-5 skeleton-shimmer rounded"></div>
+                                    <div class="h-3 w-24 skeleton-shimmer rounded"></div>
+                                </div>
+                                <div class="h-11 skeleton-shimmer rounded-xl max-w-xs"></div>
+                                <div class="h-3 w-40 skeleton-shimmer rounded"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skeleton COD Card -->
+                <div class="card-flat p-6 sm:p-8">
+                    <div class="flex items-start gap-4 sm:gap-6">
+                        <div class="w-14 h-14 skeleton-shimmer rounded-2xl shrink-0"></div>
+                        <div class="flex-1 space-y-4">
+                            <div>
+                                <div class="h-5 w-40 skeleton-shimmer rounded"></div>
+                                <div class="h-3 w-52 skeleton-shimmer rounded mt-2"></div>
+                            </div>
+                            <div class="p-5 bg-neutral-100 rounded-2xl space-y-3">
+                                <div class="h-3 w-20 skeleton-shimmer rounded"></div>
+                                <div class="h-12 skeleton-shimmer rounded-xl max-w-xs"></div>
+                                <div class="h-3 w-44 skeleton-shimmer rounded"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Error -->

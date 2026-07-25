@@ -1,15 +1,22 @@
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import vueDevTools from 'vite-plugin-vue-devtools'
 import tailwindcss from '@tailwindcss/vite'
+
+// Conditionally import devtools — only in development mode
+let vueDevToolsPlugin = null;
+if (process.env.NODE_ENV !== 'production') {
+  const { default: vueDevTools } = await import('vite-plugin-vue-devtools');
+  vueDevToolsPlugin = vueDevTools();
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     vue(),
-    vueDevTools(),
+    vueDevToolsPlugin,
     tailwindcss()
-  ],
+  ].filter(Boolean),
   server: {
     port: Number(process.env.VITE_PORT) || 3001,
     proxy: {

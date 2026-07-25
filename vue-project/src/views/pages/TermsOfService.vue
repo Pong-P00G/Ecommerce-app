@@ -67,7 +67,7 @@ const sections = [
                 <span class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-ink text-paper mb-5 shadow-[0_8px_24px_-6px_rgb(249_115_22_/_0.45)]">
                     <Scale class="w-7 h-7 text-accent" />
                 </span>
-                <h1 class="heading-hero text-5xl md:text-6xl text-ink mb-4">
+                <h1 class="heading-hero text-4xl sm:text-5xl md:text-6xl text-ink mb-4">
                     Terms of
                     <span class="text-accent">service</span>
                 </h1>
@@ -77,9 +77,9 @@ const sections = [
 
             <!-- Content -->
             <div class="max-w-3xl mx-auto space-y-8">
-                <div v-for="(section, idx) in sections" :key="idx" class="card-flat p-6 md:p-8">
+                <div v-for="(section, idx) in sections" :key="idx" class="card-flat p-6 md:p-8 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 stagger-item group">
                     <div class="flex items-start gap-4">
-                        <div class="w-10 h-10 rounded-xl bg-accent-50 flex items-center justify-center text-accent shrink-0 mt-0.5">
+                        <div class="w-10 h-10 rounded-xl bg-accent-50 flex items-center justify-center text-accent shrink-0 mt-0.5 transition-colors duration-300 group-hover:bg-accent group-hover:text-white">
                             <CheckCircle class="w-5 h-5" />
                         </div>
                         <div>

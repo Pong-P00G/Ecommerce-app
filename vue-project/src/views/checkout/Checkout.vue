@@ -13,7 +13,7 @@ import { shippingAPI } from '@/api/shippingApi.js';
 import {
     CreditCard, Lock, CheckCircle, Truck, MapPin,
     Sparkles, ArrowRight, ChevronRight, Loader2,
-    Plus, Trash2, Home, Phone, Mail, User,
+    Plus, Minus, Trash2, Home, Phone, Mail, User,
     AlertCircle, ShoppingBag, RefreshCw,
     DollarSign, Info
 } from 'lucide-vue-next';
@@ -589,8 +589,67 @@ onMounted(async () => {
                         <transition name="step" mode="out-in">
                             <div :key="'step-' + currentStep">
 
-                                <!-- Step 1: Shipping Information -->
+                                <!-- Step 1: Review Cart + Shipping Information -->
                                 <div v-if="currentStep === 1" class="bg-paper rounded-2xl shadow-sm p-4 sm:p-6">
+                                    <!-- Cart Review Section -->
+                                    <div class="mb-6 border-b border-neutral-200 pb-6">
+                                        <div class="flex items-center justify-between mb-4">
+                                            <h2 class="text-xl font-semibold text-ink">Review Your Cart</h2>
+                                            <span class="text-sm text-neutral-500">{{ cartItems.length }} item{{ cartItems.length !== 1 ? 's' : '' }}</span>
+                                        </div>
+                                        <div class="space-y-3">
+                                            <div
+                                                v-for="(item, idx) in cartItems"
+                                                :key="'cart-' + idx"
+                                                class="flex items-center gap-3 sm:gap-4 p-3 bg-neutral-50 rounded-xl transition-all hover:bg-neutral-100"
+                                            >
+                                                <!-- Product Image -->
+                                                <div class="w-14 h-14 sm:w-16 sm:h-16 bg-neutral-200 rounded-lg overflow-hidden shrink-0">
+                                                    <LazyImage :src="item.image" :alt="item.title" wrapper-class="w-full h-full" />
+                                                </div>
+
+                                                <!-- Product Info -->
+                                                <div class="flex-1 min-w-0">
+                                                    <h4 class="text-sm font-medium text-ink truncate">{{ item.title }}</h4>
+                                                    <p class="text-sm text-neutral-500 mt-0.5">${{ item.price.toFixed(2) }}</p>
+                                                </div>
+
+                                                <!-- Quantity Controls -->
+                                                <div class="flex items-center gap-1 sm:gap-2">
+                                                    <button
+                                                        @click="shop.updateQuantity(idx, item.qty - 1)"
+                                                        class="w-8 h-8 flex items-center justify-center rounded-lg border border-neutral-300 text-neutral-600 hover:bg-neutral-200 hover:border-neutral-400 transition-all active:scale-90"
+                                                        :disabled="item.qty <= 0"
+                                                        aria-label="Decrease quantity"
+                                                    >
+                                                        <Minus class="w-3.5 h-3.5" />
+                                                    </button>
+                                                    <span class="w-8 text-center text-sm font-semibold text-ink tabular-nums">{{ item.qty }}</span>
+                                                    <button
+                                                        @click="shop.updateQuantity(idx, item.qty + 1)"
+                                                        class="w-8 h-8 flex items-center justify-center rounded-lg border border-neutral-300 text-neutral-600 hover:bg-neutral-200 hover:border-neutral-400 transition-all active:scale-90"
+                                                        aria-label="Increase quantity"
+                                                    >
+                                                        <Plus class="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+
+                                                <!-- Item Total & Remove -->
+                                                <div class="text-right shrink-0">
+                                                    <p class="text-sm font-semibold text-ink">${{ (item.price * item.qty).toFixed(2) }}</p>
+                                                    <button
+                                                        @click="shop.removeFromCart(idx)"
+                                                        class="mt-1 text-xs text-neutral-400 hover:text-red-500 transition-colors flex items-center gap-1 ml-auto active:scale-90"
+                                                        aria-label="Remove item"
+                                                    >
+                                                        <Trash2 class="w-3 h-3" />
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div class="flex items-center justify-between mb-6">
                                         <h2 class="text-xl font-semibold text-ink">Shipping Information</h2>
                                         <button
@@ -1118,16 +1177,15 @@ onMounted(async () => {
 
                             <!-- Cart Items -->
                             <div class="space-y-4 mb-6">
-                                <div
-                                    v-for="(item, idx) in cartItems"
+                                <div                                    v-for="(item, idx) in cartItems"
                                     :key="idx"
-                                    class="flex gap-4"
+                                    class="flex gap-4 group/item"
                                 >
-                                    <div class="w-16 h-16 sm:w-20 sm:h-20 bg-neutral-100 rounded-lg overflow-hidden shrink-0">
+                                    <div class="w-16 h-16 sm:w-20 sm:h-20 bg-neutral-100 rounded-lg overflow-hidden shrink-0 transition-all duration-200 group-hover/item:shadow-md">
                                         <LazyImage :src="item.image" :alt="item.title" wrapper-class="w-full h-full" />
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <h4 class="text-sm font-medium text-ink truncate">{{ item.title }}</h4>
+                                        <h4 class="text-sm font-medium text-ink truncate group-hover/item:text-accent transition-colors">{{ item.title }}</h4>
                                         <p class="text-sm text-neutral-500">Qty: {{ item.qty }}</p>
                                         <p class="text-sm font-semibold text-ink">${{ (item.price * item.qty).toFixed(2) }}</p>
                                     </div>
@@ -1144,21 +1202,20 @@ onMounted(async () => {
                                         class="flex-1 px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:border-transparent"
                                         :disabled="promoApplied"
                                         aria-label="Promo code"
-                                    />
-                                    <button
-                                        v-if="!promoApplied"
-                                        @click="applyPromo"
-                                        class="px-4 py-2 bg-neutral-100 text-neutral-700 rounded-lg hover:bg-neutral-200 transition-colors text-sm font-medium"
-                                    >
-                                        Apply
-                                    </button>
-                                    <button
-                                        v-else
-                                        @click="removePromo"
-                                        class="px-4 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium"
-                                    >
-                                        Remove
-                                    </button>
+                                    />                                            <button
+                                                v-if="!promoApplied"
+                                                @click="applyPromo"
+                                                class="px-4 py-2 bg-neutral-100 text-neutral-700 rounded-lg hover:bg-neutral-200 transition-colors text-sm font-medium"
+                                            >
+                                                Apply
+                                            </button>
+                                            <button
+                                                v-else
+                                                @click="removePromo"
+                                                class="px-4 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium"
+                                            >
+                                                Remove
+                                            </button>
                                 </div>
                                 <p v-if="promoApplied" class="text-sm text-green-600 mt-2 flex items-center gap-1">
                                     <CheckCircle class="w-3.5 h-3.5" />

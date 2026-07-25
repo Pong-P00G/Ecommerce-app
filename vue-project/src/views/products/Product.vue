@@ -339,11 +339,19 @@ onMounted(async () => {
                         </div>
                     </div>
 
-                    <!-- Loading State -->
-                    <div v-if="loading" class="flex items-center justify-center py-20">
-                        <div class="text-center">
-                            <div class="w-12 h-12 border-4 border-neutral-200 border-t-accent rounded-full animate-spin mb-4 mx-auto"></div>
-                            <p class="text-neutral-500 text-sm">Loading products...</p>
+                    <!-- Skeleton Loading State -->
+                    <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
+                        <div v-for="i in 6" :key="'sk-'+i" class="card-base overflow-hidden">
+                            <div class="aspect-square bg-neutral-100 overflow-hidden skeleton-shimmer"></div>
+                            <div class="p-4 sm:p-5 space-y-3">
+                                <div class="h-3 w-20 skeleton-shimmer rounded"></div>
+                                <div class="h-5 w-40 skeleton-shimmer rounded"></div>
+                                <div class="h-4 w-16 skeleton-shimmer rounded"></div>
+                                <div class="flex items-center justify-between pt-2 border-t border-neutral-100">
+                                    <div class="h-3 w-12 skeleton-shimmer rounded"></div>
+                                    <div class="h-3 w-10 skeleton-shimmer rounded"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -363,7 +371,7 @@ onMounted(async () => {
                                 v-for="product in paginatedProducts"
                                 :key="product.product_id"
                                 @click="viewProduct(product.product_id)"
-                                class="card-base overflow-hidden cursor-pointer group"
+                                class="card-base overflow-hidden cursor-pointer group transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_-8px_rgb(0_0_0_/_0.12)]"
                             >
                                 <div class="relative aspect-square bg-neutral-100 overflow-hidden">
                                     <button
@@ -410,7 +418,8 @@ onMounted(async () => {
                                 <button
                                     @click="goToPage(currentPage - 1)"
                                     :disabled="currentPage === 1"
-                                    class="btn-icon disabled:opacity-30 disabled:hover:scale-100 disabled:hover:bg-transparent"
+                                    class="btn-icon disabled:opacity-30 disabled:hover:scale-100 disabled:hover:bg-transparent active:scale-90 transition-transform"
+                                    aria-label="Previous page"
                                 >
                                     <ChevronLeft class="w-5 h-5" />
                                 </button>
@@ -420,11 +429,12 @@ onMounted(async () => {
                                         :key="page"
                                         @click="goToPage(page)"
                                         :class="[
-                                            'min-w-10 h-10 rounded-full border text-sm font-bold transition-all',
+                                            'min-w-10 h-10 rounded-full border text-sm font-bold transition-all active:scale-90',
                                             page === currentPage
-                                                ? 'bg-ink text-paper border-ink'
+                                                ? 'bg-ink text-paper border-ink scale-105'
                                                 : 'bg-paper text-ink border-neutral-200 hover:border-ink'
                                         ]"
+                                        :aria-label="`Page ${page}`"
                                     >
                                         {{ page }}
                                     </button>
@@ -432,13 +442,14 @@ onMounted(async () => {
                                 <button
                                     @click="goToPage(currentPage + 1)"
                                     :disabled="currentPage === totalPages"
-                                    class="btn-icon disabled:opacity-30 disabled:hover:scale-100 disabled:hover:bg-transparent"
+                                    class="btn-icon disabled:opacity-30 disabled:hover:scale-100 disabled:hover:bg-transparent active:scale-90 transition-transform"
+                                    aria-label="Next page"
                                 >
                                     <ChevronRight class="w-5 h-5" />
                                 </button>
                             </div>
                             <div class="text-xs text-neutral-500 tabular-nums">
-                                Page <span class="font-bold text-ink">{{ currentPage }}</span> of {{ totalPages }}
+                                Showing <span class="font-bold text-ink">{{ startIndex }}-{{ endIndex }}</span> of <span class="font-bold text-ink">{{ totalItems }}</span>
                             </div>
                         </div>
                     </div>

@@ -26,7 +26,7 @@ const benefits = [
                 <span class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-ink text-paper mb-5 shadow-[0_8px_24px_-6px_rgb(249_115_22_/_0.45)]">
                     <Briefcase class="w-7 h-7 text-accent" />
                 </span>
-                <h1 class="heading-hero text-5xl md:text-6xl text-ink mb-4">
+                <h1 class="heading-hero text-4xl sm:text-5xl md:text-6xl text-ink mb-4">
                     Join our
                     <span class="text-accent">team</span>
                 </h1>
@@ -40,7 +40,7 @@ const benefits = [
                     <h2 class="font-elegant font-bold text-2xl text-ink mt-2">Why work with us</h2>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div v-for="benefit in benefits" :key="benefit.title" class="text-center group">
+                    <div v-for="benefit in benefits" :key="benefit.title" class="text-center group stagger-item">
                         <div class="w-14 h-14 mx-auto mb-4 rounded-xl bg-neutral-100 group-hover:bg-ink group-hover:text-paper text-ink inline-flex items-center justify-center transition-all duration-300">
                             <component :is="benefit.icon" class="w-6 h-6" />
                         </div>
@@ -64,7 +64,7 @@ const benefits = [
                     <div
                         v-for="(job, idx) in openPositions"
                         :key="idx"
-                        class="card-base p-6 group cursor-pointer"
+                        class="card-base p-6 group cursor-pointer stagger-item"
                     >
                         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                             <div class="flex-1">

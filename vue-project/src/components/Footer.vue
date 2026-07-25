@@ -149,6 +149,8 @@ const perks = [
                                     v-model="email"
                                     type="email"
                                     required
+                                    id="footer-email"
+                                    name="email"
                                     placeholder="Enter your email"
                                     class="w-full pl-11 pr-4 py-3 bg-neutral-900 border border-neutral-800 rounded-full text-sm text-paper placeholder:text-neutral-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
                                 />

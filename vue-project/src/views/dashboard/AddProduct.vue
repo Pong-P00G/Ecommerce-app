@@ -694,10 +694,36 @@ onMounted(async () => {
             </div>
 
             <!-- Loading State -->
-            <div v-if="loadingProduct" class="flex items-center justify-center py-20">
-                <div class="text-center">
-                    <Loader2 class="w-10 h-10 text-accent animate-spin mx-auto mb-4" />
-                    <p class="text-neutral-500 text-sm font-medium">Loading product data...</p>
+            <div v-if="loadingProduct" class="space-y-6">
+                <!-- Skeleton Header -->
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="h-4 w-24 skeleton-shimmer rounded"></div>
+                </div>
+                <div class="space-y-2 mb-8">
+                    <div class="h-3 w-32 skeleton-shimmer rounded"></div>
+                    <div class="h-8 w-56 skeleton-shimmer rounded-lg"></div>
+                    <div class="h-4 w-48 skeleton-shimmer rounded"></div>
+                </div>
+
+                <!-- Skeleton Form Sections -->
+                <div v-for="i in 3" :key="'sk-form-' + i" class="card-flat p-6 md:p-8">
+                    <div class="h-5 w-40 skeleton-shimmer rounded mb-6"></div>
+                    <div class="space-y-5">
+                        <div v-for="j in 3" :key="'sk-field-' + i + '-' + j" class="space-y-2">
+                            <div class="h-3 w-28 skeleton-shimmer rounded"></div>
+                            <div class="h-11 skeleton-shimmer rounded-xl"></div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div class="space-y-2">
+                                <div class="h-3 w-24 skeleton-shimmer rounded"></div>
+                                <div class="h-11 skeleton-shimmer rounded-xl"></div>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="h-3 w-20 skeleton-shimmer rounded"></div>
+                                <div class="h-11 skeleton-shimmer rounded-xl"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

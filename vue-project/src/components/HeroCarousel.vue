@@ -141,7 +141,7 @@ onUnmounted(() => stopAutoPlay());
                     </p>
 
                     <h2
-                        class="text-5xl md:text-7xl lg:text-8xl font-elegant text-paper leading-[0.95] animate-fade-up"
+                        class="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-elegant text-paper leading-[0.95] animate-fade-up"
                         style="animation-delay: 280ms"
                     >
                         {{ slide.title }}
